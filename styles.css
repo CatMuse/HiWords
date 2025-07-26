@@ -154,9 +154,9 @@
 }
 
 .hello-word-word-card {
-    background: var(--word-card-bg-color, var(--background-primary));
-    border: 1px solid color-mix(in srgb, var(--word-card-accent-color, var(--text-accent)) 50%, transparent);
-    border-left: 4px solid var(--word-card-accent-color, var(--text-accent));
+    background: var(--word-card-bg-color, var(--background-secondary));
+    border: 1px solid color-mix(in srgb, var(--word-card-accent-color, var(--text-muted)) 50%, transparent);
+    border-left: 4px solid var(--word-card-accent-color, var(--text-muted));
     border-radius: 8px;
     padding: 12px;
     cursor: pointer;
@@ -169,14 +169,14 @@
 .hello-word-word-card:hover,
 .hello-word-word-card-hover {
     background: var(--word-card-bg-color, var(--background-modifier-hover));
-    border-color: var(--word-card-accent-color, var(--text-accent));
+    border-color: var(--word-card-accent-color, var(--text-muted));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px) scale(1.01);
     filter: brightness(1.05) saturate(1.1);
 }
 
 .hello-word-word-title {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -209,7 +209,6 @@
     color: var(--text-normal);
     line-height: 1.5;
     margin-top: 8px;
-    padding: 4px 0;
     position: relative;
     z-index: 1;
 }

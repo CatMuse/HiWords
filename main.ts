@@ -64,6 +64,13 @@ export default class HelloWordPlugin extends Plugin {
         
         // 初始化侧边栏
         this.initializeSidebar();
+        
+        // 在布局准备好后自动刷新生词本
+        this.app.workspace.onLayoutReady(async () => {
+            await this.vocabularyManager.loadAllVocabularyBooks();
+            this.refreshHighlighter();
+            console.log('生词本已自动刷新');
+        });
     }
 
     /**
@@ -192,8 +199,13 @@ export default class HelloWordPlugin extends Plugin {
     private async initializeSidebar() {
         // 在右侧边栏中添加生词列表视图
         this.app.workspace.onLayoutReady(() => {
-            // 自动打开侧边栏
-            this.activateSidebarView();
+            // 仅在首次安装插件时打开侧边栏
+            // 之后将尊重用户的设置，不强制打开
+            const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);
+            if (leaves.length === 0) {
+                // 如果侧边栏视图不存在，创建一个
+                this.activateSidebarView();
+            }
         });
     }
 
