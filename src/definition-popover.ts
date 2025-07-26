@@ -1,227 +1,226 @@
-import { App, Component, MarkdownRenderer } from 'obsidian';
-import { WordDefinition } from './types';
+import { App, MarkdownRenderer, MarkdownView, Notice } from 'obsidian';
+import { VocabularyManager } from './vocabulary-manager';
 
-export class DefinitionPopover extends Component {
+export class DefinitionPopover {
     private app: App;
-    private popoverEl: HTMLElement | null = null;
-    private isVisible = false;
+    private activeTooltip: HTMLElement | null = null;
+    private vocabularyManager: VocabularyManager | null = null;
+    private eventHandlers: {[key: string]: EventListener} = {};
 
     constructor(app: App) {
-        super();
         this.app = app;
-        this.setupEventListeners();
-    }
-
-    /**
-     * 设置事件监听器
-     */
-    private setupEventListeners() {
-        // 监听鼠标悬停事件
-        document.addEventListener('mouseover', this.handleMouseOver.bind(this));
-        document.addEventListener('mouseout', this.handleMouseOut.bind(this));
         
-        // 监听点击事件隐藏弹窗
-        document.addEventListener('click', this.handleClick.bind(this));
+        // 初始化事件处理函数
+        this.eventHandlers = {
+            mouseover: this.handleMouseOver.bind(this),
+            mouseout: this.handleMouseOut.bind(this)
+        };
+        
+        // 添加全局事件监听器
+        this.registerEvents();
     }
 
     /**
-     * 处理鼠标悬停
+     * 简单的 Markdown 转 HTML 处理
+     * 处理基本的 Markdown 语法，如粗体、斜体、链接等
      */
-    private async handleMouseOver(event: MouseEvent) {
+    private simpleMarkdownToHtml(markdown: string): string {
+        if (!markdown) return '';
+        
+        let html = markdown
+            // 转义 HTML 特殊字符
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            
+            // 标题
+            .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+            
+            // 粗体和斜体
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/__(.*?)__/g, '<strong>$1</strong>')
+            .replace(/_(.*?)_/g, '<em>$1</em>')
+            
+            // 链接
+            .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+            
+            // 列表
+            .replace(/^\* (.*?)$/gm, '<li>$1</li>')
+            .replace(/^\d+\. (.*?)$/gm, '<li>$1</li>')
+            
+            // 引用
+            .replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>')
+            
+            // 代码
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            
+            // 换行
+            .replace(/\n/g, '<br>');
+            
+        return html;
+    }
+
+    /**
+     * 设置词汇管理器
+     */
+    setVocabularyManager(manager: VocabularyManager) {
+        this.vocabularyManager = manager;
+    }
+
+    /**
+     * 注册事件监听器
+     */
+    private registerEvents() {
+        // 监听鼠标悬停事件
+        document.addEventListener('mouseover', this.eventHandlers.mouseover);
+        document.addEventListener('mouseout', this.eventHandlers.mouseout);
+    }
+
+    /**
+     * 处理鼠标悬停事件
+     */
+    private handleMouseOver(event: MouseEvent) {
         const target = event.target as HTMLElement;
         
-        if (target.classList.contains('hello-word-highlight')) {
+        // 检查是否悬停在高亮词汇上
+        if (target && target.classList.contains('hello-word-highlight')) {
+            // 获取词汇和定义
             const word = target.getAttribute('data-word');
             const definition = target.getAttribute('data-definition');
             
             if (word && definition) {
-                await this.showPopover(target, word, definition);
+                // 创建并显示工具提示
+                this.createTooltip(target, word, definition);
             }
         }
     }
 
     /**
-     * 处理鼠标离开
+     * 处理鼠标移出事件
      */
     private handleMouseOut(event: MouseEvent) {
-        const target = event.target as HTMLElement;
-        const relatedTarget = event.relatedTarget as HTMLElement;
-        
-        // 如果鼠标移动到弹窗上，不隐藏
-        if (this.popoverEl && (
-            relatedTarget === this.popoverEl || 
-            this.popoverEl.contains(relatedTarget)
-        )) {
-            return;
-        }
-        
-        // 如果鼠标离开高亮词汇，延迟隐藏弹窗
-        if (target.classList.contains('hello-word-highlight')) {
-            setTimeout(() => {
-                if (!this.isHoveringPopover()) {
-                    this.hidePopover();
-                }
-            }, 100);
-        }
+        // 移除工具提示
+        this.removeTooltip();
     }
+    
+
 
     /**
-     * 处理点击事件
+     * 创建工具提示
      */
-    private handleClick(event: MouseEvent) {
-        const target = event.target as HTMLElement;
+    private createTooltip(target: HTMLElement, word: string, definition: string) {
+        // 如果已经有工具提示，先移除它
+        this.removeTooltip();
         
-        // 如果点击的不是弹窗或高亮词汇，隐藏弹窗
-        if (this.popoverEl && 
-            !this.popoverEl.contains(target) && 
-            !target.classList.contains('hello-word-highlight')) {
-            this.hidePopover();
-        }
-    }
-
-    /**
-     * 显示定义弹窗
-     */
-    private async showPopover(target: HTMLElement, word: string, definition: string) {
-        if (this.isVisible) {
-            this.hidePopover();
-        }
-
-        this.popoverEl = document.createElement('div');
-        this.popoverEl.className = 'hello-word-popover';
+        // 创建工具提示元素
+        const tooltip = document.createElement('div');
+        tooltip.className = 'hello-word-tooltip';
         
-        // 创建弹窗内容
-        const contentEl = document.createElement('div');
-        contentEl.className = 'hello-word-popover-content';
-        
-        // 词汇标题
+        // 创建标题
         const titleEl = document.createElement('div');
-        titleEl.className = 'hello-word-popover-title';
+        titleEl.className = 'hello-word-tooltip-title';
         titleEl.textContent = word;
+        tooltip.appendChild(titleEl);
         
-        // 定义内容
-        const definitionEl = document.createElement('div');
-        definitionEl.className = 'hello-word-popover-definition';
+        // 创建内容
+        const contentEl = document.createElement('div');
+        contentEl.className = 'hello-word-tooltip-content';
         
-        // 渲染 Markdown 内容
-        if (definition.trim()) {
-            await MarkdownRenderer.renderMarkdown(
-                definition, 
-                definitionEl, 
-                '', 
-                this
-            );
+        // 如果定义为空，显示提示信息
+        if (!definition || definition.trim() === '') {
+            contentEl.textContent = '暂无定义';
+            tooltip.appendChild(contentEl);
         } else {
-            definitionEl.textContent = '暂无定义';
-        }
-        
-        contentEl.appendChild(titleEl);
-        contentEl.appendChild(definitionEl);
-        this.popoverEl.appendChild(contentEl);
-        
-        // 添加到 DOM
-        document.body.appendChild(this.popoverEl);
-        
-        // 定位弹窗
-        this.positionPopover(target);
-        
-        // 添加悬停事件到弹窗
-        this.popoverEl.addEventListener('mouseenter', () => {
-            this.isVisible = true;
-        });
-        
-        this.popoverEl.addEventListener('mouseleave', () => {
-            setTimeout(() => {
-                if (!this.isHoveringTarget(target)) {
-                    this.hidePopover();
+            tooltip.appendChild(contentEl);
+            
+            // 使用 Obsidian 的 MarkdownRenderer 渲染 Markdown 内容
+            try {
+                // 使用更安全的方式渲染 Markdown
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (activeView && activeView.file) {
+                    // 安全地使用 MarkdownRenderer
+                    MarkdownRenderer.renderMarkdown(
+                        definition,
+                        contentEl,
+                        activeView.file.path,
+                        activeView
+                    );
+                } else {
+                    // 如果没有活动的 MarkdownView 或文件为空，尝试使用更简单的方法
+                    // 使用基本的 HTML 标记来模拟 Markdown 效果
+                    const formattedText = this.simpleMarkdownToHtml(definition);
+                    contentEl.innerHTML = formattedText;
                 }
-            }, 100);
-        });
-        
-        this.isVisible = true;
-    }
-
-    /**
-     * 定位弹窗
-     */
-    private positionPopover(target: HTMLElement) {
-        if (!this.popoverEl) return;
-
-        const targetRect = target.getBoundingClientRect();
-        const popoverRect = this.popoverEl.getBoundingClientRect();
-        
-        let left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
-        let top = targetRect.bottom + 8;
-        
-        // 确保弹窗不超出视窗边界
-        const margin = 10;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        // 水平位置调整
-        if (left < margin) {
-            left = margin;
-        } else if (left + popoverRect.width > viewportWidth - margin) {
-            left = viewportWidth - popoverRect.width - margin;
+            } catch (error) {
+                // 如果渲染失败，回退到纯文本显示
+                console.error('Markdown 渲染失败:', error);
+                contentEl.textContent = definition;
+            }
         }
         
-        // 垂直位置调整
-        if (top + popoverRect.height > viewportHeight - margin) {
-            top = targetRect.top - popoverRect.height - 8;
+        // 获取更多详细信息（如果有词汇管理器）
+        if (this.vocabularyManager) {
+            const detailDef = this.vocabularyManager.getDefinition(word);
+            if (detailDef && detailDef.source) {
+                // 添加来源信息
+                const sourceEl = document.createElement('div');
+                sourceEl.className = 'hello-word-tooltip-source';
+                sourceEl.textContent = `来源: ${detailDef.source.split('/').pop()}`;
+                tooltip.appendChild(sourceEl);
+            }
         }
         
-        this.popoverEl.style.left = `${left}px`;
-        this.popoverEl.style.top = `${top}px`;
-    }
-
-    /**
-     * 隐藏弹窗
-     */
-    private hidePopover() {
-        if (this.popoverEl) {
-            this.popoverEl.remove();
-            this.popoverEl = null;
-        }
-        this.isVisible = false;
-    }
-
-    /**
-     * 检查是否正在悬停弹窗
-     */
-    private isHoveringPopover(): boolean {
-        if (!this.popoverEl) return false;
+        // 将工具提示添加到文档中
+        document.body.appendChild(tooltip);
         
-        const rect = this.popoverEl.getBoundingClientRect();
-        const mouseX = event instanceof MouseEvent ? event.clientX : 0;
-        const mouseY = event instanceof MouseEvent ? event.clientY : 0;
-        
-        return mouseX >= rect.left && 
-               mouseX <= rect.right && 
-               mouseY >= rect.top && 
-               mouseY <= rect.bottom;
-    }
-
-    /**
-     * 检查是否正在悬停目标元素
-     */
-    private isHoveringTarget(target: HTMLElement): boolean {
+        // 计算位置
         const rect = target.getBoundingClientRect();
-        const mouseX = event instanceof MouseEvent ? event.clientX : 0;
-        const mouseY = event instanceof MouseEvent ? event.clientY : 0;
+        tooltip.style.left = rect.left + 'px';
+        tooltip.style.top = (rect.bottom + 5) + 'px';
         
-        return mouseX >= rect.left && 
-               mouseX <= rect.right && 
-               mouseY >= rect.top && 
-               mouseY <= rect.bottom;
+        // 考虑滚动位置
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        tooltip.style.left = (rect.left + scrollLeft) + 'px';
+        tooltip.style.top = (rect.bottom + scrollTop + 5) + 'px';
+        
+        // 确保工具提示不会超出屏幕边缘
+        setTimeout(() => {
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            
+            if (tooltipRect.right > viewportWidth - 10) {
+                const overflow = tooltipRect.right - viewportWidth + 10;
+                tooltip.style.left = (parseFloat(tooltip.style.left) - overflow) + 'px';
+            }
+        }, 0);
+        
+        // 保存引用
+        this.activeTooltip = tooltip;
     }
 
     /**
-     * 清理资源
+     * 移除工具提示
      */
-    onunload() {
-        this.hidePopover();
-        document.removeEventListener('mouseover', this.handleMouseOver.bind(this));
-        document.removeEventListener('mouseout', this.handleMouseOut.bind(this));
-        document.removeEventListener('click', this.handleClick.bind(this));
+    private removeTooltip() {
+        if (this.activeTooltip && this.activeTooltip.parentNode) {
+            this.activeTooltip.parentNode.removeChild(this.activeTooltip);
+            this.activeTooltip = null;
+        }
+    }
+
+    /**
+     * 卸载
+     */
+    unload() {
+        // 移除事件监听器
+        document.removeEventListener('mouseover', this.eventHandlers.mouseover);
+        document.removeEventListener('mouseout', this.eventHandlers.mouseout);
+        
+        // 移除工具提示
+        this.removeTooltip();
     }
 }

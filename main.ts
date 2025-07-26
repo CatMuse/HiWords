@@ -31,7 +31,10 @@ export default class HelloWordPlugin extends Plugin {
         
         // 初始化管理器
         this.vocabularyManager = new VocabularyManager(this.app, this.settings);
+        
+        // 初始化定义弹出框
         this.definitionPopover = new DefinitionPopover(this.app);
+        this.definitionPopover.setVocabularyManager(this.vocabularyManager);
         
         // 加载生词本
         await this.vocabularyManager.loadAllVocabularyBooks();
