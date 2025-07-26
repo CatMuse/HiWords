@@ -15,9 +15,6 @@ export class HelloWordSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        // 标题
-        containerEl.createEl('h2', { text: 'Hello Word 设置' });
-
         // 基础设置
         this.addBasicSettings();
         
