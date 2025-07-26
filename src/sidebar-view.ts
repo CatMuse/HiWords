@@ -152,11 +152,11 @@ export class HelloWordSidebarView extends ItemView {
         const borderColor = mapCanvasColorToCSSVar(wordDef.color, 'var(--color-base-60)');
         card.style.borderLeftColor = borderColor;
         
-        // 可选：同时设置背景色（淡化版本）
+        // 设置卡片彩色背景
         if (wordDef.color) {
             card.style.setProperty('--word-card-accent-color', borderColor);
-            // 也可以设置淡化背景色
-            const bgColor = getColorWithOpacity(borderColor, 0.05);
+            // 设置更明显的彩色背景
+            const bgColor = getColorWithOpacity(borderColor, 0.15);
             card.style.setProperty('--word-card-bg-color', bgColor);
         }
 

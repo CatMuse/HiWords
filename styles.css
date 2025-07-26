@@ -154,62 +154,83 @@
 }
 
 .hello-word-word-card {
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-left: 4px solid var(--text-accent);
+    background: var(--word-card-bg-color, var(--background-primary));
+    border: 1px solid color-mix(in srgb, var(--word-card-accent-color, var(--text-accent)) 50%, transparent);
+    border-left: 4px solid var(--word-card-accent-color, var(--text-accent));
     border-radius: 8px;
     padding: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
 }
 
 .hello-word-word-card:hover,
 .hello-word-word-card-hover {
-    background: var(--background-modifier-hover);
-    border-color: var(--text-accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
+    background: var(--word-card-bg-color, var(--background-modifier-hover));
+    border-color: var(--word-card-accent-color, var(--text-accent));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px) scale(1.01);
+    filter: brightness(1.05) saturate(1.1);
 }
 
 .hello-word-word-title {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
 }
 
 .hello-word-word-text {
     font-size: 16px;
     font-weight: 600;
-    color: var(--text-accent);
+    color: var(--text-normal);
+    letter-spacing: 0.5px;
 }
 
 .hello-word-word-source {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
 }
 
 .hello-word-source-text {
     font-size: 11px;
     color: var(--text-muted);
-    background: var(--background-secondary);
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
 }
 
 .hello-word-word-definition {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text-normal);
-    line-height: 1.4;
+    line-height: 1.5;
     margin-top: 8px;
+    padding: 4px 0;
+    position: relative;
+    z-index: 1;
 }
 
 .hello-word-expand-btn {
     color: var(--text-accent);
     cursor: pointer;
-    font-weight: 500;
-    text-decoration: underline;
+    font-weight: 400;
+    text-decoration: none;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: inline-block;
+    margin-left: 8px;
 }
 
 .hello-word-expand-btn:hover {
-    color: var(--text-accent-hover);
+    color: var(--text-accent);
+    background: var(--background-modifier-hover);
+    transform: scale(1.05);
 }
 
 .hello-word-empty-state {
@@ -241,10 +262,20 @@
     }
     
     .hello-word-word-card {
-        padding: 10px;
+        padding: 12px;
+        border-radius: 10px;
     }
     
     .hello-word-word-text {
-        font-size: 14px;
+        font-size: 16px;
+    }
+    
+    .hello-word-word-list {
+        gap: 12px;
+    }
+    
+    .hello-word-word-card:hover,
+    .hello-word-word-card-hover {
+        transform: none; /* 移动设备上禁用变形效果 */
     }
 }

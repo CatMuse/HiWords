@@ -52,15 +52,18 @@ export function mapCanvasColorToCSSVar(
  * @returns 带透明度的颜色字符串
  */
 export function getColorWithOpacity(cssVar: string, opacity: number = 0.1): string {
-    // 如果是CSS变量，需要特殊处理
+    // 如果是CSS变量，使用color-mix函数来创建透明度效果
     if (cssVar.startsWith('var(--color-')) {
-        const colorName = cssVar.match(/var\(--color-(\w+)\)/)?.[1];
-        if (colorName) {
-            return `rgba(var(--color-${colorName}-rgb), ${opacity})`;
-        }
+        // 使用现代CSS的color-mix函数
+        return `color-mix(in srgb, ${cssVar} ${opacity * 100}%, transparent)`;
     }
     
-    // 对于其他颜色值，直接返回
+    // 对于其他颜色值，也使用color-mix
+    if (cssVar.startsWith('#') || cssVar.startsWith('rgb') || cssVar.startsWith('hsl')) {
+        return `color-mix(in srgb, ${cssVar} ${opacity * 100}%, transparent)`;
+    }
+    
+    // 如果都不匹配，直接返回原值
     return cssVar;
 }
 
