@@ -1,6 +1,7 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView } from 'obsidian';
 import HelloWordPlugin from '../main';
 import { WordDefinition } from './types';
+import { mapCanvasColorToCSSVar, getColorWithOpacity } from './color-utils';
 
 export const SIDEBAR_VIEW_TYPE = 'hello-word-sidebar';
 
@@ -147,9 +148,16 @@ export class HelloWordSidebarView extends ItemView {
     private createWordCard(container: HTMLElement, wordDef: WordDefinition) {
         const card = container.createEl('div', { cls: 'hello-word-word-card' });
         
-        // 设置卡片颜色边框
+        // 设置卡片颜色边框，使用Obsidian CSS变量
+        const borderColor = mapCanvasColorToCSSVar(wordDef.color, 'var(--color-base-60)');
+        card.style.borderLeftColor = borderColor;
+        
+        // 可选：同时设置背景色（淡化版本）
         if (wordDef.color) {
-            card.style.borderLeftColor = wordDef.color;
+            card.style.setProperty('--word-card-accent-color', borderColor);
+            // 也可以设置淡化背景色
+            const bgColor = getColorWithOpacity(borderColor, 0.05);
+            card.style.setProperty('--word-card-bg-color', bgColor);
         }
 
         // 词汇标题

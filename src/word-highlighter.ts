@@ -4,18 +4,19 @@ import {
     StateField,
     StateEffect
 } from '@codemirror/state';
-import {
-    Decoration,
-    DecorationSet,
-    EditorView,
+import { 
+    EditorView, 
+    Decoration, 
+    DecorationSet, 
+    ViewUpdate,
+    ViewPlugin,
     PluginSpec,
     PluginValue,
-    ViewPlugin,
-    ViewUpdate,
     WidgetType
 } from '@codemirror/view';
-import { WordMatch, WordDefinition } from './types';
 import { VocabularyManager } from './vocabulary-manager';
+import { WordMatch, WordDefinition } from './types';
+import { mapCanvasColorToCSSVar } from './color-utils';
 
 // 状态效果：强制更新高亮
 const forceUpdateEffect = StateEffect.define<boolean>();
@@ -87,6 +88,7 @@ export class WordHighlighter implements PluginValue {
 
         // 添加装饰器
         filteredMatches.forEach(match => {
+            const highlightColor = mapCanvasColorToCSSVar(match.definition.color, 'var(--color-accent)');
             builder.add(
                 match.from, 
                 match.to, 
@@ -95,7 +97,7 @@ export class WordHighlighter implements PluginValue {
                     attributes: {
                         'data-word': match.word,
                         'data-definition': match.definition.definition,
-                        'style': `border-bottom: 2px dashed ${match.color}; cursor: pointer;`
+                        'style': `border-bottom: 2px dashed ${highlightColor}; cursor: pointer;`
                     }
                 })
             );
@@ -126,7 +128,7 @@ export class WordHighlighter implements PluginValue {
                         definition,
                         from: offset + match.index,
                         to: offset + match.index + match[0].length,
-                        color: definition.color || '#007acc'
+                        color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)')
                     });
                 }
             }
