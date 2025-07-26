@@ -190,11 +190,6 @@ export class HelloWordSidebarView extends ItemView {
             }
         }
 
-        // 添加点击事件，跳转到生词本
-        card.onclick = () => {
-            this.openVocabularyBook(wordDef);
-        };
-
         // 添加悬停效果
         card.onmouseenter = () => {
             card.addClass('hello-word-word-card-hover');
