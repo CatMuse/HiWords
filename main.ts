@@ -60,9 +60,6 @@ export default class HelloWordPlugin extends Plugin {
         // 添加设置页面
         this.addSettingTab(new HelloWordSettingTab(this.app, this));
         
-        // 添加状态栏
-        this.addStatusBar();
-        
         // 初始化侧边栏
         this.initializeSidebar();
         
@@ -158,21 +155,7 @@ export default class HelloWordPlugin extends Plugin {
         );
     }
 
-    /**
-     * 添加状态栏
-     */
-    private addStatusBar() {
-        const statusBarItem = this.addStatusBarItem();
-        const updateStatusBar = () => {
-            const stats = this.vocabularyManager.getStats();
-            statusBarItem.setText(`📚 ${stats.enabledBooks}/${stats.totalBooks} 生词本 | ${stats.totalWords} 词汇`);
-        };
-        
-        updateStatusBar();
-        
-        // 定期更新状态栏
-        this.registerInterval(window.setInterval(updateStatusBar, 5000));
-    }
+    // 状态栏功能已删除
 
     /**
      * 刷新高亮器
