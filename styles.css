@@ -229,7 +229,7 @@
 }
 
 .hello-word-word-source {
-    margin-bottom: 12px;
+    margin-top: 6px;
     position: relative;
     z-index: 1;
 }
@@ -237,7 +237,7 @@
 .hello-word-source-text {
     font-size: 11px;
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 400;
     text-transform: uppercase;
 }
 

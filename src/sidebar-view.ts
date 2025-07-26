@@ -164,11 +164,6 @@ export class HelloWordSidebarView extends ItemView {
         const wordTitle = card.createEl('div', { cls: 'hello-word-word-title' });
         wordTitle.createEl('span', { text: wordDef.word, cls: 'hello-word-word-text' });
         
-        // 来源信息
-        const source = card.createEl('div', { cls: 'hello-word-word-source' });
-        const bookName = this.getBookNameFromPath(wordDef.source);
-        source.createEl('span', { text: `来自: ${bookName}`, cls: 'hello-word-source-text' });
-
         // 定义内容
         if (wordDef.definition && wordDef.definition.trim()) {
             const definition = card.createEl('div', { cls: 'hello-word-word-definition' });
@@ -197,6 +192,11 @@ export class HelloWordSidebarView extends ItemView {
                 };
             }
         }
+        
+        // 来源信息
+        const source = card.createEl('div', { cls: 'hello-word-word-source' });
+        const bookName = this.getBookNameFromPath(wordDef.source);
+        source.createEl('span', { text: `来自: ${bookName}`, cls: 'hello-word-source-text' });
 
         // 添加悬停效果
         card.onmouseenter = () => {
