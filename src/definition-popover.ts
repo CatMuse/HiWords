@@ -86,7 +86,7 @@ export class DefinitionPopover {
         const target = event.target as HTMLElement;
         
         // 检查是否悬停在高亮词汇上
-        if (target && target.classList.contains('hello-word-highlight')) {
+        if (target && target.classList.contains('hi-words-highlight')) {
             // 获取词汇和定义
             const word = target.getAttribute('data-word');
             const definition = target.getAttribute('data-definition');
@@ -117,17 +117,17 @@ export class DefinitionPopover {
         
         // 创建工具提示元素
         const tooltip = document.createElement('div');
-        tooltip.className = 'hello-word-tooltip';
+        tooltip.className = 'hi-words-tooltip';
         
         // 创建标题
         const titleEl = document.createElement('div');
-        titleEl.className = 'hello-word-tooltip-title';
+        titleEl.className = 'hi-words-tooltip-title';
         titleEl.textContent = word;
         tooltip.appendChild(titleEl);
         
         // 创建内容
         const contentEl = document.createElement('div');
-        contentEl.className = 'hello-word-tooltip-content';
+        contentEl.className = 'hi-words-tooltip-content';
         
         // 如果定义为空，显示提示信息
         if (!definition || definition.trim() === '') {
@@ -167,7 +167,7 @@ export class DefinitionPopover {
             if (detailDef && detailDef.source) {
                 // 添加来源信息
                 const sourceEl = document.createElement('div');
-                sourceEl.className = 'hello-word-tooltip-source';
+                sourceEl.className = 'hi-words-tooltip-source';
                 sourceEl.textContent = `来源: ${detailDef.source.split('/').pop()}`;
                 tooltip.appendChild(sourceEl);
             }

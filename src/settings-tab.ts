@@ -1,12 +1,12 @@
 import { App, PluginSettingTab, Setting, TFile, Notice, Modal } from 'obsidian';
-import HelloWordPlugin from '../main';
+import HiWordsPlugin from '../main';
 import { VocabularyBook } from './types';
 import { CanvasParser } from './canvas-parser';
 
-export class HelloWordSettingTab extends PluginSettingTab {
-    plugin: HelloWordPlugin;
+export class HiWordsSettingTab extends PluginSettingTab {
+    plugin: HiWordsPlugin;
 
-    constructor(app: App, plugin: HelloWordPlugin) {
+    constructor(app: App, plugin: HiWordsPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -206,7 +206,7 @@ export class HelloWordSettingTab extends PluginSettingTab {
         
         const stats = this.plugin.vocabularyManager.getStats();
         
-        const statsEl = containerEl.createEl('div', { cls: 'hello-word-stats' });
+        const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
         statsEl.createEl('p', { text: `总生词本数量: ${stats.totalBooks}` });
         statsEl.createEl('p', { text: `已启用生词本: ${stats.enabledBooks}` });
         statsEl.createEl('p', { text: `总词汇数量: ${stats.totalWords}` });

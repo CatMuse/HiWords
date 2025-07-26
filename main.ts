@@ -1,30 +1,30 @@
 import { App, Plugin, TFile, MarkdownView, Notice, Modal, WorkspaceLeaf, ItemView } from 'obsidian';
 import { Extension } from '@codemirror/state';
-import { HelloWordSettings, VocabularyBook } from './src/types';
+import { HiWordsSettings, VocabularyBook } from './src/types';
 import { VocabularyManager } from './src/vocabulary-manager';
 import { WordHighlighter, createWordHighlighterExtension, getWordUnderCursor } from './src/word-highlighter';
 import { DefinitionPopover } from './src/definition-popover';
-import { HelloWordSettingTab } from './src/settings-tab';
-import { HelloWordSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
+import { HiWordsSettingTab } from './src/settings-tab';
+import { HiWordsSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
 import { AddWordModal } from './src/add-word-modal';
 
 // 默认设置
-const DEFAULT_SETTINGS: HelloWordSettings = {
+const DEFAULT_SETTINGS: HiWordsSettings = {
     vocabularyBooks: [],
     showDefinitionOnHover: true,
     enableAutoHighlight: true
 };
 
-export default class HelloWordPlugin extends Plugin {
-    settings: HelloWordSettings;
+export default class HiWordsPlugin extends Plugin {
+    settings: HiWordsSettings;
     vocabularyManager: VocabularyManager;
     definitionPopover: DefinitionPopover;
     editorExtensions: Extension[] = [];
     highlighterInstance: WordHighlighter | null = null;
-    sidebarView: HelloWordSidebarView | null = null;
+    sidebarView: HiWordsSidebarView | null = null;
 
     async onload() {
-        console.log('Loading Hello Word plugin');
+        console.log('Loading HiWords plugin');
         
         // 加载设置
         await this.loadSettings();
@@ -43,7 +43,7 @@ export default class HelloWordPlugin extends Plugin {
         this.registerView(
             SIDEBAR_VIEW_TYPE,
             (leaf) => {
-                this.sidebarView = new HelloWordSidebarView(leaf, this);
+                this.sidebarView = new HiWordsSidebarView(leaf, this);
                 return this.sidebarView;
             }
         );
@@ -58,7 +58,7 @@ export default class HelloWordPlugin extends Plugin {
         this.registerEvents();
         
         // 添加设置页面
-        this.addSettingTab(new HelloWordSettingTab(this.app, this));
+        this.addSettingTab(new HiWordsSettingTab(this.app, this));
         
         // 初始化侧边栏
         this.initializeSidebar();
@@ -244,7 +244,7 @@ export default class HelloWordPlugin extends Plugin {
      * 卸载插件
      */
     onunload() {
-        console.log('Unloading Hello Word plugin');
+        console.log('Unloading HiWords plugin');
         this.definitionPopover.unload();
         this.vocabularyManager.clear();
         

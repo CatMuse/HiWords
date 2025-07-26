@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { WordDefinition, VocabularyBook, HelloWordSettings } from './types';
+import { WordDefinition, VocabularyBook, HiWordsSettings } from './types';
 import { CanvasParser } from './canvas-parser';
 import { CanvasEditor } from './canvas-editor';
 
@@ -8,9 +8,9 @@ export class VocabularyManager {
     private canvasParser: CanvasParser;
     private canvasEditor: CanvasEditor;
     private definitions: Map<string, WordDefinition[]> = new Map();
-    private settings: HelloWordSettings;
+    private settings: HiWordsSettings;
 
-    constructor(app: App, settings: HelloWordSettings) {
+    constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
         this.canvasParser = new CanvasParser(app);
         this.canvasEditor = new CanvasEditor(app);
@@ -108,7 +108,7 @@ export class VocabularyManager {
     /**
      * 更新设置
      */
-    updateSettings(settings: HelloWordSettings): void {
+    updateSettings(settings: HiWordsSettings): void {
         this.settings = settings;
     }
 

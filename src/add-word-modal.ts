@@ -1,15 +1,15 @@
 import { App, Modal, Notice } from 'obsidian';
 import type { VocabularyBook } from './types';
-import HelloWordPlugin from '../main';
+import HiWordsPlugin from '../main';
 
 /**
  * 添加词汇到生词本的模态框
  */
 export class AddWordModal extends Modal {
-    private plugin: HelloWordPlugin;
+    private plugin: HiWordsPlugin;
     private word: string;
 
-    constructor(app: App, plugin: HelloWordPlugin, word: string) {
+    constructor(app: App, plugin: HiWordsPlugin, word: string) {
         super(app);
         this.plugin = plugin;
         this.word = word;

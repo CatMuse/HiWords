@@ -93,7 +93,7 @@ export class WordHighlighter implements PluginValue {
                 match.from, 
                 match.to, 
                 Decoration.mark({
-                    class: 'hello-word-highlight',
+                    class: 'hi-words-highlight',
                     attributes: {
                         'data-word': match.word,
                         'data-definition': match.definition.definition,

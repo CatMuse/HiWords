@@ -1,19 +1,19 @@
-/* Hello Word Plugin Styles */
+/* HiWords Plugin Styles */
 
 /* 词汇高亮样式 */
-.hello-word-highlight {
+.hi-words-highlight {
     border-bottom: 2px dashed var(--text-accent);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.hello-word-highlight:hover {
+.hi-words-highlight:hover {
     background-color: var(--background-modifier-hover);
     border-bottom: 2px solid var(--text-accent);
 }
 
 /* 工具提示样式 */
-.hello-word-tooltip {
+.hi-words-tooltip {
     position: absolute;
     z-index: 1000;
     background: var(--background-primary);
@@ -21,18 +21,18 @@
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     padding: 10px 14px;
-    max-width: 480px;
+    max-width: 420px;
     font-size: 14px;
-    animation: hello-word-tooltip-fade-in 0.2s ease;
+    animation: hi-words-tooltip-fade-in 0.2s ease;
     transition: opacity 0.2s ease;
 }
 
-@keyframes hello-word-tooltip-fade-in {
+@keyframes hi-words-tooltip-fade-in {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-.hello-word-tooltip-title {
+.hi-words-tooltip-title {
     font-weight: 600;
     font-size: 15px;
     color: var(--text-accent);
@@ -41,14 +41,14 @@
     padding-bottom: 8px;
 }
 
-.hello-word-tooltip-content {
+.hi-words-tooltip-content {
     color: var(--text-normal);
     line-height: 1.5;
     font-size: 14px;
     margin-bottom: 6px;
 }
 
-.hello-word-tooltip-source {
+.hi-words-tooltip-source {
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 6px;
@@ -59,28 +59,28 @@
 
 
 /* Markdown 内容样式 */
-.hello-word-tooltip-content p {
+.hi-words-tooltip-content p {
     margin: 0 0 8px 0;
 }
 
-.hello-word-tooltip-content p:last-child {
+.hi-words-tooltip-content p:last-child {
     margin-bottom: 0;
 }
 
-.hello-word-tooltip-content ul,
-.hello-word-tooltip-content ol {
+.hi-words-tooltip-content ul,
+.hi-words-tooltip-content ol {
     margin: 4px 0;
     padding-left: 20px;
 }
 
-.hello-word-tooltip-content code {
+.hi-words-tooltip-content code {
     background: var(--background-secondary);
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.9em;
 }
 
-.hello-word-tooltip-content blockquote {
+.hi-words-tooltip-content blockquote {
     border-left: 3px solid var(--text-accent);
     margin: 4px 0;
     padding-left: 10px;
@@ -88,7 +88,7 @@
 }
 
 /* 设置页面样式 */
-.hello-word-stats {
+.hi-words-stats {
     background: var(--background-secondary);
     border-radius: 6px;
     padding: 12px;
@@ -160,17 +160,17 @@
 }
 
 /* 侧边栏样式 */
-.hello-word-sidebar {
+.hi-words-sidebar {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
 }
 
-.hello-word-sidebar-content {
+.hi-words-sidebar-content {
     flex: 1;
 }
 
-.hello-word-sidebar-stats {
+.hi-words-sidebar-stats {
     margin-bottom: 16px;
     padding: 8px 12px;
     background: var(--background-secondary);
@@ -178,19 +178,19 @@
     text-align: center;
 }
 
-.hello-word-stats-text {
+.hi-words-stats-text {
     font-size: 13px;
     color: var(--text-muted);
     font-weight: 500;
 }
 
-.hello-word-word-list {
+.hi-words-word-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.hello-word-word-card {
+.hi-words-word-card {
     background: var(--word-card-bg-color, var(--background-secondary));
     border: 1px solid color-mix(in srgb, var(--word-card-accent-color, var(--text-muted)) 50%, transparent);
     border-left: 4px solid var(--word-card-accent-color, var(--text-muted));
@@ -203,8 +203,8 @@
     overflow: hidden;
 }
 
-.hello-word-word-card:hover,
-.hello-word-word-card-hover {
+.hi-words-word-card:hover,
+.hi-words-word-card-hover {
     background: var(--word-card-bg-color, var(--background-modifier-hover));
     border-color: var(--word-card-accent-color, var(--text-muted));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -212,7 +212,7 @@
     filter: brightness(1.05) saturate(1.1);
 }
 
-.hello-word-word-title {
+.hi-words-word-title {
     margin-bottom: 4px;
     display: flex;
     align-items: center;
@@ -221,27 +221,27 @@
     z-index: 1;
 }
 
-.hello-word-word-text {
+.hi-words-word-text {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-normal);
     letter-spacing: 0.5px;
 }
 
-.hello-word-word-source {
+.hi-words-word-source {
     margin-top: 6px;
     position: relative;
     z-index: 1;
 }
 
-.hello-word-source-text {
+.hi-words-source-text {
     font-size: 11px;
     color: var(--text-muted);
     font-weight: 400;
     text-transform: uppercase;
 }
 
-.hello-word-word-definition {
+.hi-words-word-definition {
     font-size: 14px;
     color: var(--text-normal);
     line-height: 1.5;
@@ -250,7 +250,7 @@
     z-index: 1;
 }
 
-.hello-word-expand-btn {
+.hi-words-expand-btn {
     color: var(--text-accent);
     cursor: pointer;
     font-weight: 400;
@@ -263,13 +263,13 @@
     margin-left: 8px;
 }
 
-.hello-word-expand-btn:hover {
+.hi-words-expand-btn:hover {
     color: var(--text-accent);
     background: var(--background-modifier-hover);
     transform: scale(1.05);
 }
 
-.hello-word-empty-state {
+.hi-words-empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -279,7 +279,7 @@
     height: 200px;
 }
 
-.hello-word-empty-text {
+.hi-words-empty-text {
     font-size: 14px;
     color: var(--text-muted);
     line-height: 1.5;
@@ -287,25 +287,25 @@
 
 /* 响应式调整 */
 @media (max-width: 768px) {
-    .hello-word-sidebar {
+    .hi-words-sidebar {
         padding: 12px;
     }
     
-    .hello-word-word-card {
+    .hi-words-word-card {
         padding: 12px;
         border-radius: 10px;
     }
     
-    .hello-word-word-text {
+    .hi-words-word-text {
         font-size: 16px;
     }
     
-    .hello-word-word-list {
+    .hi-words-word-list {
         gap: 12px;
     }
     
-    .hello-word-word-card:hover,
-    .hello-word-word-card-hover {
+    .hi-words-word-card:hover,
+    .hi-words-word-card-hover {
         transform: none; /* 移动设备上禁用变形效果 */
     }
 }

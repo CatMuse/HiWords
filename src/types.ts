@@ -34,7 +34,7 @@ export interface VocabularyBook {
 }
 
 // 插件设置
-export interface HelloWordSettings {
+export interface HiWordsSettings {
     vocabularyBooks: VocabularyBook[];
     showDefinitionOnHover: boolean;
     enableAutoHighlight: boolean;

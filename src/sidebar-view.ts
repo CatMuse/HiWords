@@ -1,16 +1,16 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView } from 'obsidian';
-import HelloWordPlugin from '../main';
+import HiWordsPlugin from '../main';
 import { WordDefinition } from './types';
 import { mapCanvasColorToCSSVar, getColorWithOpacity } from './color-utils';
 
-export const SIDEBAR_VIEW_TYPE = 'hello-word-sidebar';
+export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
-export class HelloWordSidebarView extends ItemView {
-    private plugin: HelloWordPlugin;
+export class HiWordsSidebarView extends ItemView {
+    private plugin: HiWordsPlugin;
     private currentWords: WordDefinition[] = [];
     private currentFile: TFile | null = null;
 
-    constructor(leaf: WorkspaceLeaf, plugin: HelloWordPlugin) {
+    constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
         this.plugin = plugin;
     }
@@ -30,10 +30,10 @@ export class HelloWordSidebarView extends ItemView {
     async onOpen() {
         const container = this.containerEl.children[1];
         container.empty();
-        container.addClass('hello-word-sidebar');
+        container.addClass('hi-words-sidebar');
 
         // 创建内容区域
-        const content = container.createEl('div', { cls: 'hello-word-sidebar-content' });
+        const content = container.createEl('div', { cls: 'hi-words-sidebar-content' });
         
         // 初始化显示
         this.updateView();
@@ -117,7 +117,7 @@ export class HelloWordSidebarView extends ItemView {
      * 渲染生词列表
      */
     private renderWordList() {
-        const container = this.containerEl.querySelector('.hello-word-sidebar-content');
+        const container = this.containerEl.querySelector('.hi-words-sidebar-content');
         if (!container) return;
 
         container.empty();
@@ -128,14 +128,14 @@ export class HelloWordSidebarView extends ItemView {
         }
 
         // 创建统计信息
-        const stats = container.createEl('div', { cls: 'hello-word-sidebar-stats' });
+        const stats = container.createEl('div', { cls: 'hi-words-sidebar-stats' });
         stats.createEl('span', { 
             text: `发现 ${this.currentWords.length} 个生词`,
-            cls: 'hello-word-stats-text'
+            cls: 'hi-words-stats-text'
         });
 
         // 创建生词卡片列表
-        const wordList = container.createEl('div', { cls: 'hello-word-word-list' });
+        const wordList = container.createEl('div', { cls: 'hi-words-word-list' });
 
         this.currentWords.forEach(wordDef => {
             this.createWordCard(wordList, wordDef);
@@ -146,7 +146,7 @@ export class HelloWordSidebarView extends ItemView {
      * 创建生词卡片
      */
     private createWordCard(container: HTMLElement, wordDef: WordDefinition) {
-        const card = container.createEl('div', { cls: 'hello-word-word-card' });
+        const card = container.createEl('div', { cls: 'hi-words-word-card' });
         
         // 设置卡片颜色边框，使用Obsidian CSS变量
         const borderColor = mapCanvasColorToCSSVar(wordDef.color, 'var(--color-base-60)');
@@ -161,12 +161,12 @@ export class HelloWordSidebarView extends ItemView {
         }
 
         // 词汇标题
-        const wordTitle = card.createEl('div', { cls: 'hello-word-word-title' });
-        wordTitle.createEl('span', { text: wordDef.word, cls: 'hello-word-word-text' });
+        const wordTitle = card.createEl('div', { cls: 'hi-words-word-title' });
+        wordTitle.createEl('span', { text: wordDef.word, cls: 'hi-words-word-text' });
         
         // 定义内容
         if (wordDef.definition && wordDef.definition.trim()) {
-            const definition = card.createEl('div', { cls: 'hello-word-word-definition' });
+            const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
             // 限制定义长度，避免卡片过长
             const shortDefinition = this.truncateText(wordDef.definition, 100);
             definition.textContent = shortDefinition;
@@ -175,14 +175,14 @@ export class HelloWordSidebarView extends ItemView {
             if (wordDef.definition.length > 100) {
                 const expandBtn = definition.createEl('span', { 
                     text: ' ...更多',
-                    cls: 'hello-word-expand-btn'
+                    cls: 'hi-words-expand-btn'
                 });
                 expandBtn.onclick = () => {
                     if (definition.textContent === shortDefinition + ' ...更多') {
                         definition.textContent = wordDef.definition;
                         const collapseBtn = definition.createEl('span', {
                             text: ' 收起',
-                            cls: 'hello-word-expand-btn'
+                            cls: 'hi-words-expand-btn'
                         });
                         collapseBtn.onclick = () => {
                             definition.textContent = shortDefinition;
@@ -194,16 +194,16 @@ export class HelloWordSidebarView extends ItemView {
         }
         
         // 来源信息
-        const source = card.createEl('div', { cls: 'hello-word-word-source' });
+        const source = card.createEl('div', { cls: 'hi-words-word-source' });
         const bookName = this.getBookNameFromPath(wordDef.source);
-        source.createEl('span', { text: `来自: ${bookName}`, cls: 'hello-word-source-text' });
+        source.createEl('span', { text: `来自: ${bookName}`, cls: 'hi-words-source-text' });
 
         // 添加悬停效果
         card.onmouseenter = () => {
-            card.addClass('hello-word-word-card-hover');
+            card.addClass('hi-words-word-card-hover');
         };
         card.onmouseleave = () => {
-            card.removeClass('hello-word-word-card-hover');
+            card.removeClass('hi-words-word-card-hover');
         };
     }
 
@@ -211,12 +211,12 @@ export class HelloWordSidebarView extends ItemView {
      * 显示空状态
      */
     private showEmptyState(message: string) {
-        const container = this.containerEl.querySelector('.hello-word-sidebar-content');
+        const container = this.containerEl.querySelector('.hi-words-sidebar-content');
         if (!container) return;
 
         container.empty();
-        const emptyState = container.createEl('div', { cls: 'hello-word-empty-state' });
-        emptyState.createEl('div', { text: message, cls: 'hello-word-empty-text' });
+        const emptyState = container.createEl('div', { cls: 'hi-words-empty-state' });
+        emptyState.createEl('div', { text: message, cls: 'hi-words-empty-text' });
     }
 
     /**
