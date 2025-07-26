@@ -1,8 +1,220 @@
-/*
+/* Hello Word Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* 词汇高亮样式 */
+.hello-word-highlight {
+    border-bottom: 2px dashed #007acc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
-If your plugin does not need CSS, delete this file.
+.hello-word-highlight:hover {
+    background-color: rgba(0, 122, 204, 0.1);
+    border-bottom: 3px dashed #007acc;
+}
 
-*/
+/* 定义弹窗样式 */
+.hello-word-popover {
+    position: fixed;
+    z-index: 1000;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    min-width: 200px;
+    padding: 0;
+    font-size: 14px;
+}
+
+.hello-word-popover-content {
+    padding: 12px 16px;
+}
+
+.hello-word-popover-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-accent);
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 6px;
+}
+
+.hello-word-popover-definition {
+    color: var(--text-normal);
+    line-height: 1.5;
+}
+
+/* 设置页面样式 */
+.hello-word-stats {
+    background: var(--background-secondary);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 12px;
+}
+
+/* Canvas 选择器样式 */
+.canvas-picker-item {
+    padding: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.canvas-picker-item:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--text-accent);
+}
+
+.canvas-picker-name {
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 4px;
+}
+
+.canvas-picker-path {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+}
+
+/* 侧边栏样式 */
+.hello-word-sidebar {
+    padding: 16px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.hello-word-sidebar-header {
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 12px;
+}
+
+.hello-word-sidebar-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.hello-word-sidebar-content {
+    flex: 1;
+}
+
+.hello-word-sidebar-stats {
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.hello-word-stats-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.hello-word-word-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hello-word-word-card {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-left: 4px solid var(--text-accent);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.hello-word-word-card:hover,
+.hello-word-word-card-hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--text-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.hello-word-word-title {
+    margin-bottom: 6px;
+}
+
+.hello-word-word-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-accent);
+}
+
+.hello-word-word-source {
+    margin-bottom: 8px;
+}
+
+.hello-word-source-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--background-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.hello-word-word-definition {
+    font-size: 13px;
+    color: var(--text-normal);
+    line-height: 1.4;
+    margin-top: 8px;
+}
+
+.hello-word-expand-btn {
+    color: var(--text-accent);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+.hello-word-expand-btn:hover {
+    color: var(--text-accent-hover);
+}
+
+.hello-word-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    height: 200px;
+}
+
+.hello-word-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.hello-word-empty-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .hello-word-sidebar {
+        padding: 12px;
+    }
+    
+    .hello-word-word-card {
+        padding: 10px;
+    }
+    
+    .hello-word-word-text {
+        font-size: 14px;
+    }
+}
