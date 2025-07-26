@@ -105,6 +105,43 @@
     transition: all 0.2s ease;
 }
 
+/* 添加词汇模态框样式 */
+.word-definition-input {
+    width: 100%;
+    min-height: 100px;
+    margin: 8px 0;
+    
+}
+
+.modal-button-container {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modal-button-container button.mod-cta {
+    margin-left: 8px;
+}
+
+/* 表单元素样式 */
+.form-item {
+    margin: 8px 0 20px 0;
+}
+
+.form-item-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 400;
+    color: var(--text-normal);
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.form-item select,
+.form-item textarea {
+    width: 100%;
+}
+
 .canvas-picker-item:hover {
     background: var(--background-modifier-hover);
     border-color: var(--text-accent);

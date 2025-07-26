@@ -19,16 +19,14 @@ export class AddWordModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         
-        contentEl.createEl('h2', { text: '添加词汇到生词本' });
+        // 标题中包含词汇
+        contentEl.createEl('h2', { text: `添加 "${this.word}" 到生词本` });
         
-        contentEl.createEl('p', { text: `词汇: ${this.word}` });
+        // 生词本选择
+        const bookSelectContainer = contentEl.createDiv({ cls: 'form-item' });
+        bookSelectContainer.createEl('label', { text: '生词本', cls: 'form-item-label' });
         
-        // 选择生词本
-        const bookSelectContainer = contentEl.createDiv({ cls: 'setting-item' });
-        bookSelectContainer.createDiv({ text: '生词本', cls: 'setting-item-name' });
-        const bookSelectControl = bookSelectContainer.createDiv({ cls: 'setting-item-control' });
-        
-        const bookSelect = bookSelectControl.createEl('select', { cls: 'dropdown' });
+        const bookSelect = bookSelectContainer.createEl('select', { cls: 'dropdown' });
         bookSelect.createEl('option', { text: '请选择生词本', value: '' });
         
         this.plugin.settings.vocabularyBooks.forEach(book => {
@@ -37,13 +35,12 @@ export class AddWordModal extends Modal {
             }
         });
         
-        // 选择颜色
-        const colorSelectContainer = contentEl.createDiv({ cls: 'setting-item' });
-        colorSelectContainer.createDiv({ text: '卡片颜色', cls: 'setting-item-name' });
-        const colorSelectControl = colorSelectContainer.createDiv({ cls: 'setting-item-control' });
+        // 颜色选择
+        const colorSelectContainer = contentEl.createDiv({ cls: 'form-item' });
+        colorSelectContainer.createEl('label', { text: '卡片颜色', cls: 'form-item-label' });
         
-        const colorSelect = colorSelectControl.createEl('select', { cls: 'dropdown' });
-        colorSelect.createEl('option', { text: '默认', value: '' });
+        const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown' });
+        colorSelect.createEl('option', { text: '灰色', value: '' });
         
         // Canvas 支持的颜色
         const colors = [
@@ -60,28 +57,22 @@ export class AddWordModal extends Modal {
         });
         
         // 定义输入
-        const definitionContainer = contentEl.createDiv({ cls: 'setting-item' });
-        definitionContainer.createDiv({ text: '词汇定义', cls: 'setting-item-name' });
-        const definitionControl = definitionContainer.createDiv({ cls: 'setting-item-control' });
+        const definitionContainer = contentEl.createDiv({ cls: 'form-item' });
+        definitionContainer.createEl('label', { text: '词汇定义', cls: 'form-item-label' });
         
-        const definitionInput = definitionControl.createEl('textarea', { 
+        const definitionInput = definitionContainer.createEl('textarea', { 
             placeholder: '请输入词汇定义...',
             cls: 'word-definition-input'
         });
         definitionInput.rows = 5;
-        definitionInput.style.width = '100%';
         
         // 按钮
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        buttonContainer.style.marginTop = '20px';
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.justifyContent = 'flex-end';
         
         const cancelButton = buttonContainer.createEl('button', { text: '取消' });
         cancelButton.onclick = () => this.close();
         
         const addButton = buttonContainer.createEl('button', { text: '添加', cls: 'mod-cta' });
-        addButton.style.marginLeft = '10px';
         addButton.onclick = async () => {
             const selectedBook = bookSelect.value;
             const definition = definitionInput.value;
