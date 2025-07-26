@@ -216,7 +216,6 @@ export class HelloWordSidebarView extends ItemView {
 
         container.empty();
         const emptyState = container.createEl('div', { cls: 'hello-word-empty-state' });
-        emptyState.createEl('div', { text: '📚', cls: 'hello-word-empty-icon' });
         emptyState.createEl('div', { text: message, cls: 'hello-word-empty-text' });
     }
 

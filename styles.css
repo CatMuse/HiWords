@@ -279,12 +279,6 @@
     height: 200px;
 }
 
-.hello-word-empty-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
-}
-
 .hello-word-empty-text {
     font-size: 14px;
     color: var(--text-muted);
