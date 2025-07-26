@@ -31,10 +31,6 @@ export class HelloWordSidebarView extends ItemView {
         container.empty();
         container.addClass('hello-word-sidebar');
 
-        // 创建标题
-        const header = container.createEl('div', { cls: 'hello-word-sidebar-header' });
-        header.createEl('h3', { text: '当前文档生词', cls: 'hello-word-sidebar-title' });
-
         // 创建内容区域
         const content = container.createEl('div', { cls: 'hello-word-sidebar-content' });
         

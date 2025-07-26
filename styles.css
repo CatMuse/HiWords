@@ -86,19 +86,6 @@
     overflow-y: auto;
 }
 
-.hello-word-sidebar-header {
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--background-modifier-border);
-    padding-bottom: 12px;
-}
-
-.hello-word-sidebar-title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-normal);
-}
-
 .hello-word-sidebar-content {
     flex: 1;
 }
