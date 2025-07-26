@@ -1,16 +1,19 @@
 import { App, TFile } from 'obsidian';
 import { WordDefinition, VocabularyBook, HelloWordSettings } from './types';
 import { CanvasParser } from './canvas-parser';
+import { CanvasEditor } from './canvas-editor';
 
 export class VocabularyManager {
     private app: App;
-    private parser: CanvasParser;
+    private canvasParser: CanvasParser;
+    private canvasEditor: CanvasEditor;
     private definitions: Map<string, WordDefinition[]> = new Map();
     private settings: HelloWordSettings;
 
     constructor(app: App, settings: HelloWordSettings) {
         this.app = app;
-        this.parser = new CanvasParser(app);
+        this.canvasParser = new CanvasParser(app);
+        this.canvasEditor = new CanvasEditor(app);
         this.settings = settings;
     }
 
@@ -44,7 +47,7 @@ export class VocabularyManager {
         }
 
         try {
-            const definitions = await this.parser.parseCanvasFile(file);
+            const definitions = await this.canvasParser.parseCanvasFile(file);
             
 
             
@@ -132,5 +135,24 @@ export class VocabularyManager {
      */
     clear(): void {
         this.definitions.clear();
+    }
+    
+    /**
+     * 添加词汇到 Canvas 文件
+     * 代理到 CanvasEditor 的方法
+     * @param bookPath Canvas 文件路径
+     * @param word 要添加的词汇
+     * @param definition 词汇定义
+     * @param color 可选的节点颜色
+     */
+    async addWordToCanvas(bookPath: string, word: string, definition: string, color?: number): Promise<boolean> {
+        const success = await this.canvasEditor.addWordToCanvas(bookPath, word, definition, color);
+        
+        if (success) {
+            // 如果添加成功，重新加载生词本
+            await this.reloadVocabularyBook(bookPath);
+        }
+        
+        return success;
     }
 }

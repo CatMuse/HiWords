@@ -1,4 +1,4 @@
-import { App, Plugin, TFile, MarkdownView, Notice, Modal, WorkspaceLeaf } from 'obsidian';
+import { App, Plugin, TFile, MarkdownView, Notice, Modal, WorkspaceLeaf, ItemView } from 'obsidian';
 import { Extension } from '@codemirror/state';
 import { HelloWordSettings, VocabularyBook } from './src/types';
 import { VocabularyManager } from './src/vocabulary-manager';
@@ -6,6 +6,7 @@ import { WordHighlighter, createWordHighlighterExtension, getWordUnderCursor } f
 import { DefinitionPopover } from './src/definition-popover';
 import { HelloWordSettingTab } from './src/settings-tab';
 import { HelloWordSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
+import { AddWordModal } from './src/add-word-modal';
 
 // 默认设置
 const DEFAULT_SETTINGS: HelloWordSettings = {
@@ -101,19 +102,7 @@ export default class HelloWordPlugin extends Plugin {
 
 
 
-        // 添加词汇到生词本命令
-        this.addCommand({
-            id: 'add-word-to-vocabulary',
-            name: '添加词汇到生词本',
-            editorCallback: (editor, view) => {
-                const selectedText = editor.getSelection();
-                if (selectedText) {
-                    new AddWordModal(this.app, this, selectedText).open();
-                } else {
-                    new Notice('请先选择要添加的词汇');
-                }
-            }
-        });
+
 
         // 打开生词列表侧边栏命令
         this.addCommand({
@@ -148,6 +137,23 @@ export default class HelloWordPlugin extends Plugin {
             this.app.workspace.on('active-leaf-change', () => {
                 // 当切换文件时，可能需要更新高亮
                 setTimeout(() => this.refreshHighlighter(), 100);
+            })
+        );
+        
+        // 注册编辑器右键菜单
+        this.registerEvent(
+            this.app.workspace.on('editor-menu', (menu, editor) => {
+                const selection = editor.getSelection();
+                if (selection && selection.trim()) {
+                    menu.addItem((item) => {
+                        item
+                            .setTitle('添加到生词本')
+                            .setIcon('book-plus')
+                            .onClick(() => {
+                                new AddWordModal(this.app, this, selection.trim()).open();
+                            });
+                    });
+                }
             })
         );
     }
@@ -234,21 +240,7 @@ export default class HelloWordPlugin extends Plugin {
         }
     }
 
-    /**
-     * 获取指定位置的词汇
-     */
-    private getWordAtPosition(line: string, position: number): string | null {
-        const wordRegex = /[a-zA-Z]+/g;
-        let match;
-        
-        while ((match = wordRegex.exec(line)) !== null) {
-            if (position >= match.index && position <= match.index + match[0].length) {
-                return match[0];
-            }
-        }
-        
-        return null;
-    }
+
 
     /**
      * 加载设置
@@ -280,66 +272,4 @@ export default class HelloWordPlugin extends Plugin {
 
 
 
-// 添加词汇模态框
-class AddWordModal extends Modal {
-    private plugin: HelloWordPlugin;
-    private word: string;
 
-    constructor(app: App, plugin: HelloWordPlugin, word: string) {
-        super(app);
-        this.plugin = plugin;
-        this.word = word;
-    }
-
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        
-        contentEl.createEl('h2', { text: '添加词汇到生词本' });
-        
-        contentEl.createEl('p', { text: `词汇: ${this.word}` });
-        
-        // 选择生词本
-        const bookSelect = contentEl.createEl('select');
-        bookSelect.createEl('option', { text: '请选择生词本', value: '' });
-        
-        this.plugin.settings.vocabularyBooks.forEach(book => {
-            if (book.enabled) {
-                bookSelect.createEl('option', { text: book.name, value: book.path });
-            }
-        });
-        
-        // 定义输入
-        const definitionInput = contentEl.createEl('textarea', { 
-            placeholder: '请输入词汇定义...',
-            cls: 'word-definition-input'
-        });
-        
-        // 按钮
-        const buttonContainer = contentEl.createEl('div', { cls: 'modal-button-container' });
-        
-        const cancelButton = buttonContainer.createEl('button', { text: '取消' });
-        cancelButton.onclick = () => this.close();
-        
-        const addButton = buttonContainer.createEl('button', { text: '添加', cls: 'mod-cta' });
-        addButton.onclick = async () => {
-            const selectedBook = bookSelect.value;
-            const definition = definitionInput.value;
-            
-            if (!selectedBook) {
-                new Notice('请选择生词本');
-                return;
-            }
-            
-            // 这里需要实现添加词汇到 Canvas 的逻辑
-            // 由于 Canvas 文件的复杂性，这里先显示提示
-            new Notice('请手动在 Canvas 中添加词汇卡片');
-            this.close();
-        };
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}
