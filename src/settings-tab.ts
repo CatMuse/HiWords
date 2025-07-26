@@ -53,16 +53,7 @@ export class HelloWordSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // 默认高亮颜色
-        new Setting(containerEl)
-            .setName('默认高亮颜色')
-            .setDesc('新添加生词本的默认高亮颜色')
-            .addColorPicker(color => color
-                .setValue(this.plugin.settings.defaultColor)
-                .onChange(async (value) => {
-                    this.plugin.settings.defaultColor = value;
-                    await this.plugin.saveSettings();
-                }));
+
     }
 
     /**
@@ -78,7 +69,8 @@ export class HelloWordSettingTab extends PluginSettingTab {
             .setName('添加生词本')
             .setDesc('选择一个 Canvas 文件作为生词本')
             .addButton(button => button
-                .setButtonText('添加 Canvas 生词本')
+                .setIcon('plus-circle')
+                .setTooltip('添加 Canvas 生词本')
                 .setCta()
                 .onClick(() => this.showCanvasFilePicker()));
 
@@ -131,8 +123,7 @@ export class HelloWordSettingTab extends PluginSettingTab {
         const newBook: VocabularyBook = {
             path: file.path,
             name: file.basename,
-            enabled: true,
-            color: this.plugin.settings.defaultColor
+            enabled: true
         };
 
         this.plugin.settings.vocabularyBooks.push(newBook);
@@ -177,19 +168,11 @@ export class HelloWordSettingTab extends PluginSettingTab {
                     this.plugin.refreshHighlighter();
                 }));
 
-            // 颜色选择器
-            setting.addColorPicker(color => color
-                .setValue(book.color)
-                .onChange(async (value) => {
-                    book.color = value;
-                    await this.plugin.saveSettings();
-                    await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
-                    this.plugin.refreshHighlighter();
-                }));
+
 
             // 重新加载按钮
             setting.addButton(button => button
-                .setButtonText('重新加载')
+                .setIcon('refresh-cw')
                 .setTooltip('重新解析该生词本')
                 .onClick(async () => {
                     await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
@@ -199,7 +182,8 @@ export class HelloWordSettingTab extends PluginSettingTab {
 
             // 删除按钮
             setting.addButton(button => button
-                .setButtonText('删除')
+                .setIcon('trash')
+                .setTooltip('删除生词本')
                 .setWarning()
                 .onClick(async () => {
                     this.plugin.settings.vocabularyBooks.splice(index, 1);

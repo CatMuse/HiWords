@@ -36,10 +36,9 @@ export class CanvasParser {
 
     /**
      * 解析文本节点，提取词汇和定义
-     * 支持多种格式：
-     * 1. "word: definition"
-     * 2. "word\ndefinition"
-     * 3. "# word\ndefinition"
+     * 只支持一种格式：
+     * - 第一行为词汇
+     * - 后面的行为定义
      */
     private parseTextNode(node: CanvasNode, sourcePath: string): WordDefinition | null {
         if (!node.text) return null;
@@ -48,21 +47,16 @@ export class CanvasParser {
         let word = '';
         let definition = '';
 
-        // 格式1: "word: definition"
-        if (text.includes(':')) {
-            const parts = text.split(':', 2);
-            word = parts[0].trim();
-            definition = parts[1].trim();
-        }
-        // 格式2: "# word\ndefinition" 或 "word\ndefinition"
-        else if (text.includes('\n')) {
-            const lines = text.split('\n');
-            word = lines[0].replace(/^#+\s*/, '').trim(); // 移除 markdown 标题符号
+        // 分割文本行
+        const lines = text.split('\n');
+        
+        // 第一行作为词汇（移除可能的 Markdown 标题符号）
+        word = lines[0].replace(/^#+\s*/, '').trim();
+        
+        // 如果有多行，则后面的行作为定义
+        if (lines.length > 1) {
             definition = lines.slice(1).join('\n').trim();
-        }
-        // 格式3: 单行文本，假设是词汇（无定义）
-        else {
-            word = text.replace(/^#+\s*/, '').trim();
+        } else {
             definition = ''; // 无定义
         }
 

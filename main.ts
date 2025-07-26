@@ -10,7 +10,6 @@ import { HelloWordSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
 // 默认设置
 const DEFAULT_SETTINGS: HelloWordSettings = {
     vocabularyBooks: [],
-    defaultColor: '#007acc',
     showDefinitionOnHover: true,
     enableAutoHighlight: true
 };

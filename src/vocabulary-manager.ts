@@ -46,12 +46,7 @@ export class VocabularyManager {
         try {
             const definitions = await this.parser.parseCanvasFile(file);
             
-            // 为每个定义设置颜色
-            definitions.forEach(def => {
-                if (!def.color) {
-                    def.color = book.color;
-                }
-            });
+
             
             this.definitions.set(book.path, definitions);
             console.log(`Loaded ${definitions.length} words from ${book.name}`);

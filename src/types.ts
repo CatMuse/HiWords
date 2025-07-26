@@ -31,13 +31,11 @@ export interface VocabularyBook {
     path: string; // Canvas 文件路径
     name: string; // 显示名称
     enabled: boolean; // 是否启用
-    color: string; // 标记颜色
 }
 
 // 插件设置
 export interface HelloWordSettings {
     vocabularyBooks: VocabularyBook[];
-    defaultColor: string;
     showDefinitionOnHover: boolean;
     enableAutoHighlight: boolean;
 }
