@@ -156,7 +156,7 @@ export class HelloWordSidebarView extends ItemView {
         if (wordDef.color) {
             card.style.setProperty('--word-card-accent-color', borderColor);
             // 设置更明显的彩色背景
-            const bgColor = getColorWithOpacity(borderColor, 0.15);
+            const bgColor = getColorWithOpacity(borderColor, 0.1);
             card.style.setProperty('--word-card-bg-color', bgColor);
         }
 

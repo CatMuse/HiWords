@@ -92,27 +92,7 @@ export default class HelloWordPlugin extends Plugin {
             }
         });
 
-        // 查看词汇定义命令
-        this.addCommand({
-            id: 'show-word-definition',
-            name: '显示词汇定义',
-            editorCallback: (editor, view) => {
-                const cursor = editor.getCursor();
-                const line = editor.getLine(cursor.line);
-                const word = this.getWordAtPosition(line, cursor.ch);
-                
-                if (word) {
-                    const definition = this.vocabularyManager.getDefinition(word);
-                    if (definition) {
-                        new WordDefinitionModal(this.app, word, definition.definition).open();
-                    } else {
-                        new Notice(`未找到词汇 "${word}" 的定义`);
-                    }
-                } else {
-                    new Notice('请将光标放在词汇上');
-                }
-            }
-        });
+
 
         // 添加词汇到生词本命令
         this.addCommand({
@@ -212,7 +192,8 @@ export default class HelloWordPlugin extends Plugin {
     private async initializeSidebar() {
         // 在右侧边栏中添加生词列表视图
         this.app.workspace.onLayoutReady(() => {
-            // 可以选择默认打开侧边栏，或者等待用户手动打开
+            // 自动打开侧边栏
+            this.activateSidebarView();
         });
     }
 
@@ -285,36 +266,7 @@ export default class HelloWordPlugin extends Plugin {
     }
 }
 
-// 词汇定义模态框
-class WordDefinitionModal extends Modal {
-    private word: string;
-    private definition: string;
 
-    constructor(app: App, word: string, definition: string) {
-        super(app);
-        this.word = word;
-        this.definition = definition;
-    }
-
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        
-        contentEl.createEl('h2', { text: this.word });
-        
-        const definitionEl = contentEl.createEl('div', { cls: 'word-definition-content' });
-        if (this.definition.trim()) {
-            definitionEl.innerHTML = this.definition;
-        } else {
-            definitionEl.textContent = '暂无定义';
-        }
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}
 
 // 添加词汇模态框
 class AddWordModal extends Modal {
