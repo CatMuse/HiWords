@@ -20,6 +20,7 @@ export interface CanvasData {
 // 词汇定义
 export interface WordDefinition {
     word: string;
+    aliases?: string[]; // 单词的别名列表
     definition: string;
     source: string; // Canvas 文件路径
     nodeId: string; // Canvas 节点 ID

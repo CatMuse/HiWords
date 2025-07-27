@@ -19,15 +19,35 @@ export class CanvasEditor {
      * @param word 要添加的词汇
      * @param definition 词汇定义
      * @param color 可选的节点颜色
+     * @param aliases 可选的词汇别名数组
      * @returns 操作是否成功
      */
-    async addWordToCanvas(bookPath: string, word: string, definition: string, color?: number): Promise<boolean> {
+    /**
+     * 添加词汇到 Canvas 文件
+     * 优化版本：限制别名数量，添加错误处理
+     */
+    async addWordToCanvas(bookPath: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<boolean> {
         try {
             const file = this.app.vault.getAbstractFileByPath(bookPath);
             
             if (!file || !(file instanceof TFile) || !CanvasParser.isCanvasFile(file)) {
                 console.error(`无效的 Canvas 文件: ${bookPath}`);
                 return false;
+            }
+            
+            // 限制别名数量
+            const maxAliases = 10;
+            if (aliases && aliases.length > maxAliases) {
+                console.warn(`别名数量超过限制，将只使用前 ${maxAliases} 个别名`);
+                aliases = aliases.slice(0, maxAliases);
+            }
+            
+            // 过滤空别名
+            if (aliases) {
+                aliases = aliases.filter(alias => alias && alias.trim().length > 0);
+                if (aliases.length === 0) {
+                    aliases = undefined;
+                }
             }
             
             // 读取 Canvas 文件内容
@@ -54,6 +74,13 @@ export class CanvasEditor {
             }
             
             // 创建新节点
+            // 构建节点文本，如果有别名则添加别名
+            let nodeText = word;
+            if (aliases && aliases.length > 0) {
+                nodeText = `${word} [${aliases.join(', ')}]`;
+            }
+            nodeText = `${nodeText}\n${definition}`;
+            
             const newNode: CanvasNode = {
                 id: nodeId,
                 type: 'text',
@@ -61,7 +88,7 @@ export class CanvasEditor {
                 y: y,
                 width: 250,
                 height: 150,
-                text: `${word}\n${definition}`,
+                text: nodeText,
                 color: color !== undefined ? color.toString() : undefined
             };
             

@@ -108,30 +108,64 @@ export class WordHighlighter implements PluginValue {
 
     /**
      * 在文本中查找词汇匹配
+     * 支持主单词和别名匹配
+     * 优化版本：限制单词数量，避免过多的匹配操作
      */
     private findWordMatches(text: string, offset: number): WordMatch[] {
+        const startTime = performance.now();
         const matches: WordMatch[] = [];
-        const words = this.vocabularyManager.getAllWords();
         
-        // 按词汇长度降序排序，优先匹配长词汇
-        words.sort((a, b) => b.length - a.length);
-
-        for (const word of words) {
-            const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
-            let match;
+        try {
+            // 限制单词数量，避免过多的匹配操作
+            const maxWords = 500; // 设置一个合理的上限
+            const words = this.vocabularyManager.getAllWords();
             
-            while ((match = regex.exec(text)) !== null) {
-                const definition = this.vocabularyManager.getDefinition(word);
-                if (definition) {
-                    matches.push({
-                        word: match[0],
-                        definition,
-                        from: offset + match.index,
-                        to: offset + match.index + match[0].length,
-                        color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)')
-                    });
+            // 按词汇长度降序排序，优先匹配长词汇
+            words.sort((a, b) => b.length - a.length);
+            
+            // 限制单词数量
+            const limitedWords = words.length > maxWords ? words.slice(0, maxWords) : words;
+            
+            // 设置最大匹配数量，避免过多匹配造成性能问题
+            const maxMatches = 1000;
+            let matchCount = 0;
+
+            for (const word of limitedWords) {
+                if (matchCount >= maxMatches) break;
+                
+                try {
+                    const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
+                    let match;
+                    
+                    while ((match = regex.exec(text)) !== null && matchCount < maxMatches) {
+                        const definition = this.vocabularyManager.getDefinition(word);
+                        if (definition) {
+                            // 确定在界面上显示的单词形式
+                            const displayWord = match[0];
+                            
+                            // 创建匹配项
+                            matches.push({
+                                word: displayWord,
+                                definition,
+                                from: offset + match.index,
+                                to: offset + match.index + displayWord.length,
+                                color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)')
+                            });
+                            
+                            matchCount++;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`匹配单词 '${word}' 时出错:`, e);
                 }
             }
+        } catch (e) {
+            console.error('在 findWordMatches 中发生错误:', e);
+        }
+        
+        const endTime = performance.now();
+        if (endTime - startTime > 100) { // 只记录耗时超过 100ms 的操作
+            console.log(`findWordMatches 耗时 ${Math.round(endTime - startTime)}ms, 匹配了 ${matches.length} 个单词`);
         }
 
         return matches;

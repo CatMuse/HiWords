@@ -36,39 +36,65 @@ export class CanvasParser {
 
     /**
      * 解析文本节点，提取词汇和定义
-     * 只支持一种格式：
-     * - 第一行为词汇
-     * - 后面的行为定义
+     * 支持两种格式：
+     * 1. 第一行为词汇，后面的行为定义
+     * 2. 第一行为词汇 [别名1, 别名2, ...]，后面的行为定义
+     */
+    /**
+     * 解析文本节点，提取单词、别名和定义
+     * 优化版本：更健壮地处理别名解析，限制别名数量
      */
     private parseTextNode(node: CanvasNode, sourcePath: string): WordDefinition | null {
         if (!node.text) return null;
 
         const text = node.text.trim();
         let word = '';
+        let aliases: string[] = [];
         let definition = '';
 
-        // 分割文本行
-        const lines = text.split('\n');
-        
-        // 第一行作为词汇（移除可能的 Markdown 标题符号）
-        word = lines[0].replace(/^#+\s*/, '').trim();
-        
-        // 如果有多行，则后面的行作为定义
-        if (lines.length > 1) {
-            definition = lines.slice(1).join('\n').trim();
-        } else {
-            definition = ''; // 无定义
+        try {
+            // 分割文本行
+            const lines = text.split('\n');
+            
+            // 解析第一行，提取单词和别名
+            const firstLine = lines[0].replace(/^#+\s*/, '').trim();
+            
+            // 使用更健壮的正则表达式匹配格式：word [alias1, alias2, ...]
+            const aliasMatch = firstLine.match(/^(.+?)\s*\[(.*?)\]$/);
+            if (aliasMatch) {
+                word = aliasMatch[1].trim();
+                
+                // 限制别名数量，防止过多别名导致性能问题
+                const maxAliases = 10;
+                aliases = aliasMatch[2].split(',')
+                    .map(alias => alias.trim().toLowerCase())
+                    .filter(alias => alias.length > 0) // 过滤空别名
+                    .slice(0, maxAliases); // 限制别名数量
+            } else {
+                word = firstLine;
+            }
+            
+            // 如果有多行，则后面的行作为定义
+            if (lines.length > 1) {
+                definition = lines.slice(1).join('\n').trim();
+            } else {
+                definition = ''; // 无定义
+            }
+
+            if (!word) return null;
+
+            return {
+                word: word.toLowerCase(), // 统一转为小写进行匹配
+                aliases: aliases.length > 0 ? aliases : undefined,
+                definition,
+                source: sourcePath,
+                nodeId: node.id,
+                color: node.color
+            };
+        } catch (error) {
+            console.error(`解析节点文本时出错: ${error}`);
+            return null;
         }
-
-        if (!word) return null;
-
-        return {
-            word: word.toLowerCase(), // 统一转为小写进行匹配
-            definition,
-            source: sourcePath,
-            nodeId: node.id,
-            color: node.color
-        };
     }
 
     /**

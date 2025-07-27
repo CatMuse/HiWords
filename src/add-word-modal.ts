@@ -56,6 +56,15 @@ export class AddWordModal extends Modal {
             colorSelect.createEl('option', { text: color.name, value: color.value });
         });
         
+        // 别名输入
+        const aliasesContainer = contentEl.createDiv({ cls: 'form-item' });
+        aliasesContainer.createEl('label', { text: '别名（可选，用逗号分隔）', cls: 'form-item-label' });
+        
+        const aliasesInput = aliasesContainer.createEl('input', { 
+            placeholder: '例如：doing, done, did',
+            cls: 'word-aliases-input'
+        });
+        
         // 定义输入
         const definitionContainer = contentEl.createDiv({ cls: 'form-item' });
         definitionContainer.createEl('label', { text: '词汇定义', cls: 'form-item-label' });
@@ -77,6 +86,18 @@ export class AddWordModal extends Modal {
             const selectedBook = bookSelect.value;
             const definition = definitionInput.value;
             const colorValue = colorSelect.value ? parseInt(colorSelect.value) : undefined;
+            const aliasesText = aliasesInput.value.trim();
+            
+            // 处理别名
+            let aliases: string[] | undefined = undefined;
+            if (aliasesText) {
+                aliases = aliasesText.split(',').map(alias => alias.trim().toLowerCase());
+                // 去除空别名
+                aliases = aliases.filter(alias => alias.length > 0);
+                if (aliases.length === 0) {
+                    aliases = undefined;
+                }
+            }
             
             if (!selectedBook) {
                 new Notice('请选择生词本');
@@ -92,7 +113,8 @@ export class AddWordModal extends Modal {
                     selectedBook,
                     this.word,
                     definition,
-                    colorValue
+                    colorValue,
+                    aliases
                 );
                 
                 // 关闭加载提示
