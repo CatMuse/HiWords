@@ -38,7 +38,8 @@ export default {
     commands: {
         refresh_vocabulary: "刷新生词本",
         add_word: "添加单词到生词本",
-        show_sidebar: "显示生词本侧边栏",
+        edit_word: "编辑单词",
+        show_sidebar: "显示 HiWords 侧边栏",
     },
     
     // 通知
@@ -49,8 +50,12 @@ export default {
         error_adding_word: "添加单词到生词本时出错",
         select_book_required: "请选择生词本",
         adding_word: "正在添加词汇到生词本...",
+        updating_word: "正在更新词汇...",
         word_added_success: "词汇 \"{0}\" 已成功添加到生词本",
+        word_updated_success: "词汇 \"{0}\" 已成功更新",
         add_word_failed: "添加词汇失败，请检查生词本文件",
+        update_word_failed: "更新词汇失败，请检查生词本文件",
+        error_processing_word: "处理词汇时出错",
         no_canvas_files: "未找到 Canvas 文件",
         book_already_exists: "该生词本已存在",
         invalid_canvas_file: "无效的 Canvas 文件",
@@ -61,7 +66,8 @@ export default {
     
     // 模态框
     modals: {
-        add_word_title: "添加词汇到生词本",
+        add_word_title: "添加 ",
+        edit_word_title: "编辑 ",
         word_label: "词汇",
         definition_label: "释义",
         book_label: "生词本",
@@ -78,6 +84,7 @@ export default {
         aliases_placeholder: "例如：doing, done, did",
         definition_placeholder: "输入词汇释义...",
         add_button: "添加",
+        save_button: "保存",
         cancel_button: "取消",
         select_canvas_file: "选择 Canvas 文件",
     },

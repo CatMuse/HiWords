@@ -101,10 +101,6 @@ export default class HiWordsPlugin extends Plugin {
             }
         });
 
-
-
-
-
         // 打开生词列表侧边栏命令
         this.addCommand({
             id: 'open-vocabulary-sidebar',
@@ -146,12 +142,18 @@ export default class HiWordsPlugin extends Plugin {
             this.app.workspace.on('editor-menu', (menu, editor) => {
                 const selection = editor.getSelection();
                 if (selection && selection.trim()) {
+                    const word = selection.trim();
+                    // 检查单词是否已存在
+                    const exists = this.vocabularyManager.hasWord(word);
+                    
                     menu.addItem((item) => {
+                        // 根据单词是否存在显示不同的菜单项文本
+                        const titleKey = exists ? 'commands.edit_word' : 'commands.add_word';
+                        
                         item
-                            .setTitle(t('commands.add_word'))
-                            .setIcon('book-plus')
+                            .setTitle(t(titleKey))
                             .onClick(() => {
-                                new AddWordModal(this.app, this, selection.trim()).open();
+                                this.addOrEditWord(word);
                             });
                     });
                 }
@@ -242,6 +244,24 @@ export default class HiWordsPlugin extends Plugin {
     async saveSettings() {
         await this.saveData(this.settings);
         this.vocabularyManager.updateSettings(this.settings);
+    }
+
+    /**
+     * 添加或编辑单词
+     * 检查单词是否已存在，如果存在则打开编辑模式，否则打开添加模式
+     * @param word 要添加或编辑的单词
+     */
+    addOrEditWord(word: string) {
+        // 检查单词是否已存在
+        const exists = this.vocabularyManager.hasWord(word);
+        
+        if (exists) {
+            // 如果单词已存在，打开编辑模式
+            new AddWordModal(this.app, this, word, true).open();
+        } else {
+            // 如果单词不存在，打开添加模式
+            new AddWordModal(this.app, this, word).open();
+        }
     }
 
     /**

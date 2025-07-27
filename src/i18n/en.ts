@@ -38,6 +38,7 @@ export default {
     commands: {
         refresh_vocabulary: "Refresh vocabulary",
         add_word: "Add word to vocabulary",
+        edit_word: "Edit word",
         show_sidebar: "Show HiWords sidebar",
     },
     
@@ -49,8 +50,12 @@ export default {
         error_adding_word: "Error adding word to vocabulary book",
         select_book_required: "Please select a vocabulary book",
         adding_word: "Adding word to vocabulary book...",
+        updating_word: "Updating word...",
         word_added_success: "Word \"{0}\" successfully added to vocabulary book",
+        word_updated_success: "Word \"{0}\" successfully updated",
         add_word_failed: "Failed to add word, please check the vocabulary book file",
+        update_word_failed: "Failed to update word, please check the vocabulary book file",
+        error_processing_word: "Error processing word",
         no_canvas_files: "No Canvas files found",
         book_already_exists: "This vocabulary book already exists",
         invalid_canvas_file: "Invalid Canvas file",
@@ -61,7 +66,8 @@ export default {
     
     // Modals
     modals: {
-        add_word_title: "Add word to vocabulary",
+        add_word_title: "Add ",
+        edit_word_title: "Edit ",
         word_label: "Word",
         definition_label: "Definition",
         book_label: "Vocabulary book",
@@ -78,6 +84,7 @@ export default {
         aliases_placeholder: "e.g.: doing, done, did",
         definition_placeholder: "Enter word definition...",
         add_button: "Add",
+        save_button: "Save",
         cancel_button: "Cancel",
         select_canvas_file: "Select vocabulary book file",
     },

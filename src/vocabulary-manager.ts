@@ -196,4 +196,25 @@ export class VocabularyManager {
         
         return success;
     }
+    
+    /**
+     * 更新 Canvas 文件中的词汇
+     * 代理到 CanvasEditor 的方法
+     * @param bookPath Canvas 文件路径
+     * @param nodeId 要更新的节点ID
+     * @param word 词汇
+     * @param definition 词汇定义
+     * @param color 可选的节点颜色
+     * @param aliases 可选的词汇别名数组
+     */
+    async updateWordInCanvas(bookPath: string, nodeId: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<boolean> {
+        const success = await this.canvasEditor.updateWordInCanvas(bookPath, nodeId, word, definition, color, aliases);
+        
+        if (success) {
+            // 如果更新成功，重新加载生词本
+            await this.reloadVocabularyBook(bookPath);
+        }
+        
+        return success;
+    }
 }

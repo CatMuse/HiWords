@@ -111,4 +111,83 @@ export class CanvasEditor {
             return false;
         }
     }
+
+    /**
+     * 更新 Canvas 文件中的词汇
+     * @param bookPath Canvas 文件路径
+     * @param nodeId 要更新的节点ID
+     * @param word 词汇
+     * @param definition 词汇定义
+     * @param color 可选的节点颜色
+     * @param aliases 可选的词汇别名数组
+     * @returns 操作是否成功
+     */
+    async updateWordInCanvas(bookPath: string, nodeId: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<boolean> {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(bookPath);
+            
+            if (!file || !(file instanceof TFile) || !CanvasParser.isCanvasFile(file)) {
+                console.error(`无效的 Canvas 文件: ${bookPath}`);
+                return false;
+            }
+            
+            // 限制别名数量
+            const maxAliases = 10;
+            if (aliases && aliases.length > maxAliases) {
+                console.warn(`别名数量超过限制，将只使用前 ${maxAliases} 个别名`);
+                aliases = aliases.slice(0, maxAliases);
+            }
+            
+            // 过滤空别名
+            if (aliases) {
+                aliases = aliases.filter(alias => alias && alias.trim().length > 0);
+                if (aliases.length === 0) {
+                    aliases = undefined;
+                }
+            }
+            
+            // 读取 Canvas 文件内容
+            const content = await this.app.vault.read(file);
+            const canvasData: CanvasData = JSON.parse(content);
+            
+            if (!Array.isArray(canvasData.nodes)) {
+                console.error(`无效的 Canvas 数据: ${bookPath}`);
+                return false;
+            }
+            
+            // 查找要更新的节点
+            const nodeIndex = canvasData.nodes.findIndex(node => node.id === nodeId);
+            if (nodeIndex === -1) {
+                console.error(`未找到节点: ${nodeId}`);
+                return false;
+            }
+            
+            // 构建节点文本，如果有别名则添加别名
+            let nodeText = word;
+            
+            // 如果有别名，则在主名字后换行添加斜体别名
+            if (aliases && aliases.length > 0) {
+                nodeText = `${word}\n*${aliases.join(', ')}*`;
+            }
+            
+            // 如果有定义，则在别名后换行添加定义
+            if (definition) {
+                nodeText = `${nodeText}\n\n${definition}`;
+            }
+            
+            // 更新节点
+            canvasData.nodes[nodeIndex].text = nodeText;
+            if (color !== undefined) {
+                canvasData.nodes[nodeIndex].color = color.toString();
+            }
+            
+            // 保存更新后的 Canvas 文件
+            await this.app.vault.modify(file, JSON.stringify(canvasData, null, 2));
+            
+            return true;
+        } catch (error) {
+            console.error(`更新 Canvas 中的词汇失败: ${error}`);
+            return false;
+        }
+    }
 }
