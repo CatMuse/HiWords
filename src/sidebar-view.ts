@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer } from '
 import HiWordsPlugin from '../main';
 import { WordDefinition } from './types';
 import { mapCanvasColorToCSSVar, getColorWithOpacity } from './color-utils';
+import { t } from './i18n';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -21,7 +22,7 @@ export class HiWordsSidebarView extends ItemView {
     }
 
     getDisplayText(): string {
-        return '生词列表';
+        return t('sidebar.title');
     }
 
     getIcon(): string {
@@ -130,14 +131,14 @@ export class HiWordsSidebarView extends ItemView {
         container.empty();
 
         if (this.currentWords.length === 0) {
-            this.showEmptyState('当前文档中没有发现生词');
+            this.showEmptyState(t('sidebar.empty_state'));
             return;
         }
 
         // 创建统计信息
         const stats = container.createEl('div', { cls: 'hi-words-sidebar-stats' });
         stats.createEl('span', { 
-            text: `发现 ${this.currentWords.length} 个生词`,
+            text: `${t('sidebar.found')} ${this.currentWords.length} ${t('sidebar.words')}`,
             cls: 'hi-words-stats-text'
         });
 
@@ -175,13 +176,10 @@ export class HiWordsSidebarView extends ItemView {
         if (wordDef.definition && wordDef.definition.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
             
-            // 创建两个版本的定义容器：简短版和完整版
-            const shortDefContainer = definition.createEl('div', { cls: 'hi-words-short-definition' });
-            const fullDefContainer = definition.createEl('div', { cls: 'hi-words-full-definition' });
-            fullDefContainer.style.display = 'none'; // 默认隐藏完整版
+            // 创建定义容器
+            const defContainer = definition.createEl('div', { cls: 'hi-words-definition' });
             
-            // 限制定义长度，避免卡片过长
-            const shortDefinition = this.truncateText(wordDef.definition, 100);
+            // 不再限制定义长度，直接显示完整定义
             
             // 渲染 Markdown 内容
             try {
@@ -189,83 +187,28 @@ export class HiWordsSidebarView extends ItemView {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView) || this.lastActiveMarkdownView;
                 
                 if (activeView && activeView.file) {
-                    // 渲染简短版定义
-                    MarkdownRenderer.renderMarkdown(
-                        shortDefinition,
-                        shortDefContainer,
-                        activeView.file.path,
-                        activeView
-                    );
-                    
-                    // 渲染完整版定义
+                    // 直接渲染完整定义
                     MarkdownRenderer.renderMarkdown(
                         wordDef.definition,
-                        fullDefContainer,
+                        defContainer,
                         activeView.file.path,
                         activeView
                     );
                 } else {
                     // 如果没有可用的 MarkdownView，使用简单的文本显示
-                    shortDefContainer.textContent = shortDefinition;
-                    fullDefContainer.textContent = wordDef.definition;
-                }
-                
-                // 如果定义被截断，添加展开/收起按钮
-                if (wordDef.definition.length > 100) {
-                    const expandBtn = shortDefContainer.createEl('span', { 
-                        text: ' ...更多',
-                        cls: 'hi-words-expand-btn'
-                    });
-                    
-                    const collapseBtn = fullDefContainer.createEl('span', {
-                        text: ' 收起',
-                        cls: 'hi-words-expand-btn'
-                    });
-                    
-                    // 展开按钮点击事件
-                    expandBtn.onclick = () => {
-                        shortDefContainer.style.display = 'none';
-                        fullDefContainer.style.display = 'block';
-                    };
-                    
-                    // 收起按钮点击事件
-                    collapseBtn.onclick = () => {
-                        fullDefContainer.style.display = 'none';
-                        shortDefContainer.style.display = 'block';
-                    };
+                    defContainer.textContent = wordDef.definition;
                 }
             } catch (error) {
                 // 如果渲染失败，回退到纯文本显示
                 console.error('Markdown 渲染失败:', error);
-                shortDefContainer.textContent = shortDefinition;
-                
-                // 如果定义被截断，添加简单的展开/收起功能
-                if (wordDef.definition.length > 100) {
-                    const expandBtn = shortDefContainer.createEl('span', { 
-                        text: ' ...更多',
-                        cls: 'hi-words-expand-btn'
-                    });
-                    expandBtn.onclick = () => {
-                        if (shortDefContainer.textContent === shortDefinition + ' ...更多') {
-                            shortDefContainer.textContent = wordDef.definition;
-                            const collapseBtn = shortDefContainer.createEl('span', {
-                                text: ' 收起',
-                                cls: 'hi-words-expand-btn'
-                            });
-                            collapseBtn.onclick = () => {
-                                shortDefContainer.textContent = shortDefinition;
-                                shortDefContainer.appendChild(expandBtn);
-                            };
-                        }
-                    };
-                }
+                defContainer.textContent = wordDef.definition;
             }
         }
         
         // 来源信息
         const source = card.createEl('div', { cls: 'hi-words-word-source' });
         const bookName = this.getBookNameFromPath(wordDef.source);
-        source.createEl('span', { text: `来自: ${bookName}`, cls: 'hi-words-source-text' });
+        source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
 
         // 添加悬停效果
         card.onmouseenter = () => {

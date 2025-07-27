@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting, TFile, Notice, Modal } from 'obsidian';
 import HiWordsPlugin from '../main';
 import { VocabularyBook } from './types';
 import { CanvasParser } from './canvas-parser';
+import { t } from './i18n';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
@@ -28,12 +29,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
     private addBasicSettings() {
         const { containerEl } = this;
         
-        containerEl.createEl('h3', { text: '基础设置' });
+        containerEl.createEl('h3', { text: t('settings.title') });
 
         // 启用自动高亮
         new Setting(containerEl)
-            .setName('启用自动高亮')
-            .setDesc('在阅读时自动高亮生词本中的词汇')
+            .setName(t('settings.enable_auto_highlight'))
+            .setDesc(t('settings.enable_auto_highlight_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableAutoHighlight)
                 .onChange(async (value) => {
@@ -44,8 +45,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         // 悬停显示定义
         new Setting(containerEl)
-            .setName('悬停显示定义')
-            .setDesc('鼠标悬停在高亮词汇上时显示定义')
+            .setName(t('settings.show_definition_on_hover'))
+            .setDesc(t('settings.show_definition_on_hover_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.showDefinitionOnHover)
                 .onChange(async (value) => {
@@ -66,7 +67,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const headerContainer = containerEl.createDiv({ cls: 'hi-words-header-container' });
         
         // 添加标题
-        headerContainer.createEl('h3', { text: '生词本管理' });
+        headerContainer.createEl('h3', { text: t('settings.vocabulary_books') });
         
         // 添加按钮容器
         const buttonContainer = headerContainer.createDiv({ cls: 'hi-words-button-container' });
@@ -75,7 +76,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const addButton = new Setting(buttonContainer)
             .addButton(button => button
                 .setIcon('plus-circle')
-                .setTooltip('添加 Canvas 生词本')
+                .setTooltip(t('settings.add_vocabulary_book'))
                 .setCta()
                 .onClick(() => this.showCanvasFilePicker())
             );
@@ -99,7 +100,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .filter(file => file.extension === 'canvas');
 
         if (canvasFiles.length === 0) {
-            new Notice('未找到 Canvas 文件');
+            new Notice(t('notices.no_canvas_files'));
             return;
         }
 
@@ -117,7 +118,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         // 检查是否已存在
         const exists = this.plugin.settings.vocabularyBooks.some(book => book.path === file.path);
         if (exists) {
-            new Notice('该生词本已存在');
+            new Notice(t('notices.book_already_exists'));
             return;
         }
 
@@ -125,7 +126,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const parser = new CanvasParser(this.app);
         const isValid = await parser.validateCanvasFile(file);
         if (!isValid) {
-            new Notice('无效的 Canvas 文件');
+            new Notice(t('notices.invalid_canvas_file'));
             return;
         }
 
@@ -141,7 +142,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         await this.plugin.vocabularyManager.loadVocabularyBook(newBook);
         this.plugin.refreshHighlighter();
 
-        new Notice(`已添加生词本: ${newBook.name}`);
+        new Notice(t('notices.book_added').replace('{0}', newBook.name));
         this.display(); // 刷新设置页面
     }
 
@@ -153,7 +154,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         if (this.plugin.settings.vocabularyBooks.length === 0) {
             containerEl.createEl('p', { 
-                text: '暂无生词本，请添加 Canvas 文件作为生词本',
+                text: t('settings.no_vocabulary_books'),
                 cls: 'setting-item-description'
             });
             return;
@@ -162,29 +163,29 @@ export class HiWordsSettingTab extends PluginSettingTab {
         this.plugin.settings.vocabularyBooks.forEach((book, index) => {
             const setting = new Setting(containerEl)
                 .setName(book.name)
-                .setDesc(`路径: ${book.path}`);
+                .setDesc(`${t('settings.path')}: ${book.path}`);
 
             // 重新加载按钮
             setting.addButton(button => button
                 .setIcon('refresh-cw')
-                .setTooltip('重新解析该生词本')
+                .setTooltip(t('settings.reload_book'))
                 .onClick(async () => {
                     await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
                     this.plugin.refreshHighlighter();
-                    new Notice(`已重新加载: ${book.name}`);
+                    new Notice(t('notices.book_reloaded').replace('{0}', book.name));
                 }));
 
             // 删除按钮
             setting.addButton(button => button
                 .setIcon('trash')
-                .setTooltip('删除生词本')
+                .setTooltip(t('settings.remove_vocabulary_book'))
                 .setWarning()
                 .onClick(async () => {
                     this.plugin.settings.vocabularyBooks.splice(index, 1);
                     await this.plugin.saveSettings();
                     await this.plugin.vocabularyManager.loadAllVocabularyBooks();
                     this.plugin.refreshHighlighter();
-                    new Notice(`已删除生词本: ${book.name}`);
+                    new Notice(t('notices.book_removed').replace('{0}', book.name));
                     this.display(); // 刷新设置页面
                 }));
                 
@@ -209,15 +210,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
      */
     private displayStats() {
         const { containerEl } = this;
-        
-        containerEl.createEl('h3', { text: '统计信息' });
-        
         const stats = this.plugin.vocabularyManager.getStats();
         
+        containerEl.createEl('h3', { text: t('settings.statistics') });
+        
         const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
-        statsEl.createEl('p', { text: `总生词本数量: ${stats.totalBooks}` });
-        statsEl.createEl('p', { text: `已启用生词本: ${stats.enabledBooks}` });
-        statsEl.createEl('p', { text: `总词汇数量: ${stats.totalWords}` });
+        statsEl.createEl('p', { text: t('settings.total_books').replace('{0}', stats.totalBooks.toString()) });
+        statsEl.createEl('p', { text: t('settings.enabled_books').replace('{0}', stats.enabledBooks.toString()) });
+        statsEl.createEl('p', { text: t('settings.total_words').replace('{0}', stats.totalWords.toString()) });
     }
 }
 
@@ -236,7 +236,7 @@ class CanvasPickerModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: '选择 Canvas 文件' });
+        contentEl.createEl('h2', { text: t('modals.select_canvas_file') });
 
         this.files.forEach(file => {
             const itemEl = contentEl.createEl('div', { cls: 'canvas-picker-item' });

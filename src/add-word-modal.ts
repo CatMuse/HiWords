@@ -1,6 +1,7 @@
 import { App, Modal, Notice } from 'obsidian';
 import type { VocabularyBook } from './types';
 import HiWordsPlugin from '../main';
+import { t } from './i18n';
 
 /**
  * 添加词汇到生词本的模态框
@@ -20,14 +21,14 @@ export class AddWordModal extends Modal {
         contentEl.empty();
         
         // 标题中包含词汇
-        contentEl.createEl('h2', { text: `添加 "${this.word}" 到生词本` });
+        contentEl.createEl('h2', { text: `${t('modals.add_word_title')} "${this.word}"` });
         
         // 生词本选择
         const bookSelectContainer = contentEl.createDiv({ cls: 'form-item' });
-        bookSelectContainer.createEl('label', { text: '生词本', cls: 'form-item-label' });
+        bookSelectContainer.createEl('label', { text: t('modals.book_label'), cls: 'form-item-label' });
         
         const bookSelect = bookSelectContainer.createEl('select', { cls: 'dropdown' });
-        bookSelect.createEl('option', { text: '请选择生词本', value: '' });
+        bookSelect.createEl('option', { text: t('modals.select_book'), value: '' });
         
         this.plugin.settings.vocabularyBooks.forEach(book => {
             if (book.enabled) {
@@ -37,10 +38,10 @@ export class AddWordModal extends Modal {
         
         // 颜色选择
         const colorSelectContainer = contentEl.createDiv({ cls: 'form-item' });
-        colorSelectContainer.createEl('label', { text: '卡片颜色', cls: 'form-item-label' });
+        colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'form-item-label' });
         
         const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown' });
-        colorSelect.createEl('option', { text: '灰色', value: '' });
+        colorSelect.createEl('option', { text: t('modals.color_gray'), value: '' });
         
         // Canvas 支持的颜色
         const colors = [
@@ -58,19 +59,19 @@ export class AddWordModal extends Modal {
         
         // 别名输入
         const aliasesContainer = contentEl.createDiv({ cls: 'form-item' });
-        aliasesContainer.createEl('label', { text: '别名（可选，用逗号分隔）', cls: 'form-item-label' });
+        aliasesContainer.createEl('label', { text: t('modals.aliases_label'), cls: 'form-item-label' });
         
         const aliasesInput = aliasesContainer.createEl('input', { 
-            placeholder: '例如：doing, done, did',
+            placeholder: t('modals.aliases_placeholder'),
             cls: 'word-aliases-input'
         });
         
         // 定义输入
         const definitionContainer = contentEl.createDiv({ cls: 'form-item' });
-        definitionContainer.createEl('label', { text: '词汇定义', cls: 'form-item-label' });
+        definitionContainer.createEl('label', { text: t('modals.definition_label'), cls: 'form-item-label' });
         
         const definitionInput = definitionContainer.createEl('textarea', { 
-            placeholder: '请输入词汇定义...',
+            placeholder: t('modals.definition_placeholder'),
             cls: 'word-definition-input'
         });
         definitionInput.rows = 5;
@@ -78,10 +79,10 @@ export class AddWordModal extends Modal {
         // 按钮
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         
-        const cancelButton = buttonContainer.createEl('button', { text: '取消' });
+        const cancelButton = buttonContainer.createEl('button', { text: t('modals.cancel_button') });
         cancelButton.onclick = () => this.close();
         
-        const addButton = buttonContainer.createEl('button', { text: '添加', cls: 'mod-cta' });
+        const addButton = buttonContainer.createEl('button', { text: t('modals.add_button'), cls: 'mod-cta' });
         addButton.onclick = async () => {
             const selectedBook = bookSelect.value;
             const definition = definitionInput.value;
@@ -100,12 +101,12 @@ export class AddWordModal extends Modal {
             }
             
             if (!selectedBook) {
-                new Notice('请选择生词本');
+                new Notice(t('notices.select_book_required'));
                 return;
             }
             
             // 显示加载中提示
-            const loadingNotice = new Notice('正在添加词汇到生词本...', 0);
+            const loadingNotice = new Notice(t('notices.adding_word'), 0);
             
             try {
                 // 调用添加词汇到 Canvas 的方法
@@ -121,17 +122,19 @@ export class AddWordModal extends Modal {
                 loadingNotice.hide();
                 
                 if (success) {
-                    new Notice(`词汇 "${this.word}" 已成功添加到生词本`);
+                    // 使用格式化字符串替换
+                    const successMessage = t('notices.word_added_success').replace('{0}', this.word);
+                    new Notice(successMessage);
                     // 刷新高亮器
                     this.plugin.refreshHighlighter();
                     this.close();
                 } else {
-                    new Notice('添加词汇失败，请检查生词本文件');
+                    new Notice(t('notices.add_word_failed'));
                 }
             } catch (error) {
                 loadingNotice.hide();
                 console.error('Failed to add word:', error);
-                new Notice('添加词汇时发生错误');
+                new Notice(t('notices.error_adding_word'));
             }
         };
     }

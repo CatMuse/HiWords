@@ -7,6 +7,7 @@ import { DefinitionPopover } from './src/definition-popover';
 import { HiWordsSettingTab } from './src/settings-tab';
 import { HiWordsSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
 import { AddWordModal } from './src/add-word-modal';
+import { i18n, t } from './src/i18n';
 
 // 默认设置
 const DEFAULT_SETTINGS: HiWordsSettings = {
@@ -28,6 +29,9 @@ export default class HiWordsPlugin extends Plugin {
         
         // 加载设置
         await this.loadSettings();
+        
+        // 初始化国际化模块
+        i18n.setApp(this.app);
         
         // 初始化管理器
         this.vocabularyManager = new VocabularyManager(this.app, this.settings);
@@ -89,11 +93,11 @@ export default class HiWordsPlugin extends Plugin {
         // 刷新生词本命令
         this.addCommand({
             id: 'refresh-vocabulary',
-            name: '刷新生词本',
+            name: t('commands.refresh_vocabulary'),
             callback: async () => {
                 await this.vocabularyManager.loadAllVocabularyBooks();
                 this.refreshHighlighter();
-                new Notice('生词本已刷新');
+                new Notice(t('notices.vocabulary_refreshed'));
             }
         });
 
@@ -104,7 +108,7 @@ export default class HiWordsPlugin extends Plugin {
         // 打开生词列表侧边栏命令
         this.addCommand({
             id: 'open-vocabulary-sidebar',
-            name: '打开生词列表',
+            name: t('commands.show_sidebar'),
             callback: () => {
                 this.activateSidebarView();
             }
@@ -144,7 +148,7 @@ export default class HiWordsPlugin extends Plugin {
                 if (selection && selection.trim()) {
                     menu.addItem((item) => {
                         item
-                            .setTitle('添加到生词本')
+                            .setTitle(t('commands.add_word'))
                             .setIcon('book-plus')
                             .onClick(() => {
                                 new AddWordModal(this.app, this, selection.trim()).open();

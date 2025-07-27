@@ -1,5 +1,6 @@
 import { App, MarkdownRenderer, MarkdownView, Notice } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
+import { t } from './i18n';
 
 export class DefinitionPopover {
     private app: App;
@@ -131,7 +132,7 @@ export class DefinitionPopover {
         
         // 如果定义为空，显示提示信息
         if (!definition || definition.trim() === '') {
-            contentEl.textContent = '暂无定义';
+            contentEl.textContent = t('sidebar.no_definition');
             tooltip.appendChild(contentEl);
         } else {
             tooltip.appendChild(contentEl);
@@ -171,7 +172,7 @@ export class DefinitionPopover {
                 // 获取文件名并移除.canvas后缀
                 const fileName = detailDef.source.split('/').pop() || '';
                 const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
-                sourceEl.textContent = `来源: ${displayName}`;
+                sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
                 tooltip.appendChild(sourceEl);
             }
         }
