@@ -9,6 +9,7 @@ export class HiWordsSidebarView extends ItemView {
     private plugin: HiWordsPlugin;
     private currentWords: WordDefinition[] = [];
     private currentFile: TFile | null = null;
+    private lastActiveMarkdownView: MarkdownView | null = null; // 缓存最后一个活动的MarkdownView
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -67,6 +68,12 @@ export class HiWordsSidebarView extends ItemView {
         if (!activeFile || activeFile.extension !== 'md') {
             this.showEmptyState('请打开一个 Markdown 文档');
             return;
+        }
+
+        // 缓存当前活动的 MarkdownView（如果有的话）
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (activeView) {
+            this.lastActiveMarkdownView = activeView;
         }
 
         if (activeFile === this.currentFile && this.currentWords.length > 0) {
@@ -178,8 +185,8 @@ export class HiWordsSidebarView extends ItemView {
             
             // 渲染 Markdown 内容
             try {
-                // 获取活动的 MarkdownView
-                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                // 优先使用当前活动的 MarkdownView，如果没有则使用缓存的最后一个活动视图
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView) || this.lastActiveMarkdownView;
                 
                 if (activeView && activeView.file) {
                     // 渲染简短版定义
@@ -198,7 +205,7 @@ export class HiWordsSidebarView extends ItemView {
                         activeView
                     );
                 } else {
-                    // 如果没有活动的 MarkdownView，使用简单的文本显示
+                    // 如果没有可用的 MarkdownView，使用简单的文本显示
                     shortDefContainer.textContent = shortDefinition;
                     fullDefContainer.textContent = wordDef.definition;
                 }
