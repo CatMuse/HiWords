@@ -75,11 +75,18 @@ export class CanvasEditor {
             
             // 创建新节点
             // 构建节点文本，如果有别名则添加别名
+            // 使用主名字换行后的斜体格式作为别名格式
             let nodeText = word;
+            
+            // 如果有别名，则在主名字后换行添加斜体别名
             if (aliases && aliases.length > 0) {
-                nodeText = `${word} [${aliases.join(', ')}]`;
+                nodeText = `${word}\n*${aliases.join(', ')}*`;
             }
-            nodeText = `${nodeText}\n${definition}`;
+            
+            // 如果有定义，则在别名后换行添加定义
+            if (definition) {
+                nodeText = `${nodeText}\n\n${definition}`;
+            }
             
             const newNode: CanvasNode = {
                 id: nodeId,
