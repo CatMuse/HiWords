@@ -1,94 +1,168 @@
-# Obsidian Sample Plugin
+# HiWords - Obsidian 生词本插件
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+一个强大的 Obsidian 插件，帮助您在阅读过程中轻松扩展词汇量。通过自动高亮和翻译不熟悉的单词，让学习变得更加高效。
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## ✨ 主要功能
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+### 📚 Canvas 生词本管理
+- **基于 Canvas 的生词本**：使用 Obsidian Canvas 文件作为生词本，支持可视化管理
+- **多生词本支持**：可以创建和管理多个生词本，分类学习不同主题的词汇
+- **灵活的词汇组织**：在 Canvas 中自由排列词汇卡片，支持颜色分类
+- **实时同步**：生词本文件修改后自动同步到插件
 
-## First time developing plugins?
+### 🎯 智能词汇高亮
+- **自动高亮**：在阅读时自动识别并高亮生词本中的词汇
+- **颜色映射**：根据 Canvas 节点颜色自动设置高亮颜色
+- **实时更新**：切换文件时自动更新高亮显示
+- **性能优化**：使用 CodeMirror 6 扩展，高效处理大文档
 
-Quick starting guide for new plugin devs:
+### 💡 悬停定义显示
+- **即时翻译**：鼠标悬停在高亮词汇上即可查看定义
+- **Markdown 支持**：定义内容支持 Markdown 格式渲染
+- **美观界面**：精心设计的弹出框界面，支持主题适配
+- **快速访问**：无需离开当前阅读流程即可查看词汇解释
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### 📋 侧边栏词汇列表
+- **当前文档词汇**：显示当前文档中出现的所有生词
+- **快速导航**：点击词汇可快速跳转到文档中的对应位置
+- **颜色标识**：保持与高亮颜色一致的视觉标识
+- **实时更新**：随着文档内容变化自动更新词汇列表
 
-## Releasing new releases
+### ⚡ 便捷操作
+- **右键添加**：选中文本后右键菜单快速添加到生词本
+- **命令面板**：通过命令面板快速刷新生词本或打开侧边栏
+- **键盘快捷键**：支持自定义快捷键操作
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## 🚀 快速开始
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### 安装插件
+1. 下载插件文件到 `.obsidian/plugins/hi-words/` 目录
+2. 在 Obsidian 设置中启用 HiWords 插件
+3. 重启 Obsidian
 
-## Adding your plugin to the community plugin list
+### 创建生词本
+1. 创建一个新的 Canvas 文件（例如：`vocabulary.canvas`）
+2. 在 Canvas 中添加文本节点，格式如下：
+   ```
+   单词
+   ---
+   定义或翻译
+   ```
+3. 可以为不同的词汇节点设置不同的颜色进行分类
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### 配置插件
+1. 打开插件设置页面
+2. 添加您创建的 Canvas 文件作为生词本
+3. 启用自动高亮和悬停显示功能
+4. 开始享受智能词汇学习体验！
 
-## How to use
+## 📖 使用指南
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+### Canvas 生词本格式
 
-## Manually installing the plugin
+在 Canvas 中，每个词汇节点应该包含：
+- **第一行**：要学习的单词或短语
+- **分隔符**：使用 `---` 分隔单词和定义
+- **定义部分**：单词的解释、翻译或例句（支持 Markdown 格式）
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+示例：
+```
+serendipity
+---
+**n.** 意外发现有价值事物的能力
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+*例句：* The discovery was pure serendipity.
 ```
 
-If you have multiple URLs, you can also do:
+### 高亮颜色系统
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+插件会自动将 Canvas 节点颜色映射为对应的高亮颜色：
+- 🔴 红色节点 → 红色高亮
+- 🟡 黄色节点 → 黄色高亮  
+- 🟢 绿色节点 → 绿色高亮
+- 🔵 蓝色节点 → 蓝色高亮
+- 🟣 紫色节点 → 紫色高亮
+- ⚫ 灰色节点 → 灰色高亮
+
+### 命令列表
+
+- **刷新生词本** (`hi-words:refresh-vocabulary`)
+  - 手动刷新所有生词本内容
+  - 在修改生词本后使用此命令立即生效
+
+- **打开生词列表** (`hi-words:open-vocabulary-sidebar`)
+  - 打开侧边栏词汇列表视图
+  - 查看当前文档中的所有生词
+
+## ⚙️ 设置选项
+
+### 基础设置
+- **启用自动高亮**：在阅读时自动高亮生词本中的词汇
+- **悬停显示定义**：鼠标悬停时显示词汇定义弹窗
+
+### 生词本管理
+- **添加生词本**：选择 Canvas 文件作为生词本
+- **启用/禁用**：控制特定生词本的激活状态
+- **删除生词本**：从配置中移除不需要的生词本
+
+## 🎨 界面特性
+
+### 主题适配
+- 完全适配 Obsidian 的明暗主题
+- 使用原生 CSS 变量，确保视觉一致性
+- 支持自定义主题的颜色方案
+
+### 响应式设计
+- 弹出框自动调整位置，避免超出屏幕边界
+- 侧边栏自适应窗口大小
+- 移动端友好的触摸交互
+
+## 🔧 技术架构
+
+### 核心组件
+- **VocabularyManager**：生词本数据管理
+- **WordHighlighter**：基于 CodeMirror 6 的词汇高亮
+- **DefinitionPopover**：定义弹窗显示
+- **CanvasParser**：Canvas 文件解析器
+- **SidebarView**：侧边栏词汇列表
+
+### 技术栈
+- TypeScript
+- Obsidian API
+- CodeMirror 6
+- Canvas API
+
+## 🤝 贡献指南
+
+### 开发环境设置
+1. 克隆仓库到本地
+2. 安装依赖：`npm install`
+3. 启动开发模式：`npm run dev`
+4. 在 Obsidian 中启用插件进行测试
+
+### 构建发布
+```bash
+npm run build
 ```
 
-## API Documentation
+## 📝 更新日志
 
-See https://github.com/obsidianmd/obsidian-api
+### v0.0.1
+- 🎉 初始版本发布
+- ✨ Canvas 生词本支持
+- 🎯 自动词汇高亮
+- 💡 悬停定义显示
+- 📋 侧边栏词汇列表
+- ⚡ 右键快速添加词汇
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 🙏 致谢
+
+感谢 Obsidian 团队提供的强大 API 和开发工具，使得这个插件的开发成为可能。
+
+---
+
+如果您觉得这个插件有用，请考虑给项目一个 ⭐ 星标支持！
