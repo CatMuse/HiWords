@@ -6,11 +6,11 @@ export default {
     
     // Settings
     settings: {
-        title: "Vocabulary Settings",
-        vocabulary_books: "Vocabulary Books",
-        add_vocabulary_book: "Add Vocabulary Book",
+        title: "Vocabulary settings",
+        vocabulary_books: "Vocabulary books",
+        add_vocabulary_book: "Add vocabulary book",
         remove_vocabulary_book: "Remove",
-        show_definition_on_hover: "Show Definition on Hover",
+        show_definition_on_hover: "Show definition on hover",
         show_definition_on_hover_desc: "Show word definition when hovering over highlighted words",
         enable_auto_highlight: "Enable Auto Highlight",
         enable_auto_highlight_desc: "Automatically highlight words from vocabulary books while reading",
@@ -36,9 +36,9 @@ export default {
     
     // Commands
     commands: {
-        refresh_vocabulary: "Refresh Vocabulary",
-        add_word: "Add Word to Vocabulary",
-        show_sidebar: "Show HiWords Sidebar",
+        refresh_vocabulary: "Refresh vocabulary",
+        add_word: "Add word to vocabulary",
+        show_sidebar: "Show HiWords sidebar",
     },
     
     // Notices
@@ -61,12 +61,12 @@ export default {
     
     // Modals
     modals: {
-        add_word_title: "Add Word to Vocabulary",
+        add_word_title: "Add word to vocabulary",
         word_label: "Word",
         definition_label: "Definition",
-        book_label: "Vocabulary Book",
+        book_label: "Vocabulary book",
         select_book: "Select a vocabulary book",
-        color_label: "Card Color",
+        color_label: "Card color",
         color_gray: "Gray",
         color_red: "Red",
         color_orange: "Orange",
@@ -79,6 +79,6 @@ export default {
         definition_placeholder: "Enter word definition...",
         add_button: "Add",
         cancel_button: "Cancel",
-        select_canvas_file: "Select Canvas File",
+        select_canvas_file: "Select vocabulary book file",
     },
 }
