@@ -40,17 +40,17 @@ export class AddWordModal extends Modal {
         const colorSelectContainer = contentEl.createDiv({ cls: 'form-item' });
         colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'form-item-label' });
         
-        const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown' });
+        const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown setting-item-select' });
         colorSelect.createEl('option', { text: t('modals.color_gray'), value: '' });
         
         // Canvas 支持的颜色
         const colors = [
-            { name: '红色', value: '1' },
-            { name: '橙色', value: '2' },
-            { name: '黄色', value: '3' },
-            { name: '绿色', value: '4' },
-            { name: '蓝色', value: '5' },
-            { name: '紫色', value: '6' }
+            { name: t('modals.color_red'), value: '1' },
+            { name: t('modals.color_orange'), value: '2' },
+            { name: t('modals.color_yellow'), value: '3' },
+            { name: t('modals.color_green'), value: '4' },
+            { name: t('modals.color_blue'), value: '5' },
+            { name: t('modals.color_purple'), value: '6' }
         ];
         
         colors.forEach(color => {
@@ -62,8 +62,9 @@ export class AddWordModal extends Modal {
         aliasesContainer.createEl('label', { text: t('modals.aliases_label'), cls: 'form-item-label' });
         
         const aliasesInput = aliasesContainer.createEl('input', { 
+            type: 'text',
             placeholder: t('modals.aliases_placeholder'),
-            cls: 'word-aliases-input'
+            cls: 'setting-item-input word-aliases-input'
         });
         
         // 定义输入
@@ -72,7 +73,7 @@ export class AddWordModal extends Modal {
         
         const definitionInput = definitionContainer.createEl('textarea', { 
             placeholder: t('modals.definition_placeholder'),
-            cls: 'word-definition-input'
+            cls: 'setting-item-input word-definition-input'
         });
         definitionInput.rows = 5;
         

@@ -198,7 +198,8 @@
 }
 
 .form-item select,
-.form-item textarea {
+.form-item textarea,
+.form-item input {
     width: 100%;
 }
 
