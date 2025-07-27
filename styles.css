@@ -36,9 +36,8 @@
     font-weight: 600;
     font-size: 15px;
     color: var(--text-accent);
-    margin-bottom: 8px;
-    border-bottom: 1px solid var(--background-modifier-border-hover);
-    padding-bottom: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
 }
 
 .hi-words-tooltip-content {
@@ -52,8 +51,7 @@
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 6px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--background-modifier-border);
+    padding-top: 4px;
 }
 
 

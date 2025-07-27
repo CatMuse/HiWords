@@ -168,7 +168,10 @@ export class DefinitionPopover {
                 // 添加来源信息
                 const sourceEl = document.createElement('div');
                 sourceEl.className = 'hi-words-tooltip-source';
-                sourceEl.textContent = `来源: ${detailDef.source.split('/').pop()}`;
+                // 获取文件名并移除.canvas后缀
+                const fileName = detailDef.source.split('/').pop() || '';
+                const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
+                sourceEl.textContent = `来源: ${displayName}`;
                 tooltip.appendChild(sourceEl);
             }
         }
