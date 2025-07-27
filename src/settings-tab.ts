@@ -62,17 +62,27 @@ export class HiWordsSettingTab extends PluginSettingTab {
     private addVocabularyBooksSection() {
         const { containerEl } = this;
         
-        containerEl.createEl('h3', { text: '生词本管理' });
-
-        // 添加新生词本按钮
-        new Setting(containerEl)
-            .setName('添加生词本')
-            .setDesc('选择一个 Canvas 文件作为生词本')
+        // 创建标题容器
+        const headerContainer = containerEl.createDiv({ cls: 'hi-words-header-container' });
+        
+        // 添加标题
+        headerContainer.createEl('h3', { text: '生词本管理' });
+        
+        // 添加按钮容器
+        const buttonContainer = headerContainer.createDiv({ cls: 'hi-words-button-container' });
+        
+        // 使用 Obsidian 的 ButtonComponent 创建按钮
+        const addButton = new Setting(buttonContainer)
             .addButton(button => button
                 .setIcon('plus-circle')
                 .setTooltip('添加 Canvas 生词本')
                 .setCta()
-                .onClick(() => this.showCanvasFilePicker()));
+                .onClick(() => this.showCanvasFilePicker())
+            );
+        
+        // 移除 Setting 组件的默认样式
+        addButton.settingEl.classList.add('hi-words-add-button-setting');
+        addButton.infoEl.remove();
 
         // 显示现有生词本
         this.displayVocabularyBooks();
@@ -154,22 +164,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .setName(book.name)
                 .setDesc(`路径: ${book.path}`);
 
-            // 启用/禁用开关
-            setting.addToggle(toggle => toggle
-                .setValue(book.enabled)
-                .onChange(async (value) => {
-                    book.enabled = value;
-                    await this.plugin.saveSettings();
-                    if (value) {
-                        await this.plugin.vocabularyManager.loadVocabularyBook(book);
-                    } else {
-                        await this.plugin.vocabularyManager.loadAllVocabularyBooks();
-                    }
-                    this.plugin.refreshHighlighter();
-                }));
-
-
-
             // 重新加载按钮
             setting.addButton(button => button
                 .setIcon('refresh-cw')
@@ -192,6 +186,20 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.refreshHighlighter();
                     new Notice(`已删除生词本: ${book.name}`);
                     this.display(); // 刷新设置页面
+                }));
+                
+            // 启用/禁用开关
+            setting.addToggle(toggle => toggle
+                .setValue(book.enabled)
+                .onChange(async (value) => {
+                    book.enabled = value;
+                    await this.plugin.saveSettings();
+                    if (value) {
+                        await this.plugin.vocabularyManager.loadVocabularyBook(book);
+                    } else {
+                        await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                    }
+                    this.plugin.refreshHighlighter();
                 }));
         });
     }

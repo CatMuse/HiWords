@@ -88,6 +88,30 @@
 }
 
 /* 设置页面样式 */
+/* 标题和按钮容器 */
+.hi-words-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 按钮容器样式 */
+.hi-words-button-container {
+    display: flex;
+    align-items: center;
+}
+
+/* 移除 Setting 组件的默认样式 */
+.hi-words-add-button-setting {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.hi-words-add-button-setting .setting-item-control {
+    padding: 0;
+}
+
 .hi-words-stats {
     background: var(--background-secondary);
     border-radius: 6px;
