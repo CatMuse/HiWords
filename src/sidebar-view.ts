@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, MarkdownView } from 'obsidian';
+import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer } from 'obsidian';
 import HiWordsPlugin from '../main';
 import { WordDefinition } from './types';
 import { mapCanvasColorToCSSVar, getColorWithOpacity } from './color-utils';
@@ -167,29 +167,91 @@ export class HiWordsSidebarView extends ItemView {
         // 定义内容
         if (wordDef.definition && wordDef.definition.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
+            
+            // 创建两个版本的定义容器：简短版和完整版
+            const shortDefContainer = definition.createEl('div', { cls: 'hi-words-short-definition' });
+            const fullDefContainer = definition.createEl('div', { cls: 'hi-words-full-definition' });
+            fullDefContainer.style.display = 'none'; // 默认隐藏完整版
+            
             // 限制定义长度，避免卡片过长
             const shortDefinition = this.truncateText(wordDef.definition, 100);
-            definition.textContent = shortDefinition;
             
-            // 如果定义被截断，添加展开按钮
-            if (wordDef.definition.length > 100) {
-                const expandBtn = definition.createEl('span', { 
-                    text: ' ...更多',
-                    cls: 'hi-words-expand-btn'
-                });
-                expandBtn.onclick = () => {
-                    if (definition.textContent === shortDefinition + ' ...更多') {
-                        definition.textContent = wordDef.definition;
-                        const collapseBtn = definition.createEl('span', {
-                            text: ' 收起',
-                            cls: 'hi-words-expand-btn'
-                        });
-                        collapseBtn.onclick = () => {
-                            definition.textContent = shortDefinition;
-                            definition.appendChild(expandBtn);
-                        };
-                    }
-                };
+            // 渲染 Markdown 内容
+            try {
+                // 获取活动的 MarkdownView
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                
+                if (activeView && activeView.file) {
+                    // 渲染简短版定义
+                    MarkdownRenderer.renderMarkdown(
+                        shortDefinition,
+                        shortDefContainer,
+                        activeView.file.path,
+                        activeView
+                    );
+                    
+                    // 渲染完整版定义
+                    MarkdownRenderer.renderMarkdown(
+                        wordDef.definition,
+                        fullDefContainer,
+                        activeView.file.path,
+                        activeView
+                    );
+                } else {
+                    // 如果没有活动的 MarkdownView，使用简单的文本显示
+                    shortDefContainer.textContent = shortDefinition;
+                    fullDefContainer.textContent = wordDef.definition;
+                }
+                
+                // 如果定义被截断，添加展开/收起按钮
+                if (wordDef.definition.length > 100) {
+                    const expandBtn = shortDefContainer.createEl('span', { 
+                        text: ' ...更多',
+                        cls: 'hi-words-expand-btn'
+                    });
+                    
+                    const collapseBtn = fullDefContainer.createEl('span', {
+                        text: ' 收起',
+                        cls: 'hi-words-expand-btn'
+                    });
+                    
+                    // 展开按钮点击事件
+                    expandBtn.onclick = () => {
+                        shortDefContainer.style.display = 'none';
+                        fullDefContainer.style.display = 'block';
+                    };
+                    
+                    // 收起按钮点击事件
+                    collapseBtn.onclick = () => {
+                        fullDefContainer.style.display = 'none';
+                        shortDefContainer.style.display = 'block';
+                    };
+                }
+            } catch (error) {
+                // 如果渲染失败，回退到纯文本显示
+                console.error('Markdown 渲染失败:', error);
+                shortDefContainer.textContent = shortDefinition;
+                
+                // 如果定义被截断，添加简单的展开/收起功能
+                if (wordDef.definition.length > 100) {
+                    const expandBtn = shortDefContainer.createEl('span', { 
+                        text: ' ...更多',
+                        cls: 'hi-words-expand-btn'
+                    });
+                    expandBtn.onclick = () => {
+                        if (shortDefContainer.textContent === shortDefinition + ' ...更多') {
+                            shortDefContainer.textContent = wordDef.definition;
+                            const collapseBtn = shortDefContainer.createEl('span', {
+                                text: ' 收起',
+                                cls: 'hi-words-expand-btn'
+                            });
+                            collapseBtn.onclick = () => {
+                                shortDefContainer.textContent = shortDefinition;
+                                shortDefContainer.appendChild(expandBtn);
+                            };
+                        }
+                    };
+                }
             }
         }
         

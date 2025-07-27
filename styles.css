@@ -56,7 +56,7 @@
 
 
 
-/* Markdown 内容样式 */
+/* Markdown 内容样式 - Tooltip */
 .hi-words-tooltip-content p {
     margin: 0 0 8px 0;
 }
@@ -83,6 +83,50 @@
     margin: 4px 0;
     padding-left: 10px;
     color: var(--text-muted);
+}
+
+/* Markdown 内容样式 - 侧边栏单词卡片 */
+.hi-words-short-definition p,
+.hi-words-full-definition p {
+    margin: 0 0 8px 0;
+}
+
+.hi-words-short-definition p:last-child,
+.hi-words-full-definition p:last-child {
+    margin-bottom: 0;
+}
+
+.hi-words-short-definition ul,
+.hi-words-short-definition ol,
+.hi-words-full-definition ul,
+.hi-words-full-definition ol {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.hi-words-short-definition code,
+.hi-words-full-definition code {
+    background: var(--background-secondary);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.hi-words-short-definition blockquote,
+.hi-words-full-definition blockquote {
+    border-left: 3px solid var(--text-accent);
+    margin: 4px 0;
+    padding-left: 10px;
+    color: var(--text-muted);
+}
+
+/* 侧边栏单词卡片展开/收起按钮样式 */
+.hi-words-expand-btn {
+    color: var(--text-accent);
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-left: 4px;
 }
 
 /* 设置页面样式 */
