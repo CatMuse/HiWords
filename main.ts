@@ -113,15 +113,21 @@ export default class HiWordsPlugin extends Plugin {
      * 注册事件
      */
     private registerEvents() {
+        // 记录当前正在编辑的Canvas文件
+        const modifiedCanvasFiles = new Set<string>();
+        // 记录当前活动的Canvas文件
+        let activeCanvasFile: string | null = null;
+        
         // 监听文件变化
         this.registerEvent(
-            this.app.vault.on('modify', async (file) => {
+            this.app.vault.on('modify', (file) => {
                 if (file instanceof TFile && file.extension === 'canvas') {
                     // 检查是否是生词本文件
                     const isVocabBook = this.settings.vocabularyBooks.some(book => book.path === file.path);
                     if (isVocabBook) {
-                        await this.vocabularyManager.reloadVocabularyBook(file.path);
-                        this.refreshHighlighter();
+                        // 只记录文件路径，不立即解析
+                        modifiedCanvasFiles.add(file.path);
+                        console.log(`Canvas文件已修改，待解析: ${file.path}`);
                     }
                 }
             })
@@ -129,9 +135,52 @@ export default class HiWordsPlugin extends Plugin {
 
         // 监听活动文件变化
         this.registerEvent(
-            this.app.workspace.on('active-leaf-change', () => {
-                // 当切换文件时，可能需要更新高亮
-                setTimeout(() => this.refreshHighlighter(), 100);
+            this.app.workspace.on('active-leaf-change', async (leaf) => {
+                // 获取当前活动文件
+                const activeFile = this.app.workspace.getActiveFile();
+                
+                // 如果之前有活动的Canvas文件，且已经变化，并且现在切换到了其他文件
+                // 说明用户已经编辑完成并切换了焦点，此时解析该文件
+                if (activeCanvasFile && 
+                    modifiedCanvasFiles.has(activeCanvasFile) && 
+                    (!activeFile || activeFile.path !== activeCanvasFile)) {
+                    
+                    console.log(`Canvas文件失去焦点，开始解析: ${activeCanvasFile}`);
+                    
+                    // 解析该文件
+                    await this.vocabularyManager.reloadVocabularyBook(activeCanvasFile);
+                    this.refreshHighlighter();
+                    
+                    // 从待解析列表中移除
+                    modifiedCanvasFiles.delete(activeCanvasFile);
+                }
+                
+                // 更新当前活动的Canvas文件
+                if (activeFile && activeFile.extension === 'canvas') {
+                    activeCanvasFile = activeFile.path;
+                } else {
+                    activeCanvasFile = null;
+                    
+                    // 如果切换到非Canvas文件，处理所有待解析的文件
+                    if (modifiedCanvasFiles.size > 0) {
+                        console.log(`处理所有待解析的Canvas文件，共${modifiedCanvasFiles.size}个`);
+                        
+                        // 创建一个副本并清空原集合
+                        const filesToProcess = Array.from(modifiedCanvasFiles);
+                        modifiedCanvasFiles.clear();
+                        
+                        // 处理所有待解析的文件
+                        for (const filePath of filesToProcess) {
+                            await this.vocabularyManager.reloadVocabularyBook(filePath);
+                        }
+                        
+                        // 刷新高亮
+                        this.refreshHighlighter();
+                    } else {
+                        // 当切换文件时，可能需要更新高亮
+                        setTimeout(() => this.refreshHighlighter(), 100);
+                    }
+                }
             })
         );
         
