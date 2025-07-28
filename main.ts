@@ -25,8 +25,6 @@ export default class HiWordsPlugin extends Plugin {
     sidebarView: HiWordsSidebarView | null = null;
 
     async onload() {
-        console.log('Loading HiWords plugin');
-        
         // 加载设置
         await this.loadSettings();
         
@@ -71,7 +69,6 @@ export default class HiWordsPlugin extends Plugin {
         this.app.workspace.onLayoutReady(async () => {
             await this.vocabularyManager.loadAllVocabularyBooks();
             this.refreshHighlighter();
-            console.log('生词本已自动刷新');
         });
     }
 
@@ -268,7 +265,6 @@ export default class HiWordsPlugin extends Plugin {
      * 卸载插件
      */
     onunload() {
-        console.log('Unloading HiWords plugin');
         this.definitionPopover.unload();
         this.vocabularyManager.clear();
         

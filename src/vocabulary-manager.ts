@@ -52,7 +52,6 @@ export class VocabularyManager {
 
             
             this.definitions.set(book.path, definitions);
-            console.log(`Loaded ${definitions.length} words from ${book.name}`);
         } catch (error) {
             console.error(`Failed to load vocabulary book ${book.name}:`, error);
         }

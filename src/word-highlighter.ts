@@ -163,11 +163,6 @@ export class WordHighlighter implements PluginValue {
             console.error('在 findWordMatches 中发生错误:', e);
         }
         
-        const endTime = performance.now();
-        if (endTime - startTime > 100) { // 只记录耗时超过 100ms 的操作
-            console.log(`findWordMatches 耗时 ${Math.round(endTime - startTime)}ms, 匹配了 ${matches.length} 个单词`);
-        }
-
         return matches;
     }
 
