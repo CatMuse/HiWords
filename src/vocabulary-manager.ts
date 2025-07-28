@@ -9,31 +9,51 @@ export class VocabularyManager {
     private canvasEditor: CanvasEditor;
     private definitions: Map<string, WordDefinition[]> = new Map();
     private settings: HiWordsSettings;
+    
+    // 缓存优化
+    private wordDefinitionCache: Map<string, WordDefinition> = new Map(); // 单词 -> 定义映射
+    private allWordsCache: string[] = []; // 所有单词的缓存
+    private bookWordsCache: Map<string, string[]> = new Map(); // 书本路径 -> 单词列表映射
+    private cacheValid: boolean = false; // 缓存是否有效
 
     constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
         this.canvasParser = new CanvasParser(app);
         this.canvasEditor = new CanvasEditor(app);
         this.settings = settings;
+        
+        // 性能监控
+        console.log("VocabularyManager 初始化");
     }
 
     /**
      * 加载所有启用的生词本
      */
     async loadAllVocabularyBooks(): Promise<void> {
-        this.definitions.clear();
+        const startTime = performance.now();
         
-        for (const book of this.settings.vocabularyBooks) {
-            if (book.enabled) {
-                await this.loadVocabularyBook(book);
-            }
-        }
+        this.definitions.clear();
+        this.invalidateCache();
+        
+        const loadPromises = this.settings.vocabularyBooks
+            .filter(book => book.enabled)
+            .map(book => this.loadVocabularyBook(book));
+            
+        await Promise.all(loadPromises);
+        
+        // 重建缓存
+        this.rebuildCache();
+        
+        const endTime = performance.now();
+        console.log(`加载所有词汇本耗时: ${(endTime - startTime).toFixed(2)}ms`);
     }
 
     /**
      * 加载单个生词本
      */
     async loadVocabularyBook(book: VocabularyBook): Promise<void> {
+        const startTime = performance.now();
+        
         const file = this.app.vault.getAbstractFileByPath(book.path);
         
         if (!file || !(file instanceof TFile)) {
@@ -48,10 +68,13 @@ export class VocabularyManager {
 
         try {
             const definitions = await this.canvasParser.parseCanvasFile(file);
-            
-
-            
             this.definitions.set(book.path, definitions);
+            
+            // 使缓存失效
+            this.invalidateCache();
+            
+            const endTime = performance.now();
+            console.log(`加载词汇本 ${book.name} 耗时: ${(endTime - startTime).toFixed(2)}ms，单词数量: ${definitions.length}`);
         } catch (error) {
             console.error(`Failed to load vocabulary book ${book.name}:`, error);
         }
@@ -71,11 +94,27 @@ export class VocabularyManager {
             return null;
         }
         visited.add(normalizedWord);
+        
+        // 检查缓存
+        if (this.cacheValid && this.wordDefinitionCache.has(normalizedWord)) {
+            return this.wordDefinitionCache.get(normalizedWord) || null;
+        }
+        
+        // 如果缓存无效，则重建缓存
+        if (!this.cacheValid) {
+            this.rebuildCache();
+            if (this.wordDefinitionCache.has(normalizedWord)) {
+                return this.wordDefinitionCache.get(normalizedWord) || null;
+            }
+        }
 
+        // 缓存中没有找到，执行完整搜索
         for (const definitions of this.definitions.values()) {
             // 先检查主单词
             const foundByMainWord = definitions.find(def => def.word === normalizedWord);
             if (foundByMainWord) {
+                // 更新缓存
+                this.wordDefinitionCache.set(normalizedWord, foundByMainWord);
                 return foundByMainWord;
             }
 
@@ -84,6 +123,8 @@ export class VocabularyManager {
                 def.aliases && def.aliases.includes(normalizedWord)
             );
             if (foundByAlias) {
+                // 更新缓存
+                this.wordDefinitionCache.set(normalizedWord, foundByAlias);
                 return foundByAlias;
             }
         }
@@ -95,27 +136,25 @@ export class VocabularyManager {
      * 获取所有词汇，包括别名
      */
     getAllWords(): string[] {
-        const words: string[] = [];
-        
-        for (const definitions of this.definitions.values()) {
-            // 添加主单词
-            words.push(...definitions.map(def => def.word));
-            
-            // 添加别名
-            definitions.forEach(def => {
-                if (def.aliases && def.aliases.length > 0) {
-                    words.push(...def.aliases);
-                }
-            });
+        // 如果缓存有效，直接返回缓存的单词列表
+        if (this.cacheValid) {
+            return [...this.allWordsCache]; // 返回副本以防修改
         }
         
-        return [...new Set(words)]; // 去重
+        // 重建缓存并返回
+        this.rebuildCache();
+        return [...this.allWordsCache];
     }
 
     /**
      * 获取指定生词本的词汇，包括别名
      */
     getWordsFromBook(bookPath: string): string[] {
+        // 如果缓存有效且包含该书本的单词列表，直接返回
+        if (this.cacheValid && this.bookWordsCache.has(bookPath)) {
+            return [...this.bookWordsCache.get(bookPath)!]; // 返回副本以防修改
+        }
+        
         const definitions = this.definitions.get(bookPath);
         if (!definitions) return [];
         
@@ -131,7 +170,12 @@ export class VocabularyManager {
             }
         });
         
-        return [...new Set(words)]; // 去重
+        const uniqueWords = [...new Set(words)]; // 去重
+        
+        // 更新缓存
+        this.bookWordsCache.set(bookPath, uniqueWords);
+        
+        return uniqueWords;
     }
 
     /**
@@ -141,6 +185,8 @@ export class VocabularyManager {
         const book = this.settings.vocabularyBooks.find(b => b.path === bookPath);
         if (book && book.enabled) {
             await this.loadVocabularyBook(book);
+            // 使缓存失效
+            this.invalidateCache();
         }
     }
 
@@ -149,6 +195,8 @@ export class VocabularyManager {
      */
     updateSettings(settings: HiWordsSettings): void {
         this.settings = settings;
+        // 设置变更可能影响词汇，使缓存失效
+        this.invalidateCache();
     }
 
     /**
@@ -166,6 +214,13 @@ export class VocabularyManager {
      * 检查词汇是否存在
      */
     hasWord(word: string): boolean {
+        const normalizedWord = word.toLowerCase().trim();
+        
+        // 如果缓存有效，直接检查缓存
+        if (this.cacheValid) {
+            return this.wordDefinitionCache.has(normalizedWord);
+        }
+        
         return this.getDefinition(word) !== null;
     }
 
@@ -174,6 +229,7 @@ export class VocabularyManager {
      */
     clear(): void {
         this.definitions.clear();
+        this.invalidateCache();
     }
     
     /**
@@ -191,9 +247,72 @@ export class VocabularyManager {
         if (success) {
             // 如果添加成功，重新加载生词本
             await this.reloadVocabularyBook(bookPath);
+            // 使缓存失效
+            this.invalidateCache();
         }
         
         return success;
+    }
+    
+    /**
+     * 使缓存失效
+     * 当词汇数据发生变化时调用
+     */
+    private invalidateCache(): void {
+        this.cacheValid = false;
+        this.wordDefinitionCache.clear();
+        this.allWordsCache = [];
+        this.bookWordsCache.clear();
+    }
+    
+    /**
+     * 重建缓存
+     * 构建单词到定义的映射和所有单词的列表
+     */
+    private rebuildCache(): void {
+        const startTime = performance.now();
+        
+        // 清空现有缓存
+        this.wordDefinitionCache.clear();
+        this.allWordsCache = [];
+        this.bookWordsCache.clear();
+        
+        const allWords = new Set<string>();
+        
+        // 遍历所有词汇本和定义
+        for (const [bookPath, definitions] of this.definitions.entries()) {
+            const bookWords = new Set<string>();
+            
+            for (const def of definitions) {
+                // 添加主单词到缓存
+                const normalizedWord = def.word.toLowerCase().trim();
+                this.wordDefinitionCache.set(normalizedWord, def);
+                allWords.add(normalizedWord);
+                bookWords.add(normalizedWord);
+                
+                // 添加别名到缓存
+                if (def.aliases && def.aliases.length > 0) {
+                    for (const alias of def.aliases) {
+                        const normalizedAlias = alias.toLowerCase().trim();
+                        this.wordDefinitionCache.set(normalizedAlias, def);
+                        allWords.add(normalizedAlias);
+                        bookWords.add(normalizedAlias);
+                    }
+                }
+            }
+            
+            // 保存该书本的单词列表
+            this.bookWordsCache.set(bookPath, [...bookWords]);
+        }
+        
+        // 保存所有单词列表
+        this.allWordsCache = [...allWords];
+        
+        // 标记缓存为有效
+        this.cacheValid = true;
+        
+        const endTime = performance.now();
+        console.log(`重建缓存耗时: ${(endTime - startTime).toFixed(2)}ms，单词总数: ${this.allWordsCache.length}`);
     }
     
     /**
