@@ -116,28 +116,18 @@ export class WordHighlighter implements PluginValue {
         const matches: WordMatch[] = [];
         
         try {
-            // 限制单词数量，避免过多的匹配操作
-            const maxWords = 500; // 设置一个合理的上限
+            // 获取所有单词，不再限制数量
             const words = this.vocabularyManager.getAllWords();
             
             // 按词汇长度降序排序，优先匹配长词汇
             words.sort((a, b) => b.length - a.length);
-            
-            // 限制单词数量
-            const limitedWords = words.length > maxWords ? words.slice(0, maxWords) : words;
-            
-            // 设置最大匹配数量，避免过多匹配造成性能问题
-            const maxMatches = 1000;
-            let matchCount = 0;
 
-            for (const word of limitedWords) {
-                if (matchCount >= maxMatches) break;
-                
+            for (const word of words) {
                 try {
                     const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
                     let match;
                     
-                    while ((match = regex.exec(text)) !== null && matchCount < maxMatches) {
+                    while ((match = regex.exec(text)) !== null) {
                         const definition = this.vocabularyManager.getDefinition(word);
                         if (definition) {
                             // 确定在界面上显示的单词形式
@@ -151,8 +141,6 @@ export class WordHighlighter implements PluginValue {
                                 to: offset + match.index + displayWord.length,
                                 color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)')
                             });
-                            
-                            matchCount++;
                         }
                     }
                 } catch (e) {
@@ -168,8 +156,13 @@ export class WordHighlighter implements PluginValue {
 
     /**
      * 移除重叠的匹配项，优先保留长词汇
+     * 注意：现在允许重叠的单词匹配，所以直接返回所有匹配项
      */
     private removeOverlaps(matches: WordMatch[]): WordMatch[] {
+        // 直接返回所有匹配项，不再过滤重叠的单词
+        return matches;
+        
+        /* 原始实现（已注释）
         if (matches.length === 0) return matches;
 
         const result: WordMatch[] = [];
@@ -183,6 +176,7 @@ export class WordHighlighter implements PluginValue {
         }
 
         return result;
+        */
     }
 
     /**
