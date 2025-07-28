@@ -185,16 +185,18 @@ export class WordHighlighter implements PluginValue {
      */
     private applyDecorations(builder: RangeSetBuilder<Decoration>, matches: WordMatch[]) {
         matches.forEach(match => {
-            const highlightColor = mapCanvasColorToCSSVar(match.definition.color, 'var(--color-accent)');
+            // 使用与侧边栏视图一致的默认灰色
+            const highlightColor = mapCanvasColorToCSSVar(match.definition.color, 'var(--color-base-60)');
             builder.add(
                 match.from, 
                 match.to, 
                 Decoration.mark({
-                    class: 'hi-words-highlight',
+                    class: `hi-words-highlight`,
                     attributes: {
                         'data-word': match.word,
                         'data-definition': match.definition.definition,
-                        'style': `border-bottom: 2px dashed ${highlightColor}; cursor: pointer;`
+                        'data-color': highlightColor,
+                        'style': `--word-highlight-color: ${highlightColor};`
                     }
                 })
             );

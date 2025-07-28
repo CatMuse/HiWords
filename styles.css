@@ -2,14 +2,14 @@
 
 /* 词汇高亮样式 */
 .hi-words-highlight {
-    border-bottom: 2px dashed var(--text-accent);
+    border-bottom: 2px dashed var(--word-highlight-color, var(--text-muted));
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .hi-words-highlight:hover {
     background-color: var(--background-modifier-hover);
-    border-bottom: 2px solid var(--text-accent);
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
 }
 
 /* 工具提示样式 */
