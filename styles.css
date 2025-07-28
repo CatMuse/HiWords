@@ -2,14 +2,59 @@
 
 /* 词汇高亮样式 */
 .hi-words-highlight {
-    border-bottom: 2px dashed var(--word-highlight-color, var(--text-muted));
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.hi-words-highlight:hover {
+/* 下划线样式 */
+.hi-words-highlight[data-style="underline"] {
+    border-bottom: 2px dashed var(--word-highlight-color, var(--text-muted));
+}
+
+.hi-words-highlight[data-style="underline"]:hover {
     background-color: var(--background-modifier-hover);
     border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
+}
+
+/* 背景高亮样式 */
+.hi-words-highlight[data-style="background"] {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 15%, transparent);
+    border-radius: 3px;
+    padding: 0 2px;
+}
+
+.hi-words-highlight[data-style="background"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 25%, transparent);
+}
+
+/* 粗体样式 */
+.hi-words-highlight[data-style="bold"] {
+    font-weight: 600;
+    color: var(--word-highlight-color, var(--text-muted));
+}
+
+.hi-words-highlight[data-style="bold"]:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* 点状下划线样式 */
+.hi-words-highlight[data-style="dotted"] {
+    border-bottom: 2px dotted var(--word-highlight-color, var(--text-muted));
+}
+
+.hi-words-highlight[data-style="dotted"]:hover {
+    background-color: var(--background-modifier-hover);
+    border-bottom: 2px dotted var(--word-highlight-color, var(--text-muted));
+}
+
+/* 波浪线样式 */
+.hi-words-highlight[data-style="wavy"] {
+    text-decoration: wavy underline var(--word-highlight-color, var(--text-muted));
+    text-decoration-thickness: 2px;
+}
+
+.hi-words-highlight[data-style="wavy"]:hover {
+    background-color: var(--background-modifier-hover);
 }
 
 /* 工具提示样式 */

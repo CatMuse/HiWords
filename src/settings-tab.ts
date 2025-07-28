@@ -43,7 +43,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.refreshHighlighter();
                 }));
 
-        // 悬停显示定义
+        // 浮动显示定义
         new Setting(containerEl)
             .setName(t('settings.show_definition_on_hover'))
             .setDesc(t('settings.show_definition_on_hover_desc'))
@@ -52,6 +52,23 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.showDefinitionOnHover = value;
                     await this.plugin.saveSettings();
+                }));
+
+        // 高亮样式选择
+        new Setting(containerEl)
+            .setName(t('settings.highlight_style'))
+            .setDesc(t('settings.highlight_style_desc'))
+            .addDropdown(dropdown => dropdown
+                .addOption('underline', t('settings.style_underline'))
+                .addOption('background', t('settings.style_background'))
+                .addOption('bold', t('settings.style_bold'))
+                .addOption('dotted', t('settings.style_dotted'))
+                .addOption('wavy', t('settings.style_wavy'))
+                .setValue(this.plugin.settings.highlightStyle)
+                .onChange(async (value) => {
+                    this.plugin.settings.highlightStyle = value as any;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHighlighter();
                 }));
 
 

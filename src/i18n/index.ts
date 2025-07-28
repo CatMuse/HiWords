@@ -17,6 +17,13 @@ export interface LanguagePack {
         show_definition_on_hover_desc: string;
         enable_auto_highlight: string;
         enable_auto_highlight_desc: string;
+        highlight_style: string;
+        highlight_style_desc: string;
+        style_underline: string;
+        style_background: string;
+        style_bold: string;
+        style_dotted: string;
+        style_wavy: string;
         save_settings: string;
         no_vocabulary_books: string;
         path: string;

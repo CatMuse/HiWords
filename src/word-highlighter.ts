@@ -184,9 +184,13 @@ export class WordHighlighter implements PluginValue {
      * 应用装饰到构建器
      */
     private applyDecorations(builder: RangeSetBuilder<Decoration>, matches: WordMatch[]) {
+        // 获取当前高亮样式设置
+        const highlightStyle = this.vocabularyManager.getSettings().highlightStyle || 'underline';
+        
         matches.forEach(match => {
             // 使用与侧边栏视图一致的默认灰色
             const highlightColor = mapCanvasColorToCSSVar(match.definition.color, 'var(--color-base-60)');
+            
             builder.add(
                 match.from, 
                 match.to, 
@@ -196,6 +200,7 @@ export class WordHighlighter implements PluginValue {
                         'data-word': match.word,
                         'data-definition': match.definition.definition,
                         'data-color': highlightColor,
+                        'data-style': highlightStyle,
                         'style': `--word-highlight-color: ${highlightColor};`
                     }
                 })

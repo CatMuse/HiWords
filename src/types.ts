@@ -34,11 +34,15 @@ export interface VocabularyBook {
     enabled: boolean; // 是否启用
 }
 
+// 高亮样式类型
+export type HighlightStyle = 'underline' | 'background' | 'bold' | 'dotted' | 'wavy';
+
 // 插件设置
 export interface HiWordsSettings {
     vocabularyBooks: VocabularyBook[];
     showDefinitionOnHover: boolean;
     enableAutoHighlight: boolean;
+    highlightStyle: HighlightStyle; // 高亮样式
 }
 
 // 词汇匹配信息

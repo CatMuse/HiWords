@@ -200,6 +200,13 @@ export class VocabularyManager {
     }
 
     /**
+     * 获取当前设置
+     */
+    getSettings(): HiWordsSettings {
+        return this.settings;
+    }
+
+    /**
      * 获取统计信息
      */
     getStats(): { totalBooks: number; enabledBooks: number; totalWords: number } {

@@ -13,7 +13,8 @@ import { i18n, t } from './src/i18n';
 const DEFAULT_SETTINGS: HiWordsSettings = {
     vocabularyBooks: [],
     showDefinitionOnHover: true,
-    enableAutoHighlight: true
+    enableAutoHighlight: true,
+    highlightStyle: 'underline' // 默认使用下划线样式
 };
 
 export default class HiWordsPlugin extends Plugin {
