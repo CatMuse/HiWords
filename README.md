@@ -1,6 +1,17 @@
-# HiWords - Vocabulary Manager for Obsidian
+<div align="center">
+	<h1>HiWords-Vocabulary Manager for Obsidian</h1>
+	<img src="https://img.shields.io/github/downloads/CatMuse/HiWords/total" alt="GitHub Downloads (all assets, all releases)" />
+	<img src="https://img.shields.io/github/v/release/CatMuse/HiWords" alt="GitHub release (latest by date)" />
+	<img src="https://img.shields.io/github/last-commit/CatMuse/HiWords" alt="GitHub last commit" />
+	<img src="https://img.shields.io/github/issues/CatMuse/HiWords" alt="GitHub issues" />
+	<img src="https://img.shields.io/github/stars/CatMuse/HiWords?style=social" alt="GitHub stars" />
+</div>
+
+---
 
 A powerful Obsidian plugin that helps you expand your vocabulary while reading. It automatically highlights and translates unfamiliar words, making learning more efficient.
+
+![Screenshot](https://github.com/user-attachments/assets/359f874d-299c-4dd6-9fa1-bacd4664fb42)
 
 ## ✨ Key Features
 
