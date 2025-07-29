@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, TFile, Notice, Modal } from 'obsidian';
 import HiWordsPlugin from '../main';
-import { VocabularyBook } from './types';
+import { VocabularyBook, HighlightStyle } from './types';
 import { CanvasParser } from './canvas-parser';
 import { t } from './i18n';
 
@@ -66,7 +66,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('wavy', t('settings.style_wavy'))
                 .setValue(this.plugin.settings.highlightStyle)
                 .onChange(async (value) => {
-                    this.plugin.settings.highlightStyle = value as any;
+                    this.plugin.settings.highlightStyle = value as HighlightStyle;
                     await this.plugin.saveSettings();
                     this.plugin.refreshHighlighter();
                 }));

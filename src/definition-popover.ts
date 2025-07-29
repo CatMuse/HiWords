@@ -63,6 +63,128 @@ export class DefinitionPopover {
             
         return html;
     }
+    
+    /**
+     * 安全地设置内容，使用 DOM API 而不是 innerHTML
+     * @param container 要设置内容的容器元素
+     * @param markdownText 包含简单 Markdown 标记的字符串
+     */
+    private setContentSafely(container: HTMLElement, markdownText: string): void {
+        // 清空容器
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        
+        // 处理标题
+        const processHeadings = (text: string) => {
+            const headingMatches = text.match(/^(#{1,3}) (.+)$/gm);
+            if (headingMatches) {
+                headingMatches.forEach(match => {
+                    const [_, hashes, content] = match.match(/^(#{1,3}) (.+)$/) || [];
+                    if (hashes && content) {
+                        const level = hashes.length;
+                        const heading = document.createElement(`h${level}`);
+                        heading.textContent = content;
+                        container.appendChild(heading);
+                        text = text.replace(match, '');
+                    }
+                });
+            }
+            return text;
+        };
+        
+        // 处理剩余文本
+        const processText = (text: string) => {
+            if (!text.trim()) return;
+            
+            // 处理粗体和斜体
+            text = text.replace(/\*\*(.*?)\*\*/g, (_, content) => {
+                const strong = document.createElement('strong');
+                strong.textContent = content;
+                return `[STRONG]${content}[/STRONG]`;
+            });
+            
+            text = text.replace(/\*(.*?)\*/g, (_, content) => {
+                const em = document.createElement('em');
+                em.textContent = content;
+                return `[EM]${content}[/EM]`;
+            });
+            
+            // 处理链接
+            text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, (_, linkText, url) => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.textContent = linkText;
+                a.target = '_blank';
+                return `[LINK:${url}]${linkText}[/LINK]`;
+            });
+            
+            // 处理代码
+            text = text.replace(/`(.*?)`/g, (_, content) => {
+                const code = document.createElement('code');
+                code.textContent = content;
+                return `[CODE]${content}[/CODE]`;
+            });
+            
+            // 处理换行
+            const paragraphs = text.split('\n');
+            paragraphs.forEach(para => {
+                if (!para.trim()) return;
+                
+                const p = document.createElement('p');
+                
+                // 替换标记为真正的 DOM 元素
+                let paraContent = para;
+                
+                // 处理粗体
+                paraContent = paraContent.replace(/\[STRONG\](.*?)\[\/STRONG\]/g, (_, content) => {
+                    const strong = document.createElement('strong');
+                    strong.textContent = content;
+                    p.appendChild(strong);
+                    return '';
+                });
+                
+                // 处理斜体
+                paraContent = paraContent.replace(/\[EM\](.*?)\[\/EM\]/g, (_, content) => {
+                    const em = document.createElement('em');
+                    em.textContent = content;
+                    p.appendChild(em);
+                    return '';
+                });
+                
+                // 处理链接
+                paraContent = paraContent.replace(/\[LINK:(.*?)\](.*?)\[\/LINK\]/g, (_, url, content) => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.textContent = content;
+                    a.target = '_blank';
+                    p.appendChild(a);
+                    return '';
+                });
+                
+                // 处理代码
+                paraContent = paraContent.replace(/\[CODE\](.*?)\[\/CODE\]/g, (_, content) => {
+                    const code = document.createElement('code');
+                    code.textContent = content;
+                    p.appendChild(code);
+                    return '';
+                });
+                
+                // 处理剩余文本
+                if (paraContent.trim()) {
+                    p.appendChild(document.createTextNode(paraContent));
+                }
+                
+                if (p.hasChildNodes()) {
+                    container.appendChild(p);
+                }
+            });
+        };
+        
+        // 先处理标题，然后处理其他文本
+        let remainingText = processHeadings(markdownText);
+        processText(remainingText);
+    }
 
     /**
      * 设置词汇管理器
@@ -151,9 +273,9 @@ export class DefinitionPopover {
                     );
                 } else {
                     // 如果没有活动的 MarkdownView 或文件为空，尝试使用更简单的方法
-                    // 使用基本的 HTML 标记来模拟 Markdown 效果
+                    // 使用 DOM API 安全地创建元素
                     const formattedText = this.simpleMarkdownToHtml(definition);
-                    contentEl.innerHTML = formattedText;
+                    this.setContentSafely(contentEl, formattedText);
                 }
             } catch (error) {
                 // 如果渲染失败，回退到纯文本显示

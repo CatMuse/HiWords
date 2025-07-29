@@ -317,9 +317,6 @@ export default class HiWordsPlugin extends Plugin {
     onunload() {
         this.definitionPopover.unload();
         this.vocabularyManager.clear();
-        
-        // 清理侧边栏视图
-        this.app.workspace.detachLeavesOfType(SIDEBAR_VIEW_TYPE);
     }
 }
 
