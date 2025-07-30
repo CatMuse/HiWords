@@ -1,7 +1,7 @@
 {
 	"id": "hi-words",
 	"name": "HiWords",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"minAppVersion": "0.15.0",
 	"description": "Effortlessly grow your vocabulary as you read, with automatic highlighting and translation of unfamiliar words.",
 	"author": "Kai",

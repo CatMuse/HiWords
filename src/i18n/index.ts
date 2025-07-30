@@ -9,7 +9,6 @@ export type SupportedLocale = 'en' | 'zh';
 export interface LanguagePack {
     plugin_name: string;
     settings: {
-        title: string;
         vocabulary_books: string;
         add_vocabulary_book: string;
         remove_vocabulary_book: string;
