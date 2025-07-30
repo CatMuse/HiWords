@@ -277,7 +277,7 @@
 }
 
 .hi-words-sidebar-stats {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding: 8px 12px;
     background: var(--background-secondary);
     border-radius: 6px;
@@ -301,7 +301,7 @@
     border: 1px solid color-mix(in srgb, var(--word-card-accent-color, var(--text-muted)) 50%, transparent);
     border-left: 4px solid var(--word-card-accent-color, var(--text-muted));
     border-radius: 8px;
-    padding: 12px;
+    padding: 10px 14px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);

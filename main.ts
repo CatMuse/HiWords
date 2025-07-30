@@ -23,7 +23,8 @@ export default class HiWordsPlugin extends Plugin {
     definitionPopover: DefinitionPopover;
     editorExtensions: Extension[] = [];
     highlighterInstance: WordHighlighter | null = null;
-    sidebarView: HiWordsSidebarView | null = null;
+    private sidebarView: HiWordsSidebarView | null = null;
+    private isSidebarInitialized = false;
 
     async onload() {
         // 加载设置
@@ -115,7 +116,7 @@ export default class HiWordsPlugin extends Plugin {
     private registerEvents() {
         // 记录当前正在编辑的Canvas文件
         const modifiedCanvasFiles = new Set<string>();
-        // 记录当前活动的Canvas文件
+        // 记录当前活动的 Canvas 文件
         let activeCanvasFile: string | null = null;
         
         // 监听文件变化
@@ -233,15 +234,11 @@ export default class HiWordsPlugin extends Plugin {
      * 初始化侧边栏
      */
     private async initializeSidebar() {
-        // 在右侧边栏中添加生词列表视图
+        if (this.isSidebarInitialized) return;
+        
+        // 只注册视图，不自动打开
         this.app.workspace.onLayoutReady(() => {
-            // 仅在首次安装插件时打开侧边栏
-            // 之后将尊重用户的设置，不强制打开
-            const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);
-            if (leaves.length === 0) {
-                // 如果侧边栏视图不存在，创建一个
-                this.activateSidebarView();
-            }
+            this.isSidebarInitialized = true;
         });
     }
 
