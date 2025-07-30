@@ -6,7 +6,6 @@ export default {
     
     // Settings
     settings: {
-        title: "Vocabulary settings",
         vocabulary_books: "Vocabulary books",
         add_vocabulary_book: "Add vocabulary book",
         remove_vocabulary_book: "Remove",

@@ -196,8 +196,8 @@
 .hi-words-stats {
     background: var(--background-secondary);
     border-radius: 6px;
-    padding: 12px;
-    margin-top: 12px;
+    padding: 8px 18px;
+    margin-top: 4px;
 }
 
 /* Canvas 选择器样式 */

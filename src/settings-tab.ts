@@ -28,8 +28,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
      */
     private addBasicSettings() {
         const { containerEl } = this;
-        
-        containerEl.createEl('h3', { text: t('settings.title') });
 
         // 启用自动高亮
         new Setting(containerEl)
@@ -80,27 +78,20 @@ export class HiWordsSettingTab extends PluginSettingTab {
     private addVocabularyBooksSection() {
         const { containerEl } = this;
         
-        // 创建标题容器
-        const headerContainer = containerEl.createDiv({ cls: 'hi-words-header-container' });
-        
-        // 添加标题
-        headerContainer.createEl('h3', { text: t('settings.vocabulary_books') });
-        
-        // 添加按钮容器
-        const buttonContainer = headerContainer.createDiv({ cls: 'hi-words-button-container' });
-        
-        // 使用 Obsidian 的 ButtonComponent 创建按钮
-        const addButton = new Setting(buttonContainer)
+        // 添加标题 - 使用 Obsidian 推荐的设置标题样式
+        new Setting(containerEl)
+            .setName(t('settings.vocabulary_books'))
+            .setHeading();
+            
+        // 添加生词本按钮 - 使用默认的 setting-item 样式
+        new Setting(containerEl)
+            .setName(t('settings.add_vocabulary_book'))
+            .setDesc('')
             .addButton(button => button
                 .setIcon('plus-circle')
                 .setTooltip(t('settings.add_vocabulary_book'))
-                .setCta()
                 .onClick(() => this.showCanvasFilePicker())
             );
-        
-        // 移除 Setting 组件的默认样式
-        addButton.settingEl.classList.add('hi-words-add-button-setting');
-        addButton.infoEl.remove();
 
         // 显示现有生词本
         this.displayVocabularyBooks();
@@ -229,7 +220,9 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         const stats = this.plugin.vocabularyManager.getStats();
         
-        containerEl.createEl('h3', { text: t('settings.statistics') });
+        new Setting(containerEl)
+            .setName(t('settings.statistics'))
+            .setHeading();
         
         const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
         statsEl.createEl('p', { text: t('settings.total_books').replace('{0}', stats.totalBooks.toString()) });

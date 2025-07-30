@@ -6,7 +6,6 @@ export default {
     
     // 设置
     settings: {
-        title: "生词本设置",
         vocabulary_books: "生词本",
         add_vocabulary_book: "添加生词本",
         remove_vocabulary_book: "移除",
