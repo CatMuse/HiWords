@@ -127,7 +127,6 @@ export default class HiWordsPlugin extends Plugin {
                     if (isVocabBook) {
                         // 只记录文件路径，不立即解析
                         modifiedCanvasFiles.add(file.path);
-                        console.log(`Canvas文件已修改，待解析: ${file.path}`);
                     }
                 }
             })
@@ -145,9 +144,6 @@ export default class HiWordsPlugin extends Plugin {
                     modifiedCanvasFiles.has(activeCanvasFile) && 
                     (!activeFile || activeFile.path !== activeCanvasFile)) {
                     
-                    console.log(`Canvas文件失去焦点，开始解析: ${activeCanvasFile}`);
-                    
-                    // 解析该文件
                     await this.vocabularyManager.reloadVocabularyBook(activeCanvasFile);
                     this.refreshHighlighter();
                     
@@ -163,8 +159,6 @@ export default class HiWordsPlugin extends Plugin {
                     
                     // 如果切换到非Canvas文件，处理所有待解析的文件
                     if (modifiedCanvasFiles.size > 0) {
-                        console.log(`处理所有待解析的Canvas文件，共${modifiedCanvasFiles.size}个`);
-                        
                         // 创建一个副本并清空原集合
                         const filesToProcess = Array.from(modifiedCanvasFiles);
                         modifiedCanvasFiles.clear();

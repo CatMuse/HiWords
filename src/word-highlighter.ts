@@ -83,12 +83,6 @@ export class WordHighlighter implements PluginValue {
                 this.wordTrie.addWord(word, definition);
             }
         }
-        
-        const endTime = performance.now();
-        const duration = endTime - startTime;
-        if (duration > PERFORMANCE_THRESHOLD) {
-            console.log(`构建前缀树耗时: ${duration.toFixed(2)}ms，单词数量: ${words.length}`);
-        }
     }
 
     update(update: ViewUpdate) {
@@ -171,12 +165,6 @@ export class WordHighlighter implements PluginValue {
         // 应用装饰
         this.applyDecorations(builder, filteredMatches);
         
-        const endTime = performance.now();
-        const duration = endTime - startTime;
-        if (duration > PERFORMANCE_THRESHOLD) {
-            console.log(`构建装饰器耗时: ${duration.toFixed(2)}ms，匹配数量: ${matches.length}，过滤后: ${filteredMatches.length}`);
-        }
-        
         return builder.finish();
     }
     
@@ -250,12 +238,6 @@ export class WordHighlighter implements PluginValue {
                         color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)')
                     });
                 }
-            }
-            
-            const endTime = performance.now();
-            const duration = endTime - startTime;
-            if (duration > PERFORMANCE_THRESHOLD) {
-                console.log(`单词匹配耗时: ${duration.toFixed(2)}ms，文本长度: ${text.length}，匹配数量: ${matches.length}`);
             }
         } catch (e) {
             console.error('在 findWordMatches 中发生错误:', e);

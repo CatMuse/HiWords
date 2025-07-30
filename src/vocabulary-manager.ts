@@ -21,9 +21,6 @@ export class VocabularyManager {
         this.canvasParser = new CanvasParser(app);
         this.canvasEditor = new CanvasEditor(app);
         this.settings = settings;
-        
-        // 性能监控
-        console.log("VocabularyManager 初始化");
     }
 
     /**
@@ -45,7 +42,6 @@ export class VocabularyManager {
         this.rebuildCache();
         
         const endTime = performance.now();
-        console.log(`加载所有词汇本耗时: ${(endTime - startTime).toFixed(2)}ms`);
     }
 
     /**
@@ -74,7 +70,6 @@ export class VocabularyManager {
             this.invalidateCache();
             
             const endTime = performance.now();
-            console.log(`加载词汇本 ${book.name} 耗时: ${(endTime - startTime).toFixed(2)}ms，单词数量: ${definitions.length}`);
         } catch (error) {
             console.error(`Failed to load vocabulary book ${book.name}:`, error);
         }
@@ -317,9 +312,6 @@ export class VocabularyManager {
         
         // 标记缓存为有效
         this.cacheValid = true;
-        
-        const endTime = performance.now();
-        console.log(`重建缓存耗时: ${(endTime - startTime).toFixed(2)}ms，单词总数: ${this.allWordsCache.length}`);
     }
     
     /**
