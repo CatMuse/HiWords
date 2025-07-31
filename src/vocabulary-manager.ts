@@ -207,7 +207,12 @@ export class VocabularyManager {
     getStats(): { totalBooks: number; enabledBooks: number; totalWords: number } {
         const totalBooks = this.settings.vocabularyBooks.length;
         const enabledBooks = this.settings.vocabularyBooks.filter(b => b.enabled).length;
-        const totalWords = this.getAllWords().length;
+        
+        // 只统计主单词，不包含别名
+        let totalWords = 0;
+        for (const definitions of this.definitions.values()) {
+            totalWords += definitions.length;
+        }
         
         return { totalBooks, enabledBooks, totalWords };
     }
