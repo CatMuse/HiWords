@@ -66,7 +66,7 @@
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     padding: 10px 14px;
-    max-width: 420px;
+    max-width: 400px;
     font-size: 14px;
     animation: hi-words-tooltip-fade-in 0.2s ease;
     transition: opacity 0.2s ease;
@@ -86,7 +86,7 @@
 }
 
 .hi-words-tooltip-content {
-    color: var(--text-normal);
+    color: var(--text-muted);
     line-height: 1.5;
     font-size: 14px;
     margin-bottom: 6px;
@@ -94,7 +94,7 @@
 
 .hi-words-tooltip-source {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-faint);
     margin-top: 6px;
     padding-top: 4px;
 }
@@ -325,7 +325,7 @@
 
 .hi-words-word-text {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-normal);
     letter-spacing: 0.5px;
 }
@@ -338,14 +338,14 @@
 
 .hi-words-source-text {
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--text-faint);
     font-weight: 400;
     text-transform: uppercase;
 }
 
 .hi-words-word-definition {
     font-size: 14px;
-    color: var(--text-normal);
+    color: var(--text-muted);
     line-height: 1.5;
     margin-top: 8px;
     position: relative;

@@ -203,8 +203,6 @@ export default class HiWordsPlugin extends Plugin {
         );
     }
 
-    // 状态栏功能已删除
-
     /**
      * 刷新高亮器
      */
@@ -267,8 +265,6 @@ export default class HiWordsPlugin extends Plugin {
         }
     }
 
-
-
     /**
      * 加载设置
      */
@@ -310,7 +306,3 @@ export default class HiWordsPlugin extends Plugin {
         this.vocabularyManager.clear();
     }
 }
-
-
-
-
