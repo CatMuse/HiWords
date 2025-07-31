@@ -314,6 +314,10 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.hi-words-word-card:hover .hi-words-word-definition {
+    color: var(--text-normal);
+}
+
 .hi-words-word-title {
     margin-bottom: 4px;
     display: flex;
