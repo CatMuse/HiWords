@@ -152,7 +152,6 @@ export class AddWordModal extends Modal {
             }
             
             // 显示加载中提示
-            // 显示加载中提示
             const loadingNotice = this.isEditMode ? 
                 new Notice(t('notices.updating_word'), 0) : 
                 new Notice(t('notices.adding_word'), 0);

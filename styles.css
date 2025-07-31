@@ -309,13 +309,9 @@
     overflow: hidden;
 }
 
-.hi-words-word-card:hover,
-.hi-words-word-card-hover {
-    background: var(--word-card-bg-color, var(--background-modifier-hover));
-    border-color: var(--word-card-accent-color, var(--text-muted));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+.hi-words-word-card:hover {
     transform: translateY(-2px) scale(1.01);
-    filter: brightness(1.05) saturate(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .hi-words-word-title {
@@ -393,8 +389,7 @@
         gap: 12px;
     }
     
-    .hi-words-word-card:hover,
-    .hi-words-word-card-hover {
+    .hi-words-word-card:hover {
         transform: none; /* 移动设备上禁用变形效果 */
     }
 }

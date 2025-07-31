@@ -98,23 +98,30 @@ export class HiWordsSidebarView extends ItemView {
             const foundWords: WordDefinition[] = [];
             const allWords = this.plugin.vocabularyManager.getAllWords();
 
-            // 扫描文档内容，查找生词
+            // 创建一个数组来存储找到的单词及其位置
+            const foundWordsWithPosition: { wordDef: WordDefinition, position: number }[] = [];
+            
+            // 扫描文档内容，查找生词并记录位置
             for (const word of allWords) {
                 const regex = new RegExp(`\\b${this.escapeRegExp(word)}\\b`, 'gi');
-                if (regex.test(content)) {
+                const match = regex.exec(content);
+                if (match) {
                     const definition = this.plugin.vocabularyManager.getDefinition(word);
                     if (definition) {
                         // 避免重复添加
-                        if (!foundWords.some(w => w.word === definition.word)) {
-                            foundWords.push(definition);
+                        if (!foundWordsWithPosition.some(w => w.wordDef.word === definition.word)) {
+                            foundWordsWithPosition.push({
+                                wordDef: definition,
+                                position: match.index
+                            });
                         }
                     }
                 }
             }
 
-            // 按字母顺序排序
-            foundWords.sort((a, b) => a.word.localeCompare(b.word));
-            this.currentWords = foundWords;
+            // 按照单词在文档中首次出现的位置排序
+            foundWordsWithPosition.sort((a, b) => a.position - b.position);
+            this.currentWords = foundWordsWithPosition.map(item => item.wordDef);
         } catch (error) {
             console.error('Failed to scan document:', error);
             this.currentWords = [];
@@ -210,13 +217,6 @@ export class HiWordsSidebarView extends ItemView {
         const bookName = this.getBookNameFromPath(wordDef.source);
         source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
 
-        // 添加悬停效果
-        card.onmouseenter = () => {
-            card.addClass('hi-words-word-card-hover');
-        };
-        card.onmouseleave = () => {
-            card.removeClass('hi-words-word-card-hover');
-        };
     }
 
     /**
