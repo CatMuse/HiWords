@@ -35,13 +35,6 @@ export class CanvasEditor {
                 return false;
             }
             
-            // 限制别名数量
-            const maxAliases = 10;
-            if (aliases && aliases.length > maxAliases) {
-                console.warn(`别名数量超过限制，将只使用前 ${maxAliases} 个别名`);
-                aliases = aliases.slice(0, maxAliases);
-            }
-            
             // 过滤空别名
             if (aliases) {
                 aliases = aliases.filter(alias => alias && alias.trim().length > 0);
@@ -129,13 +122,6 @@ export class CanvasEditor {
             if (!file || !(file instanceof TFile) || !CanvasParser.isCanvasFile(file)) {
                 console.error(`无效的 Canvas 文件: ${bookPath}`);
                 return false;
-            }
-            
-            // 限制别名数量
-            const maxAliases = 10;
-            if (aliases && aliases.length > maxAliases) {
-                console.warn(`别名数量超过限制，将只使用前 ${maxAliases} 个别名`);
-                aliases = aliases.slice(0, maxAliases);
             }
             
             // 过滤空别名
