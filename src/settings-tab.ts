@@ -69,32 +69,18 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.refreshHighlighter();
                 }));
 
-        // 已掌握功能设置组
-        new Setting(containerEl)
-            .setName('已掌握功能')
-            .setHeading();
-
         // 启用已掌握功能
         new Setting(containerEl)
             .setName('启用已掌握功能')
-            .setDesc('允许标记单词为已掌握状态，已掌握的单词将不再高亮显示')
+            .setDesc('启用后可以标记单词为已掌握状态，已掌握的单词将不再高亮显示，侧边栏将按分组显示单词')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableMasteredFeature)
                 .onChange(async (value) => {
                     this.plugin.settings.enableMasteredFeature = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHighlighter();
-                }));
-
-        // 在侧边栏显示已掌握单词
-        new Setting(containerEl)
-            .setName('在侧边栏显示已掌握单词')
-            .setDesc('在侧边栏单独显示已掌握的单词分组')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showMasteredInSidebar)
-                .onChange(async (value) => {
+                    // 当启用已掌握功能时，自动启用侧边栏分组显示
                     this.plugin.settings.showMasteredInSidebar = value;
                     await this.plugin.saveSettings();
+                    this.plugin.refreshHighlighter();
                     // 触发侧边栏更新
                     this.plugin.app.workspace.trigger('hi-words:mastered-changed');
                 }));

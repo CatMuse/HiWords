@@ -189,10 +189,10 @@ export class HiWordsSidebarView extends ItemView {
             cls: `hi-words-tab ${this.activeTab === 'learning' ? 'active' : ''}`,
             attr: { 'data-tab': 'learning' }
         });
-        learningTab.createEl('span', { text: `待学习 (${learningCount})` });
+        learningTab.createEl('span', { text: `单词本 (${learningCount})` });
         
         // 已掌握 Tab (只有在启用功能时显示)
-        if (this.plugin.settings.enableMasteredFeature && this.plugin.settings.showMasteredInSidebar) {
+        if (this.plugin.settings.enableMasteredFeature) {
             const masteredTab = tabNav.createEl('div', { 
                 cls: `hi-words-tab ${this.activeTab === 'mastered' ? 'active' : ''}`,
                 attr: { 'data-tab': 'mastered' }
