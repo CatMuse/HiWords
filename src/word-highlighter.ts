@@ -28,6 +28,45 @@ const PERFORMANCE_THRESHOLD = 100;
 // 状态效果：强制更新高亮
 const forceUpdateEffect = StateEffect.define<boolean>();
 
+// 全局高亮器管理器
+class HighlighterManager {
+    private static instance: HighlighterManager;
+    private highlighters: Set<WordHighlighter> = new Set();
+    
+    static getInstance(): HighlighterManager {
+        if (!HighlighterManager.instance) {
+            HighlighterManager.instance = new HighlighterManager();
+        }
+        return HighlighterManager.instance;
+    }
+    
+    register(highlighter: WordHighlighter): void {
+        this.highlighters.add(highlighter);
+    }
+    
+    unregister(highlighter: WordHighlighter): void {
+        this.highlighters.delete(highlighter);
+    }
+    
+    refreshAll(): void {
+        console.log(`刷新 ${this.highlighters.size} 个高亮器实例`);
+        this.highlighters.forEach(highlighter => {
+            try {
+                highlighter.forceUpdate();
+            } catch (error) {
+                console.error('刷新高亮器失败:', error);
+            }
+        });
+    }
+    
+    clear(): void {
+        this.highlighters.clear();
+    }
+}
+
+// 导出全局实例
+export const highlighterManager = HighlighterManager.getInstance();
+
 // 状态字段：存储当前高亮的词汇
 const highlightState = StateField.define<DecorationSet>({
     create() {
@@ -64,6 +103,9 @@ export class WordHighlighter implements PluginValue {
         this.wordTrie = new Trie();
         this.buildWordTrie();
         this.decorations = this.buildDecorations(view);
+        
+        // 注册到全局管理器
+        highlighterManager.register(this);
     }
 
     /**
@@ -287,6 +329,9 @@ export class WordHighlighter implements PluginValue {
         
         this.cachedMatches.clear();
         this.wordTrie.clear();
+        
+        // 从全局管理器中注销
+        highlighterManager.unregister(this);
     }
 }
 

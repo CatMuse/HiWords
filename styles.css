@@ -221,11 +221,18 @@
 .modal-button-container {
     margin-top: 16px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .modal-button-container button.mod-cta {
     margin-left: 8px;
+}
+
+/* 按钮容器左右分组 */
+.modal-button-container .button-group-right {
+    display: flex;
+    gap: 8px;
 }
 
 /* 表单元素样式 */

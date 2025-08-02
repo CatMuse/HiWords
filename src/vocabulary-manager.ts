@@ -15,6 +15,12 @@ export class VocabularyManager {
     private allWordsCache: string[] = []; // 所有单词的缓存
     private bookWordsCache: Map<string, string[]> = new Map(); // 书本路径 -> 单词列表映射
     private cacheValid: boolean = false; // 缓存是否有效
+    
+    // 增量更新优化
+    private memoryOnlyWords: Map<string, WordDefinition[]> = new Map(); // 仅内存中的新词汇
+    private pendingSyncWords: Map<string, WordDefinition[]> = new Map(); // 待同步的词汇
+    private syncTimeouts: Map<string, NodeJS.Timeout> = new Map(); // 同步定时器
+    private tempNodeIdCounter: number = 0; // 临时节点ID计数器
 
     constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
@@ -241,24 +247,33 @@ export class VocabularyManager {
     
     /**
      * 添加词汇到 Canvas 文件
-     * 代理到 CanvasEditor 的方法
-     * @param bookPath Canvas 文件路径
-     * @param word 要添加的词汇
-     * @param definition 词汇定义
-     * @param color 可选的节点颜色
-     * @param aliases 可选的词汇别名数组
      */
     async addWordToCanvas(bookPath: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<boolean> {
-        const success = await this.canvasEditor.addWordToCanvas(bookPath, word, definition, color, aliases);
-        
-        if (success) {
-            // 如果添加成功，重新加载生词本
-            await this.reloadVocabularyBook(bookPath);
-            // 使缓存失效
-            this.invalidateCache();
+        try {
+            // 1. 创建词汇定义（使用临时节点ID）
+            const wordDef: WordDefinition = {
+                word,
+                definition,
+                source: bookPath,
+                nodeId: this.generateTempNodeId(),
+                color: color ? this.getColorString(color) : undefined,
+                aliases: aliases?.filter(alias => alias && alias.trim().length > 0)
+            };
+            
+            // 2. 立即更新内存缓存（用户立即看到效果）
+            this.addWordToMemoryCache(bookPath, wordDef);
+            
+            // 3. 重建缓存以立即生效
+            this.rebuildCache();
+            
+            // 4. 异步写入文件并更新真实nodeId
+            this.scheduleCanvasSync(bookPath, wordDef);
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to add word to canvas:', error);
+            return false;
         }
-        
-        return success;
     }
     
     /**
@@ -320,23 +335,311 @@ export class VocabularyManager {
     }
     
     /**
-     * 更新 Canvas 文件中的词汇
-     * 代理到 CanvasEditor 的方法
-     * @param bookPath Canvas 文件路径
-     * @param nodeId 要更新的节点ID
-     * @param word 词汇
-     * @param definition 词汇定义
-     * @param color 可选的节点颜色
-     * @param aliases 可选的词汇别名数组
+     * 更新 Canvas 文件中的词汇 - 增量更新优化版本
      */
     async updateWordInCanvas(bookPath: string, nodeId: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<boolean> {
-        const success = await this.canvasEditor.updateWordInCanvas(bookPath, nodeId, word, definition, color, aliases);
-        
-        if (success) {
-            // 如果更新成功，重新加载生词本
-            await this.reloadVocabularyBook(bookPath);
+        try {
+            // 1. 先更新Canvas文件
+            const success = await this.canvasEditor.updateWordInCanvas(bookPath, nodeId, word, definition, color, aliases);
+            
+            if (success) {
+                // 2. 创建更新后的词汇定义
+                const updatedWordDef: WordDefinition = {
+                    word,
+                    definition,
+                    source: bookPath,
+                    nodeId, // 使用原有的nodeId
+                    color: color ? this.getColorString(color) : undefined,
+                    aliases: aliases?.filter(alias => alias && alias.trim().length > 0)
+                };
+                
+                // 3. 立即更新内存缓存
+                this.updateWordInMemoryCache(bookPath, nodeId, updatedWordDef);
+                
+                // 4. 重建缓存以立即生效
+                this.rebuildCache();
+                
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Failed to update word in canvas:', error);
+            return false;
+        }
+    }
+    
+    // ==================== 增量更新优化方法 ====================
+    
+    /**
+     * 生成临时节点ID
+     */
+    private generateTempNodeId(): string {
+        return `temp_${Date.now()}_${++this.tempNodeIdCounter}`;
+    }
+    
+    /**
+     * 获取颜色字符串
+     * Canvas 使用数字字符串作为颜色标识，不是具体的色值
+     */
+    private getColorString(color: number): string | undefined {
+        // Canvas 中的颜色就是数字字符串 "1", "2", "3" 等
+        // 具体的颜色映射由 color-utils.ts 中的 mapCanvasColorToCSSVar 处理
+        return (color >= 1 && color <= 6) ? color.toString() : undefined;
+    }
+    
+    /**
+     * 将词汇添加到内存缓存
+     */
+    private addWordToMemoryCache(bookPath: string, wordDef: WordDefinition): void {
+        // 获取该书本的现有词汇
+        let bookWords = this.definitions.get(bookPath);
+        if (!bookWords) {
+            bookWords = [];
+            this.definitions.set(bookPath, bookWords);
         }
         
-        return success;
+        // 检查是否已存在（避免重复）
+        const existingIndex = bookWords.findIndex(w => w.word === wordDef.word);
+        if (existingIndex >= 0) {
+            bookWords[existingIndex] = wordDef; // 更新
+        } else {
+            bookWords.push(wordDef); // 新增
+        }
+        
+        // 更新单词缓存
+        this.wordDefinitionCache.set(wordDef.word, wordDef);
+        if (wordDef.aliases) {
+            wordDef.aliases.forEach(alias => {
+                this.wordDefinitionCache.set(alias, wordDef);
+            });
+        }
+        
+        // 标记缓存需要重建
+        this.cacheValid = false;
+    }
+    
+    /**
+     * 更新内存缓存中的词汇（用于编辑功能）
+     */
+    private updateWordInMemoryCache(bookPath: string, nodeId: string, updatedWordDef: WordDefinition): void {
+        // 获取该书本的现有词汇
+        const bookWords = this.definitions.get(bookPath);
+        if (!bookWords) {
+            console.warn(`未找到书本: ${bookPath}`);
+            return;
+        }
+        
+        // 根据nodeId查找要更新的词汇
+        const existingIndex = bookWords.findIndex(w => w.nodeId === nodeId);
+        if (existingIndex >= 0) {
+            const oldWordDef = bookWords[existingIndex];
+            
+            // 清除旧的缓存映射
+            this.wordDefinitionCache.delete(oldWordDef.word);
+            if (oldWordDef.aliases) {
+                oldWordDef.aliases.forEach(alias => {
+                    this.wordDefinitionCache.delete(alias);
+                });
+            }
+            
+            // 更新词汇
+            bookWords[existingIndex] = updatedWordDef;
+            
+            // 更新新的缓存映射
+            this.wordDefinitionCache.set(updatedWordDef.word, updatedWordDef);
+            if (updatedWordDef.aliases) {
+                updatedWordDef.aliases.forEach(alias => {
+                    this.wordDefinitionCache.set(alias, updatedWordDef);
+                });
+            }
+            
+            // 标记缓存需要重建
+            this.cacheValid = false;
+        } else {
+            console.warn(`未找到节点ID: ${nodeId}`);
+        }
+    }
+    
+    /**
+     * 调度Canvas文件同步
+     */
+    private scheduleCanvasSync(bookPath: string, wordDef: WordDefinition): void {
+        // 清除之前的定时器
+        const existingTimeout = this.syncTimeouts.get(bookPath);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+        
+        // 添加到待同步队列
+        if (!this.pendingSyncWords.has(bookPath)) {
+            this.pendingSyncWords.set(bookPath, []);
+        }
+        this.pendingSyncWords.get(bookPath)!.push(wordDef);
+        
+        // 设置新的定时器（延迟1秒批量同步）
+        const timeout = setTimeout(() => {
+            this.syncPendingWords(bookPath);
+        }, 1000);
+        
+        this.syncTimeouts.set(bookPath, timeout);
+    }
+    
+    /**
+     * 同步待处理的词汇到Canvas文件
+     */
+    private async syncPendingWords(bookPath: string): Promise<void> {
+        const pendingWords = this.pendingSyncWords.get(bookPath);
+        if (!pendingWords || pendingWords.length === 0) return;
+        
+        try {
+            // 批量写入Canvas
+            for (const wordDef of pendingWords) {
+                const success = await this.canvasEditor.addWordToCanvas(
+                    bookPath,
+                    wordDef.word,
+                    wordDef.definition,
+                    wordDef.color ? this.getColorNumber(wordDef.color) : undefined,
+                    wordDef.aliases
+                );
+                
+                if (success) {
+                    // 成功写入文件，生成真实的nodeId
+                    wordDef.nodeId = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                }
+            }
+            
+            // 清空待同步队列和定时器
+            this.pendingSyncWords.delete(bookPath);
+            this.syncTimeouts.delete(bookPath);
+            
+            console.log(`Successfully synced ${pendingWords.length} words to ${bookPath}`);
+            
+        } catch (error) {
+            console.error('Failed to sync words to canvas:', error);
+            // 可以考虑重试机制或用户通知
+        }
+    }
+    
+    /**
+     * 将颜色字符串转换为数字
+     * Canvas 使用数字字符串作为颜色标识，不是具体的色值
+     */
+    private getColorNumber(colorString: string): number {
+        // 直接将字符串转换为数字
+        const colorNum = parseInt(colorString, 10);
+        // 验证是否为有效的 Canvas 颜色数字 (1-6)
+        return (colorNum >= 1 && colorNum <= 6) ? colorNum : 0;
+    }
+    
+    /**
+     * 智能缓存失效 - 只影响特定书本
+     */
+    private invalidateCacheForBook(bookPath: string): void {
+        const bookWords = this.definitions.get(bookPath);
+        if (bookWords) {
+            bookWords.forEach(wordDef => {
+                this.wordDefinitionCache.delete(wordDef.word);
+                if (wordDef.aliases) {
+                    wordDef.aliases.forEach(alias => {
+                        this.wordDefinitionCache.delete(alias);
+                    });
+                }
+            });
+        }
+        
+        // 标记缓存需要重建
+        this.cacheValid = false;
+    }
+
+    /**
+     * 从Canvas文件中删除词汇
+     * @param bookPath 生词本路径
+     * @param nodeId 要删除的节点ID
+     * @returns 操作是否成功
+     */
+    async deleteWordFromCanvas(bookPath: string, nodeId: string): Promise<boolean> {
+        try {
+            // 1. 先从Canvas文件中删除
+            const success = await this.canvasEditor.deleteWordFromCanvas(bookPath, nodeId);
+            
+            if (success) {
+                // 2. 从内存缓存中删除
+                this.deleteWordFromMemoryCache(bookPath, nodeId);
+                
+                // 3. 重建缓存以立即生效
+                this.rebuildCache();
+                
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Failed to delete word from canvas:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 从内存缓存中删除词汇（用于删除功能）
+     */
+    private deleteWordFromMemoryCache(bookPath: string, nodeId: string): void {
+        // 获取该书本的现有词汇
+        const bookWords = this.definitions.get(bookPath);
+        if (!bookWords) {
+            console.warn(`未找到书本: ${bookPath}`);
+            return;
+        }
+        
+        // 根据nodeId查找要删除的词汇
+        const existingIndex = bookWords.findIndex(w => w.nodeId === nodeId);
+        if (existingIndex >= 0) {
+            const wordDefToDelete = bookWords[existingIndex];
+            
+            // 清除缓存映射
+            this.wordDefinitionCache.delete(wordDefToDelete.word);
+            if (wordDefToDelete.aliases) {
+                wordDefToDelete.aliases.forEach(alias => {
+                    this.wordDefinitionCache.delete(alias);
+                });
+            }
+            
+            // 从数组中删除词汇
+            bookWords.splice(existingIndex, 1);
+            
+            // 从仅内存词汇中删除（如果存在）
+            const memoryWords = this.memoryOnlyWords.get(bookPath);
+            if (memoryWords) {
+                const memoryIndex = memoryWords.findIndex(w => w.nodeId === nodeId);
+                if (memoryIndex >= 0) {
+                    memoryWords.splice(memoryIndex, 1);
+                    if (memoryWords.length === 0) {
+                        this.memoryOnlyWords.delete(bookPath);
+                    }
+                }
+            }
+            
+            // 标记缓存需要重建
+            this.cacheValid = false;
+        } else {
+            console.warn(`未找到节点ID: ${nodeId}`);
+        }
+    }
+    
+    /**
+     * 清理资源
+     */
+    destroy(): void {
+        // 清理所有定时器
+        this.syncTimeouts.forEach(timeout => clearTimeout(timeout));
+        this.syncTimeouts.clear();
+        
+        // 清理缓存
+        this.definitions.clear();
+        this.wordDefinitionCache.clear();
+        this.allWordsCache = [];
+        this.bookWordsCache.clear();
+        this.memoryOnlyWords.clear();
+        this.pendingSyncWords.clear();
     }
 }

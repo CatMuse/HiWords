@@ -8,6 +8,7 @@ import { HiWordsSettingTab } from './src/settings-tab';
 import { HiWordsSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
 import { AddWordModal } from './src/add-word-modal';
 import { i18n, t } from './src/i18n';
+import { highlighterManager } from './src/word-highlighter';
 
 // 默认设置
 const DEFAULT_SETTINGS: HiWordsSettings = {
@@ -208,18 +209,8 @@ export default class HiWordsPlugin extends Plugin {
      */
     refreshHighlighter() {
         if (this.settings.enableAutoHighlight) {
-            // 强制更新所有编辑器视图
-            this.app.workspace.iterateAllLeaves(leaf => {
-                if (leaf.view instanceof MarkdownView) {
-                    const editor = leaf.view.editor;
-                    // @ts-ignore
-                    const cm = editor.cm;
-                    if (cm) {
-                        // 触发重新渲染
-                        cm.dispatch({ effects: [] });
-                    }
-                }
-            });
+            // 使用全局高亮器管理器刷新所有高亮器实例
+            highlighterManager.refreshAll();
         }
         
         // 刷新侧边栏视图
@@ -304,5 +295,11 @@ export default class HiWordsPlugin extends Plugin {
     onunload() {
         this.definitionPopover.unload();
         this.vocabularyManager.clear();
+        // 清理增量更新相关资源
+        if (this.vocabularyManager.destroy) {
+            this.vocabularyManager.destroy();
+        }
+        // 清理全局高亮器管理器
+        highlighterManager.clear();
     }
 }

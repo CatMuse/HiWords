@@ -176,4 +176,48 @@ export class CanvasEditor {
             return false;
         }
     }
+
+    /**
+     * 从 Canvas 文件中删除词汇
+     * @param bookPath Canvas 文件路径
+     * @param nodeId 要删除的节点ID
+     * @returns 操作是否成功
+     */
+    async deleteWordFromCanvas(bookPath: string, nodeId: string): Promise<boolean> {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(bookPath);
+            
+            if (!file || !(file instanceof TFile) || !CanvasParser.isCanvasFile(file)) {
+                console.error(`无效的 Canvas 文件: ${bookPath}`);
+                return false;
+            }
+            
+            // 读取 Canvas 文件内容
+            const content = await this.app.vault.read(file);
+            const canvasData: CanvasData = JSON.parse(content);
+            
+            if (!Array.isArray(canvasData.nodes)) {
+                console.error(`Canvas 文件格式无效: ${bookPath}`);
+                return false;
+            }
+            
+            // 查找要删除的节点
+            const nodeIndex = canvasData.nodes.findIndex(node => node.id === nodeId);
+            if (nodeIndex === -1) {
+                console.warn(`未找到要删除的节点: ${nodeId}`);
+                return false;
+            }
+            
+            // 删除节点
+            canvasData.nodes.splice(nodeIndex, 1);
+            
+            // 保存更新后的 Canvas 文件
+            await this.app.vault.modify(file, JSON.stringify(canvasData, null, 2));
+            
+            return true;
+        } catch (error) {
+            console.error(`从 Canvas 中删除词汇失败: ${error}`);
+            return false;
+        }
+    }
 }

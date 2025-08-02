@@ -1,4 +1,4 @@
-import { App, Modal, Notice } from 'obsidian';
+import { App, Modal, Notice, setIcon } from 'obsidian';
 import type { VocabularyBook, WordDefinition } from './types';
 import HiWordsPlugin from '../main';
 import { t } from './i18n';
@@ -123,12 +123,55 @@ export class AddWordModal extends Modal {
         // 按钮
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         
-        const cancelButton = buttonContainer.createEl('button', { text: t('modals.cancel_button') });
+        // 在编辑模式下添加删除按钮（左侧）
+        if (this.isEditMode && this.definition) {
+            const deleteButton = buttonContainer.createEl('button', { 
+                cls: 'delete-word-button',
+                attr: { 'aria-label': '删除词汇', 'title': '删除词汇' }
+            });
+            // 使用 Obsidian 的 setIcon 方法
+            setIcon(deleteButton, 'trash');
+            deleteButton.onclick = async () => {
+                // 确认删除
+                const confirmed = await this.showDeleteConfirmation();
+                if (!confirmed) return;
+                
+                // 显示删除中提示
+                const loadingNotice = new Notice('正在删除词汇...', 0);
+                
+                try {
+                    const success = await this.plugin.vocabularyManager.deleteWordFromCanvas(
+                        this.definition!.source, 
+                        this.definition!.nodeId
+                    );
+                    
+                    loadingNotice.hide();
+                    
+                    if (success) {
+                        new Notice('词汇已删除');
+                        // 刷新高亮
+                        this.plugin.refreshHighlighter();
+                        this.close();
+                    } else {
+                        new Notice('删除词汇失败，请检查生词本文件');
+                    }
+                } catch (error) {
+                    loadingNotice.hide();
+                    console.error('删除词汇时发生错误:', error);
+                    new Notice('删除词汇时发生错误');
+                }
+            };
+        }
+        
+        // 创建右侧按钮组
+        const rightButtonGroup = buttonContainer.createDiv({ cls: 'button-group-right' });
+        
+        const cancelButton = rightButtonGroup.createEl('button', { text: t('modals.cancel_button') });
         cancelButton.onclick = () => this.close();
         
         // 根据模式显示不同的按钮文本
         const buttonTextKey = this.isEditMode ? 'modals.save_button' : 'modals.add_button';
-        const actionButton = buttonContainer.createEl('button', { text: t(buttonTextKey), cls: 'mod-cta' });
+        const actionButton = rightButtonGroup.createEl('button', { text: t(buttonTextKey), cls: 'mod-cta' });
         actionButton.onclick = async () => {
             const selectedBook = bookSelect.value;
             const definition = definitionInput.value;
@@ -214,6 +257,15 @@ export class AddWordModal extends Modal {
                 new Notice(t('notices.error_processing_word'));
             }
         };
+    }
+
+    /**
+     * 显示删除确认对话框
+     * @returns Promise<boolean> 用户是否确认删除
+     */
+    private async showDeleteConfirmation(): Promise<boolean> {
+        // 使用原生的 confirm 对话框，更简洁且符合 Obsidian 的设计原则
+        return window.confirm(`确定要删除词汇 "${this.word}" 吗？\n\n此操作不可撤销。`);
     }
     
     onClose() {
