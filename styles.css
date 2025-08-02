@@ -452,12 +452,12 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--text-muted);
+    color: var(--color-green);
 }
 
 .hi-words-title-mastered-button:hover {
     background-color: var(--background-modifier-hover);
-    color: var(--text-normal);
+    color: var(--text-accent);
 }
 
 .hi-words-title-mastered-button:active {
@@ -467,11 +467,11 @@
 
 /* 已掌握状态的按钮样式 */
 .hi-words-word-card-mastered .hi-words-title-mastered-button {
-    color: var(--color-green);
+    color: var(--text-normal);
 }
 
 .hi-words-word-card-mastered .hi-words-title-mastered-button:hover {
-    color: var(--color-green);
+    color: var(--text-accent);
     background-color: color-mix(in srgb, var(--color-green) 15%, transparent);
 }
 
