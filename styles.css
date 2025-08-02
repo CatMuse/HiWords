@@ -237,9 +237,15 @@
 }
 
 /* 按钮容器左右分组 */
+.modal-button-container .button-group-left {
+    display: flex;
+    gap: 8px;
+}
+
 .modal-button-container .button-group-right {
     display: flex;
     gap: 8px;
+    margin-left: auto; /* 确保右侧按钮组始终在右侧 */
 }
 
 /* 表单元素样式 */

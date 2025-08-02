@@ -123,9 +123,12 @@ export class AddWordModal extends Modal {
         // 按钮
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         
+        // 创建左侧容器（用于删除按钮或占位）
+        const leftButtonGroup = buttonContainer.createDiv({ cls: 'button-group-left' });
+        
         // 在编辑模式下添加删除按钮（左侧）
         if (this.isEditMode && this.definition) {
-            const deleteButton = buttonContainer.createEl('button', { 
+            const deleteButton = leftButtonGroup.createEl('button', { 
                 cls: 'delete-word-button',
                 attr: { 'aria-label': '删除词汇', 'title': '删除词汇' }
             });
