@@ -29,7 +29,9 @@ export default {
         enabled_books: "已启用生词本: {0}",
         total_words: "总词汇数量: {0}",
         enable_mastered_feature: "启用已掌握功能",
-        enable_mastered_feature_desc: "标记已掌握单词，不再高亮，侧边栏分组显示",
+        enable_mastered_feature_desc: "标记已掌握单词以停止高亮显示。侧边栏显示分组单词",
+        blur_definitions: "模糊内容",
+        blur_definitions_desc: "默认模糊显示内容，鼠标悬停时显示清晰内容。适合学习时先回忆再查看答案",
     },
     
     // 侧边栏
@@ -49,8 +51,8 @@ export default {
     // 命令
     commands: {
         refresh_vocabulary: "刷新生词本",
-        add_word: "添加单词到生词本",
-        edit_word: "编辑单词",
+        add_word: "HiWords: 添加单词",
+        edit_word: "HiWords: 编辑单词",
         show_sidebar: "显示 HiWords 侧边栏",
     },
     

@@ -166,6 +166,41 @@
     color: var(--text-muted);
 }
 
+/* 模糊定义内容功能 */
+.hi-words-definition.blur-enabled {
+    filter: blur(4px);
+    transition: filter 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.hi-words-definition.blur-enabled:hover {
+    filter: blur(0px);
+    user-select: text;
+}
+
+.hi-words-definition.blur-enabled::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--background-primary);
+    color: var(--text-muted);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    pointer-events: none;
+    opacity: 0.8;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.hi-words-definition.blur-enabled:hover::before {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
 /* 侧边栏单词卡片展开/收起按钮样式 */
 .hi-words-expand-btn {
     color: var(--text-accent);
@@ -496,13 +531,13 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--text-muted);
+    color: var(--color-green);
     flex-shrink: 0;
 }
 
 .hi-words-tooltip-title-mastered-button:hover {
     background-color: var(--background-modifier-hover);
-    color: var(--text-normal);
+    color: var(--text-accent);
 }
 
 .hi-words-tooltip-title-mastered-button:active {

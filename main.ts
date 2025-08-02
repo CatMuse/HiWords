@@ -18,7 +18,8 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     enableAutoHighlight: true,
     highlightStyle: 'underline', // 默认使用下划线样式
     enableMasteredFeature: true, // 默认启用已掌握功能
-    showMasteredInSidebar: true  // 跟随 enableMasteredFeature 的值
+    showMasteredInSidebar: true,  // 跟随 enableMasteredFeature 的值
+    blurDefinitions: false // 默认不启用模糊效果
 };
 
 export default class HiWordsPlugin extends Plugin {
@@ -45,7 +46,7 @@ export default class HiWordsPlugin extends Plugin {
         this.masteredService = new MasteredService(this, this.vocabularyManager);
         
         // 初始化定义弹出框
-        this.definitionPopover = new DefinitionPopover(this.app);
+        this.definitionPopover = new DefinitionPopover(this);
         this.definitionPopover.setVocabularyManager(this.vocabularyManager);
         this.definitionPopover.setMasteredService(this.masteredService);
         

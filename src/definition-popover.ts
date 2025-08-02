@@ -2,17 +2,20 @@ import { App, MarkdownRenderer, MarkdownView, Notice, setIcon } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
 import { MasteredService } from './mastered-service';
 import { t } from './i18n';
+import HiWordsPlugin from '../main';
 
 export class DefinitionPopover {
     private app: App;
+    private plugin: HiWordsPlugin;
     private activeTooltip: HTMLElement | null = null;
     private vocabularyManager: VocabularyManager | null = null;
     private masteredService: MasteredService | null = null;
     private eventHandlers: {[key: string]: EventListener} = {};
     private tooltipHideTimeout: number | undefined;
 
-    constructor(app: App) {
-        this.app = app;
+    constructor(plugin: HiWordsPlugin) {
+        this.app = plugin.app;
+        this.plugin = plugin;
 
         this.eventHandlers = {
             mouseover: this.handleMouseOver.bind(this),
@@ -204,6 +207,13 @@ export class DefinitionPopover {
         // 内容
         const contentEl = document.createElement('div');
         contentEl.className = 'hi-words-tooltip-content';
+        
+        // 如果启用了模糊效果，为内容添加模糊样式
+        if (this.plugin.settings.blurDefinitions) {
+            contentEl.classList.add('hi-words-definition', 'blur-enabled');
+        } else {
+            contentEl.classList.add('hi-words-definition');
+        }
 
         if (!definition || definition.trim() === '') {
             contentEl.textContent = t('sidebar.no_definition');

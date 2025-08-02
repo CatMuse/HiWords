@@ -85,6 +85,19 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.app.workspace.trigger('hi-words:mastered-changed');
                 }));
 
+        // 模糊定义内容
+        new Setting(containerEl)
+            .setName(t('settings.blur_definitions'))
+            .setDesc(t('settings.blur_definitions_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.blurDefinitions)
+                .onChange(async (value) => {
+                    this.plugin.settings.blurDefinitions = value;
+                    await this.plugin.saveSettings();
+                    // 触发侧边栏更新以应用模糊效果
+                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                }));
+
     }
 
     /**

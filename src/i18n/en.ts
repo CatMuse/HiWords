@@ -6,8 +6,8 @@ export default {
     
     // Settings
     settings: {
-        vocabulary_books: "Vocabulary books",
-        add_vocabulary_book: "Add vocabulary book",
+        vocabulary_books: "Word books",
+        add_vocabulary_book: "Add word book",
         remove_vocabulary_book: "Remove",
         show_definition_on_hover: "Show definition on hover",
         show_definition_on_hover_desc: "Show word definition when hovering over highlighted words",
@@ -23,13 +23,15 @@ export default {
         save_settings: "Save settings",
         no_vocabulary_books: "No vocabulary books yet. Please add a Canvas file as a vocabulary book.",
         path: "Path",
-        reload_book: "Reload this vocabulary book",
+        reload_book: "Reload this word book",
         statistics: "Statistics",
-        total_books: "Total vocabulary books: {0}",
-        enabled_books: "Enabled vocabulary books: {0}",
+        total_books: "Total word books: {0}",
+        enabled_books: "Enabled word books: {0}",
         total_words: "Total words: {0}",
         enable_mastered_feature: "Enable mastered feature",
         enable_mastered_feature_desc: "Mark mastered words to stop highlighting them. Sidebar shows grouped words",
+        blur_definitions: "Blur content",
+        blur_definitions_desc: "Blur content by default, reveal on hover. Great for learning—recall before seeing the answer",
     },
     
     // Sidebar
@@ -40,7 +42,7 @@ export default {
         found: "Found",
         words: "words",
         no_definition: "No definition available.",
-        vocabulary_book: "Vocabulary",
+        vocabulary_book: "Words",
         mastered: "Mastered",
         no_learning_words: "No words to learn",
         no_mastered_words: "No mastered words",
@@ -49,8 +51,8 @@ export default {
     // Commands
     commands: {
         refresh_vocabulary: "Refresh vocabulary",
-        add_word: "Add word to vocabulary",
-        edit_word: "Edit word",
+        add_word: "HiWords: Add word",
+        edit_word: "HiWords: Edit word",
         show_sidebar: "Show HiWords sidebar",
     },
     

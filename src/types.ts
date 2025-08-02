@@ -48,6 +48,7 @@ export interface HiWordsSettings {
     highlightStyle: HighlightStyle; // 高亮样式
     enableMasteredFeature: boolean; // 启用已掌握功能
     showMasteredInSidebar: boolean; // 在侧边栏显示已掌握单词
+    blurDefinitions: boolean; // 模糊定义内容，悬停时显示
 }
 
 // 词汇匹配信息

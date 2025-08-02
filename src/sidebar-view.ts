@@ -62,6 +62,20 @@ export class HiWordsSidebarView extends ItemView {
                 }
             })
         );
+        
+        // 监听已掌握功能状态变化
+        this.registerEvent(
+            this.app.workspace.on('hi-words:mastered-changed' as any, () => {
+                this.updateView();
+            })
+        );
+        
+        // 监听设置变化（如模糊效果开关）
+        this.registerEvent(
+            this.app.workspace.on('hi-words:settings-changed' as any, () => {
+                this.updateView();
+            })
+        );
     }
 
     async onClose() {
@@ -346,7 +360,9 @@ export class HiWordsSidebarView extends ItemView {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
             
             // 创建定义容器
-            const defContainer = definition.createEl('div', { cls: 'hi-words-definition' });
+            const defContainer = definition.createEl('div', { 
+                cls: this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition'
+            });
             
             // 不再限制定义长度，直接显示完整定义
             
