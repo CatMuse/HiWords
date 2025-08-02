@@ -1,11 +1,13 @@
-import { App, MarkdownRenderer, MarkdownView, Notice } from 'obsidian';
+import { App, MarkdownRenderer, MarkdownView, Notice, setIcon } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
+import { MasteredService } from './mastered-service';
 import { t } from './i18n';
 
 export class DefinitionPopover {
     private app: App;
     private activeTooltip: HTMLElement | null = null;
     private vocabularyManager: VocabularyManager | null = null;
+    private masteredService: MasteredService | null = null;
     private eventHandlers: {[key: string]: EventListener} = {};
     private tooltipHideTimeout: number | undefined;
 
@@ -117,6 +119,10 @@ export class DefinitionPopover {
         this.vocabularyManager = manager;
     }
 
+    setMasteredService(service: MasteredService) {
+        this.masteredService = service;
+    }
+
     private registerEvents() {
         document.addEventListener('mouseover', this.eventHandlers.mouseover);
         document.addEventListener('mouseout', this.eventHandlers.mouseout);
@@ -182,11 +188,18 @@ export class DefinitionPopover {
         const tooltip = document.createElement('div');
         tooltip.className = 'hi-words-tooltip';
 
-        // 标题
+        // 标题容器
+        const titleContainer = document.createElement('div');
+        titleContainer.className = 'hi-words-tooltip-title-container';
+        
+        // 标题文本
         const titleEl = document.createElement('div');
         titleEl.className = 'hi-words-tooltip-title';
         titleEl.textContent = word;
-        tooltip.appendChild(titleEl);
+        titleContainer.appendChild(titleEl);
+        
+        // 先添加标题容器
+        tooltip.appendChild(titleContainer);
 
         // 内容
         const contentEl = document.createElement('div');
@@ -194,9 +207,7 @@ export class DefinitionPopover {
 
         if (!definition || definition.trim() === '') {
             contentEl.textContent = t('sidebar.no_definition');
-            tooltip.appendChild(contentEl);
         } else {
-            tooltip.appendChild(contentEl);
             try {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (activeView && activeView.file) {
@@ -215,16 +226,56 @@ export class DefinitionPopover {
                 contentEl.textContent = definition;
             }
         }
+        tooltip.appendChild(contentEl);
 
+        // 添加已掌握按钮和源信息
         if (this.vocabularyManager) {
             const detailDef = this.vocabularyManager.getDefinition(word);
             if (detailDef && detailDef.source) {
+                // 已掌握按钮（添加到标题容器中）
+                if (this.masteredService && this.masteredService.isEnabled) {
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'hi-words-tooltip-title-mastered-button';
+                    // 移除 aria-label 以避免与弹出框重叠
+                    
+                    // 设置图标（未掌握显示smile供用户点击标记为已掌握，已掌握显示frown供用户点击取消）
+                    setIcon(buttonContainer, detailDef.mastered ? 'frown' : 'smile');
+                    
+                    // 添加点击事件
+                    buttonContainer.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        
+                        try {
+                            // 切换已掌握状态
+                            if (detailDef.mastered) {
+                                await this.masteredService!.unmarkWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
+                            } else {
+                                await this.masteredService!.markWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
+                            }
+                            
+
+                        } catch (error) {
+                            console.error('切换已掌握状态失败:', error);
+                        }
+                    });
+                    
+                    // 添加到标题容器
+                    titleContainer.appendChild(buttonContainer);
+                }
+                
+                // 创建底部容器（只包含源信息）
+                const footerEl = document.createElement('div');
+                footerEl.className = 'hi-words-tooltip-footer';
+                
+                // 源信息
                 const sourceEl = document.createElement('div');
                 sourceEl.className = 'hi-words-tooltip-source';
                 const fileName = detailDef.source.split('/').pop() || '';
                 const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
                 sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
-                tooltip.appendChild(sourceEl);
+                footerEl.appendChild(sourceEl);
+                
+                tooltip.appendChild(footerEl);
             }
         }
 

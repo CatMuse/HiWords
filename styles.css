@@ -67,6 +67,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     padding: 10px 14px;
     max-width: 400px;
+    min-width: 200px;
     font-size: 14px;
     animation: hi-words-tooltip-fade-in 0.2s ease;
     transition: opacity 0.2s ease;
@@ -83,6 +84,12 @@
     color: var(--text-accent);
     margin-bottom: 4px;
     padding-bottom: 4px;
+}
+
+/* 当标题在容器中时，移除下边距以保持对齐 */
+.hi-words-tooltip-title-container .hi-words-tooltip-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 .hi-words-tooltip-content {
@@ -274,33 +281,71 @@
 
 /* 侧边栏样式 */
 .hi-words-sidebar {
+    display: flex;
+    flex-direction: column;
     padding: 16px;
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
-.hi-words-sidebar-content {
+/* Tab 导航样式 */
+.hi-words-tab-nav {
+    display: flex;
+    flex-shrink: 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    border-radius: 6px 6px 0 0;
+    overflow: hidden;
+}
+
+.hi-words-tab {
     flex: 1;
-}
-
-.hi-words-sidebar-stats {
-    margin-bottom: 12px;
-    padding: 8px 12px;
-    background: var(--background-secondary);
-    border-radius: 6px;
+    padding: 12px 16px;
     text-align: center;
+    cursor: pointer;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-right: 1px solid var(--background-modifier-border);
+    position: relative;
 }
 
-.hi-words-stats-text {
-    font-size: 13px;
-    color: var(--text-muted);
-    font-weight: 500;
+.hi-words-tab:last-child {
+    border-right: none;
+}
+
+.hi-words-tab:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-tab.active {
+    background: var(--background-primary);
+    color: var(--text-accent);
+    font-weight: 600;
+}
+
+.hi-words-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--text-accent);
 }
 
 .hi-words-word-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .hi-words-word-card {
@@ -314,10 +359,13 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     position: relative;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
 .hi-words-word-card:hover {
-    transform: translateY(-2px) scale(1.01);
+    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
@@ -332,6 +380,76 @@
     justify-content: space-between;
     position: relative;
     z-index: 1;
+    width: 100%;
+    min-height: 24px;
+}
+
+.hi-words-title-mastered-button {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+}
+
+.hi-words-title-mastered-button:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-title-mastered-button:active {
+    background-color: var(--background-modifier-active);
+    transform: scale(0.95);
+}
+
+/* 已掌握状态的按钮样式 */
+.hi-words-word-card-mastered .hi-words-title-mastered-button {
+    color: var(--color-green);
+}
+
+.hi-words-word-card-mastered .hi-words-title-mastered-button:hover {
+    color: var(--color-green);
+    background-color: color-mix(in srgb, var(--color-green) 15%, transparent);
+}
+
+/* 弹出框标题容器样式 */
+.hi-words-tooltip-title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 24px;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+}
+
+/* 弹出框标题中的已掌握按钮样式 */
+.hi-words-tooltip-title-mastered-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.hi-words-tooltip-title-mastered-button:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-tooltip-title-mastered-button:active {
+    background-color: var(--background-modifier-active);
+    transform: scale(0.95);
 }
 
 .hi-words-word-text {
@@ -339,6 +457,9 @@
     font-weight: 700;
     color: var(--text-normal);
     letter-spacing: 0.5px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
 }
 
 .hi-words-word-source {
@@ -361,6 +482,9 @@
     margin-top: 8px;
     position: relative;
     z-index: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
 }
 
 /* 展开/收起按钮样式已删除 */
@@ -403,4 +527,137 @@
     .hi-words-word-card:hover {
         transform: none; /* 移动设备上禁用变形效果 */
     }
+}
+
+
+
+/* 已掌握分组样式 */
+.hi-words-mastered-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-mastered-section .hi-words-section-title {
+    color: var(--color-green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hi-words-mastered-section .hi-words-section-title svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-green);
+}
+
+.hi-words-mastered-word-card {
+    opacity: 0.8;
+    border-left: 3px solid var(--color-green);
+}
+
+.hi-words-mastered-word-card:hover {
+    opacity: 1;
+}
+
+/* 已掌握单词的特殊样式 */
+.hi-words-mastered-word-card .hi-words-word-text {
+    text-decoration: line-through;
+    text-decoration-color: var(--color-green);
+    text-decoration-thickness: 1px;
+}
+
+
+
+/* 侧边栏分组样式 */
+.hi-words-section {
+    margin-bottom: 20px;
+}
+
+.hi-words-mastered-section {
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.hi-words-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-section-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+
+.hi-words-section-text {
+    flex: 1;
+}
+
+/* 已掌握分组特殊样式 */
+.hi-words-mastered-section .hi-words-section-title {
+    color: var(--color-green);
+}
+
+.hi-words-mastered-section .hi-words-section-icon {
+    color: var(--color-green);
+}
+
+/* 单词卡片底部容器 */
+.hi-words-word-footer {
+    margin-top: 8px;
+}
+
+.hi-words-word-source {
+    flex: 1;
+    min-width: 0; /* 允许文本截断 */
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: background-color 0.2s ease;
+}
+
+.hi-words-word-source:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.hi-words-word-source:active {
+    background-color: var(--background-modifier-active);
+}
+
+
+
+/* 已掌握单词卡片样式 */
+.hi-words-word-card-mastered {
+    opacity: 0.7;
+    background-color: var(--background-secondary);
+}
+
+.hi-words-word-card-mastered .hi-words-word-text {
+    text-decoration: line-through;
+    text-decoration-color: var(--color-green);
+    text-decoration-thickness: 1px;
+    color: var(--text-muted);
+}
+
+.hi-words-word-card-mastered:hover {
+    opacity: 1;
+    background-color: var(--background-modifier-hover);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .hi-words-word-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+
 }

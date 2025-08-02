@@ -7,6 +7,7 @@ import { DefinitionPopover } from './src/definition-popover';
 import { HiWordsSettingTab } from './src/settings-tab';
 import { HiWordsSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
 import { AddWordModal } from './src/add-word-modal';
+import { MasteredService } from './src/mastered-service';
 import { i18n, t } from './src/i18n';
 import { highlighterManager } from './src/word-highlighter';
 
@@ -15,13 +16,16 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     vocabularyBooks: [],
     showDefinitionOnHover: true,
     enableAutoHighlight: true,
-    highlightStyle: 'underline' // 默认使用下划线样式
+    highlightStyle: 'underline', // 默认使用下划线样式
+    enableMasteredFeature: true, // 默认启用已掌握功能
+    showMasteredInSidebar: true  // 默认在侧边栏显示已掌握单词
 };
 
 export default class HiWordsPlugin extends Plugin {
     settings: HiWordsSettings;
     vocabularyManager: VocabularyManager;
     definitionPopover: DefinitionPopover;
+    masteredService: MasteredService;
     editorExtensions: Extension[] = [];
     highlighterInstance: WordHighlighter | null = null;
     private sidebarView: HiWordsSidebarView | null = null;
@@ -37,9 +41,13 @@ export default class HiWordsPlugin extends Plugin {
         // 初始化管理器
         this.vocabularyManager = new VocabularyManager(this.app, this.settings);
         
+        // 初始化已掌握服务
+        this.masteredService = new MasteredService(this, this.vocabularyManager);
+        
         // 初始化定义弹出框
         this.definitionPopover = new DefinitionPopover(this.app);
         this.definitionPopover.setVocabularyManager(this.vocabularyManager);
+        this.definitionPopover.setMasteredService(this.masteredService);
         
         // 加载生词本
         await this.vocabularyManager.loadAllVocabularyBooks();

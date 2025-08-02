@@ -96,7 +96,7 @@ export class CanvasEditor {
             canvasData.nodes.push(newNode);
             
             // 保存更新后的 Canvas 文件
-            await this.app.vault.modify(file, JSON.stringify(canvasData, null, 2));
+            await this.app.vault.modify(file, JSON.stringify(canvasData));
             
             return true;
         } catch (error) {
@@ -168,7 +168,7 @@ export class CanvasEditor {
             }
             
             // 保存更新后的 Canvas 文件
-            await this.app.vault.modify(file, JSON.stringify(canvasData, null, 2));
+            await this.app.vault.modify(file, JSON.stringify(canvasData));
             
             return true;
         } catch (error) {
@@ -212,7 +212,7 @@ export class CanvasEditor {
             canvasData.nodes.splice(nodeIndex, 1);
             
             // 保存更新后的 Canvas 文件
-            await this.app.vault.modify(file, JSON.stringify(canvasData, null, 2));
+            await this.app.vault.modify(file, JSON.stringify(canvasData));
             
             return true;
         } catch (error) {

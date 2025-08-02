@@ -1,14 +1,16 @@
 // Canvas 节点类型定义
 export interface CanvasNode {
     id: string;
-    type: string;
+    type: 'text' | 'group' | string; // 支持分组类型
     x: number;
     y: number;
     width: number;
     height: number;
-    text?: string;
+    text?: string;      // 文本节点内容
     file?: string;
     color?: string;
+    label?: string;     // 分组标签
+    group?: string[];   // 所属分组ID数组
 }
 
 // Canvas 数据结构
@@ -25,6 +27,7 @@ export interface WordDefinition {
     source: string; // Canvas 文件路径
     nodeId: string; // Canvas 节点 ID
     color?: string;
+    mastered?: boolean; // 是否已掌握
 }
 
 // 生词本配置
@@ -43,6 +46,8 @@ export interface HiWordsSettings {
     showDefinitionOnHover: boolean;
     enableAutoHighlight: boolean;
     highlightStyle: HighlightStyle; // 高亮样式
+    enableMasteredFeature: boolean; // 启用已掌握功能
+    showMasteredInSidebar: boolean; // 在侧边栏显示已掌握单词
 }
 
 // 词汇匹配信息

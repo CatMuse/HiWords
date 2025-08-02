@@ -1,4 +1,4 @@
-import { App, TFile } from 'obsidian';
+import { App, TFile, Notice } from 'obsidian';
 import { WordDefinition, VocabularyBook, HiWordsSettings } from './types';
 import { CanvasParser } from './canvas-parser';
 import { CanvasEditor } from './canvas-editor';
@@ -145,6 +145,40 @@ export class VocabularyManager {
         // 重建缓存并返回
         this.rebuildCache();
         return [...this.allWordsCache];
+    }
+
+    /**
+     * 获取未掌握的词汇（用于高亮显示）
+     * 如果已掌握功能未启用，返回所有单词
+     */
+    getAllWordsForHighlight(): string[] {
+        // 如果已掌握功能未启用，返回所有单词
+        if (!this.settings.enableMasteredFeature) {
+            return this.getAllWords();
+        }
+        
+        // 如果缓存有效，从缓存中过滤出未掌握的单词
+        if (this.cacheValid) {
+            const unmasteredWords: string[] = [];
+            for (const word of this.allWordsCache) {
+                const wordDef = this.wordDefinitionCache.get(word);
+                if (wordDef && !wordDef.mastered) {
+                    unmasteredWords.push(word);
+                }
+            }
+            return unmasteredWords;
+        }
+        
+        // 重建缓存并过滤
+        this.rebuildCache();
+        const unmasteredWords: string[] = [];
+        for (const word of this.allWordsCache) {
+            const wordDef = this.wordDefinitionCache.get(word);
+            if (wordDef && !wordDef.mastered) {
+                unmasteredWords.push(word);
+            }
+        }
+        return unmasteredWords;
     }
 
     /**
@@ -513,7 +547,7 @@ export class VocabularyManager {
             this.pendingSyncWords.delete(bookPath);
             this.syncTimeouts.delete(bookPath);
             
-            console.log(`Successfully synced ${pendingWords.length} words to ${bookPath}`);
+
             
         } catch (error) {
             console.error('Failed to sync words to canvas:', error);
@@ -641,5 +675,200 @@ export class VocabularyManager {
         this.bookWordsCache.clear();
         this.memoryOnlyWords.clear();
         this.pendingSyncWords.clear();
+    }
+
+    // ==================== 已掌握功能支持方法 ====================
+
+    /**
+     * 根据节点ID获取单词定义
+     * @param bookPath 生词本路径
+     * @param nodeId 节点ID
+     * @returns 单词定义或null
+     */
+    async getWordDefinitionByNodeId(bookPath: string, nodeId: string): Promise<WordDefinition | null> {
+        const bookWords = this.definitions.get(bookPath);
+        if (!bookWords) return null;
+
+        const wordDef = bookWords.find(w => w.nodeId === nodeId);
+        return wordDef || null;
+    }
+
+    /**
+     * 更新单词定义
+     * @param bookPath 生词本路径
+     * @param nodeId 节点ID
+     * @param updatedDef 更新后的定义
+     * @returns 操作是否成功
+     */
+    async updateWordDefinition(bookPath: string, nodeId: string, updatedDef: WordDefinition): Promise<boolean> {
+        const bookWords = this.definitions.get(bookPath);
+        if (!bookWords) return false;
+
+        const index = bookWords.findIndex(w => w.nodeId === nodeId);
+        if (index === -1) return false;
+
+        const oldDef = bookWords[index];
+        
+        // 更新定义
+        bookWords[index] = updatedDef;
+
+        // 更新缓存
+        this.wordDefinitionCache.delete(oldDef.word);
+        if (oldDef.aliases) {
+            oldDef.aliases.forEach(alias => this.wordDefinitionCache.delete(alias));
+        }
+        
+        this.wordDefinitionCache.set(updatedDef.word, updatedDef);
+        if (updatedDef.aliases) {
+            updatedDef.aliases.forEach(alias => this.wordDefinitionCache.set(alias, updatedDef));
+        }
+
+        // 标记缓存需要重建
+        this.cacheValid = false;
+
+        // 保存到 Canvas 文件
+        try {
+            await this.saveWordDefinitionToCanvas(bookPath, nodeId, updatedDef);
+        } catch (error) {
+            console.error('保存单词定义到 Canvas 失败:', error);
+            // 不返回 false，因为内存更新已经成功
+        }
+
+        return true;
+    }
+
+    /**
+     * 保存单词定义到 Canvas 文件
+     * @param bookPath 生词本路径
+     * @param nodeId 节点 ID
+     * @param wordDef 单词定义
+     */
+    private async saveWordDefinitionToCanvas(bookPath: string, nodeId: string, wordDef: WordDefinition): Promise<void> {
+        const file = this.app.vault.getAbstractFileByPath(bookPath);
+        if (!(file instanceof TFile)) {
+            throw new Error(`Canvas 文件不存在: ${bookPath}`);
+        }
+
+        try {
+            const content = await this.app.vault.read(file);
+            const canvasData = JSON.parse(content);
+            
+            // 找到要更新的节点
+            const node = canvasData.nodes.find((n: any) => n.id === wordDef.nodeId);
+            if (!node) {
+                throw new Error(`找不到节点 ID: ${wordDef.nodeId}`);
+            }
+            
+            // 构建纯文本内容，不包含 frontmatter
+            let textContent = wordDef.word;
+            
+            // 添加别名（如果有）
+            if (wordDef.aliases && wordDef.aliases.length > 0) {
+                textContent += '\n';
+                for (const alias of wordDef.aliases) {
+                    textContent += `- ${alias}\n`;
+                }
+            }
+            
+            // 添加定义
+            if (wordDef.definition) {
+                textContent += '\n' + wordDef.definition;
+            }
+            
+            // 更新节点内容
+            node.text = textContent;
+            
+            // 保存到文件（使用紧凑JSON格式）
+            await this.app.vault.modify(file, JSON.stringify(canvasData));
+            
+        } catch (error) {
+            console.error('保存 Canvas 文件失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取所有单词定义
+     * @returns 所有单词定义数组
+     */
+    async getAllWordDefinitions(): Promise<WordDefinition[]> {
+        const allDefs: WordDefinition[] = [];
+        
+        for (const bookWords of this.definitions.values()) {
+            allDefs.push(...bookWords);
+        }
+        
+        // 也包括仅内存中的词汇
+        for (const memoryWords of this.memoryOnlyWords.values()) {
+            allDefs.push(...memoryWords);
+        }
+        
+        return allDefs;
+    }
+
+    /**
+     * 获取指定生词本的所有单词定义
+     * @param bookPath 生词本路径
+     * @returns 该生词本的所有单词定义
+     */
+    async getWordDefinitionsByBook(bookPath: string): Promise<WordDefinition[]> {
+        const bookWords = this.definitions.get(bookPath) || [];
+        const memoryWords = this.memoryOnlyWords.get(bookPath) || [];
+        
+        return [...bookWords, ...memoryWords];
+    }
+
+    /**
+     * 获取未掌握的单词列表（用于高亮过滤）
+     * @returns 未掌握的单词数组
+     */
+    async getUnmasteredWords(): Promise<string[]> {
+        if (!this.cacheValid) {
+            this.rebuildCache();
+        }
+        
+        // 从缓存中过滤出未掌握的单词
+        const unmasteredWords: string[] = [];
+        
+        for (const word of this.allWordsCache) {
+            const wordDef = this.wordDefinitionCache.get(word);
+            if (wordDef && !wordDef.mastered) {
+                unmasteredWords.push(word);
+            }
+        }
+        
+        return unmasteredWords;
+    }
+
+    /**
+     * 获取已掌握的单词列表
+     * @returns 已掌握的单词数组
+     */
+    async getMasteredWords(): Promise<string[]> {
+        if (!this.cacheValid) {
+            this.rebuildCache();
+        }
+        
+        // 从缓存中过滤出已掌握的单词
+        const masteredWords: string[] = [];
+        
+        for (const word of this.allWordsCache) {
+            const wordDef = this.wordDefinitionCache.get(word);
+            if (wordDef && wordDef.mastered) {
+                masteredWords.push(word);
+            }
+        }
+        
+        return masteredWords;
+    }
+
+    /**
+     * 检查单词是否已掌握
+     * @param word 单词
+     * @returns 是否已掌握
+     */
+    isWordMastered(word: string): boolean {
+        const wordDef = this.wordDefinitionCache.get(word.toLowerCase());
+        return wordDef?.mastered === true;
     }
 }

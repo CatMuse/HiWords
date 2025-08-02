@@ -49,7 +49,7 @@ class HighlighterManager {
     }
     
     refreshAll(): void {
-        console.log(`刷新 ${this.highlighters.size} 个高亮器实例`);
+
         this.highlighters.forEach(highlighter => {
             try {
                 highlighter.forceUpdate();
@@ -115,8 +115,8 @@ export class WordHighlighter implements PluginValue {
         const startTime = performance.now();
         this.wordTrie.clear();
         
-        // 获取所有单词
-        const words = this.vocabularyManager.getAllWords();
+        // 获取未掌握的单词（已掌握的单词不会被高亮）
+        const words = this.vocabularyManager.getAllWordsForHighlight();
         
         // 将单词添加到前缀树
         for (const word of words) {

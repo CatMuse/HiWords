@@ -45,12 +45,25 @@ export class CanvasParser {
             const content = await this.app.vault.read(file);
             const canvasData: CanvasData = JSON.parse(content);
             
+            // 查找 "Mastered" 分组
+            const masteredGroup = canvasData.nodes.find(node => 
+                node.type === 'group' && 
+                (node.label === 'Mastered' || node.label === '已掌握')
+            );
+            
             const definitions: WordDefinition[] = [];
             
             for (const node of canvasData.nodes) {
                 if (node.type === 'text' && node.text) {
                     const wordDef = this.parseTextNode(node, file.path);
                     if (wordDef) {
+                        // 检查节点是否在 "Mastered" 分组内
+                        if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
+                            wordDef.mastered = true;
+                            
+
+                        }
+                        
                         definitions.push(wordDef);
                     }
                 }
@@ -86,7 +99,7 @@ export class CanvasParser {
             const lines = text.split('\n');
             if (lines.length === 0) return null;
             
-            // 第一行为主词，去除标题标记和其他 Markdown 格式符号
+            // 获取第一行作为主词
             word = lines[0].replace(/^#+\s*/, '').trim();
             
             // 去除 Markdown 格式符号（加粗、斜体、代码块等）
@@ -99,26 +112,18 @@ export class CanvasParser {
                 // 循环查找斜体别名行
                 let aliasLineIndex = -1;
                 let definitionStartIndex = -1;
-                
+                // 解析别名（第二行开始）
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    
-                    // 跳过空行
-                    if (line === '') continue;
-                    
-                    // 检查是否是斜体别名格式：*alias1, alias2, ...*
-                    const aliasMatch = line.match(/^\*(.*?)\*$/);
-                    if (aliasMatch) {
-                        aliasLineIndex = i;
-                        definitionStartIndex = i + 1;
-                        
-                        // 限制别名数量
-                        const maxAliases = 10;
-                        aliases = aliasMatch[1].split(',')
-                            .map(alias => this.removeMarkdownFormatting(alias.trim()).toLowerCase())
-                            .filter(alias => alias.length > 0) // 过滤空别名
-                            .slice(0, maxAliases); // 限制别名数量
-                        
+                    if (line.startsWith('- ') || line.startsWith('* ')) {
+                        // 列表项作为别名
+                        const alias = line.substring(2).trim();
+                        if (alias && !aliases.includes(alias)) {
+                            aliases.push(alias);
+                        }
+                    } else if (line !== '') {
+                        // 非空行作为定义的开始
+                        definition = lines.slice(i).join('\n').trim();
                         // 找到别名行后跳出循环
                         break;
                     } else {
@@ -146,7 +151,7 @@ export class CanvasParser {
 
             if (!word) return null;
 
-            return {
+            const result = {
                 word: word.toLowerCase(), // 统一转为小写进行匹配
                 aliases: aliases.length > 0 ? aliases : undefined,
                 definition,
@@ -154,6 +159,10 @@ export class CanvasParser {
                 nodeId: node.id,
                 color: node.color
             };
+            
+
+            
+            return result;
         } catch (error) {
             console.error(`解析节点文本时出错: ${error}`);
             return null;
@@ -178,5 +187,64 @@ export class CanvasParser {
         } catch {
             return false;
         }
+    }
+
+    /**
+     * 检查节点是否在指定分组内
+     * @param node 要检查的节点
+     * @param group 分组节点
+     * @returns 是否在分组内
+     */
+    public isNodeInGroup(node: CanvasNode, group: CanvasNode): boolean {
+        // 检查节点是否有必要的坐标信息
+        if (typeof node.x !== 'number' || typeof node.y !== 'number' ||
+            typeof node.width !== 'number' || typeof node.height !== 'number' ||
+            typeof group.x !== 'number' || typeof group.y !== 'number' ||
+            typeof group.width !== 'number' || typeof group.height !== 'number') {
+            return false;
+        }
+
+        // 计算节点的边界
+        const nodeLeft = node.x;
+        const nodeRight = node.x + node.width;
+        const nodeTop = node.y;
+        const nodeBottom = node.y + node.height;
+
+        // 计算分组的边界
+        const groupLeft = group.x;
+        const groupRight = group.x + group.width;
+        const groupTop = group.y;
+        const groupBottom = group.y + group.height;
+
+        // 检查节点是否完全在分组内（或者至少有重叠）
+        const isInside = nodeLeft >= groupLeft && 
+                        nodeRight <= groupRight && 
+                        nodeTop >= groupTop && 
+                        nodeBottom <= groupBottom;
+
+        // 如果不完全在内，检查是否有重叠（更宽松的判断）
+        if (!isInside) {
+            const hasOverlap = nodeLeft < groupRight && 
+                              nodeRight > groupLeft && 
+                              nodeTop < groupBottom && 
+                              nodeBottom > groupTop;
+            
+            // 只有当重叠面积超过节点面积的 50% 时才认为在分组内
+            if (hasOverlap) {
+                const overlapLeft = Math.max(nodeLeft, groupLeft);
+                const overlapRight = Math.min(nodeRight, groupRight);
+                const overlapTop = Math.max(nodeTop, groupTop);
+                const overlapBottom = Math.min(nodeBottom, groupBottom);
+                
+                const overlapArea = (overlapRight - overlapLeft) * (overlapBottom - overlapTop);
+                const nodeArea = node.width * node.height;
+                
+                return overlapArea >= nodeArea * 0.5;
+            }
+            
+            return false;
+        }
+
+        return true;
     }
 }
