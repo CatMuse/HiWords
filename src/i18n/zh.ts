@@ -28,6 +28,8 @@ export default {
         total_books: "总生词本数量: {0}",
         enabled_books: "已启用生词本: {0}",
         total_words: "总词汇数量: {0}",
+        enable_mastered_feature: "启用已掌握功能",
+        enable_mastered_feature_desc: "标记已掌握单词，不再高亮，侧边栏分组显示",
     },
     
     // 侧边栏
@@ -38,6 +40,10 @@ export default {
         found: "发现",
         words: "个生词",
         no_definition: "暂无定义",
+        vocabulary_book: "词汇",
+        mastered: "已掌握",
+        no_learning_words: "没有待学习的单词",
+        no_mastered_words: "没有已掌握的单词",
     },
     
     // 命令
@@ -68,6 +74,10 @@ export default {
         book_added: "已添加生词本: {0}",
         book_reloaded: "已重新加载: {0}",
         book_removed: "已删除生词本: {0}",
+        deleting_word: "正在删除词汇...",
+        word_deleted: "词汇已删除",
+        delete_word_failed: "删除词汇失败，请检查生词本文件",
+        error_deleting_word: "删除词汇时发生错误",
     },
     
     // 模态框
@@ -93,5 +103,6 @@ export default {
         save_button: "保存",
         cancel_button: "取消",
         select_canvas_file: "选择 Canvas 文件",
+        delete_confirmation: "确定要删除词汇 \"{0}\" 吗？\n此操作不可撤销。",
     },
 }

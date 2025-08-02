@@ -71,8 +71,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         // 启用已掌握功能
         new Setting(containerEl)
-            .setName('启用已掌握功能')
-            .setDesc('启用后可以标记单词为已掌握状态，已掌握的单词将不再高亮显示，侧边栏将按分组显示单词')
+            .setName(t('settings.enable_mastered_feature'))
+            .setDesc(t('settings.enable_mastered_feature_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableMasteredFeature)
                 .onChange(async (value) => {

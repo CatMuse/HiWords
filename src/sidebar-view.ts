@@ -189,7 +189,7 @@ export class HiWordsSidebarView extends ItemView {
             cls: `hi-words-tab ${this.activeTab === 'learning' ? 'active' : ''}`,
             attr: { 'data-tab': 'learning' }
         });
-        learningTab.createEl('span', { text: `单词本 (${learningCount})` });
+        learningTab.createEl('span', { text: `${t('sidebar.vocabulary_book')} (${learningCount})` });
         
         // 已掌握 Tab (只有在启用功能时显示)
         if (this.plugin.settings.enableMasteredFeature) {
@@ -197,7 +197,7 @@ export class HiWordsSidebarView extends ItemView {
                 cls: `hi-words-tab ${this.activeTab === 'mastered' ? 'active' : ''}`,
                 attr: { 'data-tab': 'mastered' }
             });
-            masteredTab.createEl('span', { text: `已掌握 (${masteredCount})` });
+            masteredTab.createEl('span', { text: `${t('sidebar.mastered')} (${masteredCount})` });
             
             // 添加点击事件
             masteredTab.addEventListener('click', () => {
@@ -219,13 +219,13 @@ export class HiWordsSidebarView extends ItemView {
             if (unmasteredWords.length > 0) {
                 this.createWordList(container, unmasteredWords, false);
             } else {
-                this.showEmptyState('没有待学习的单词');
+                this.showEmptyState(t('sidebar.no_learning_words'));
             }
         } else if (this.activeTab === 'mastered') {
             if (masteredWords.length > 0) {
                 this.createWordList(container, masteredWords, true);
             } else {
-                this.showEmptyState('没有已掌握的单词');
+                this.showEmptyState(t('sidebar.no_mastered_words'));
             }
         }
     }

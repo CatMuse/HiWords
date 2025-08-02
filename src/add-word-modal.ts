@@ -130,7 +130,6 @@ export class AddWordModal extends Modal {
         if (this.isEditMode && this.definition) {
             const deleteButton = leftButtonGroup.createEl('button', { 
                 cls: 'delete-word-button',
-                attr: { 'aria-label': '删除词汇', 'title': '删除词汇' }
             });
             // 使用 Obsidian 的 setIcon 方法
             setIcon(deleteButton, 'trash');
@@ -140,7 +139,7 @@ export class AddWordModal extends Modal {
                 if (!confirmed) return;
                 
                 // 显示删除中提示
-                const loadingNotice = new Notice('正在删除词汇...', 0);
+                const loadingNotice = new Notice(t('notices.deleting_word'), 0);
                 
                 try {
                     const success = await this.plugin.vocabularyManager.deleteWordFromCanvas(
@@ -151,17 +150,17 @@ export class AddWordModal extends Modal {
                     loadingNotice.hide();
                     
                     if (success) {
-                        new Notice('词汇已删除');
+                        new Notice(t('notices.word_deleted'));
                         // 刷新高亮
                         this.plugin.refreshHighlighter();
                         this.close();
                     } else {
-                        new Notice('删除词汇失败，请检查生词本文件');
+                        new Notice(t('notices.delete_word_failed'));
                     }
                 } catch (error) {
                     loadingNotice.hide();
                     console.error('删除词汇时发生错误:', error);
-                    new Notice('删除词汇时发生错误');
+                    new Notice(t('notices.error_deleting_word'));
                 }
             };
         }
@@ -268,7 +267,7 @@ export class AddWordModal extends Modal {
      */
     private async showDeleteConfirmation(): Promise<boolean> {
         // 使用原生的 confirm 对话框，更简洁且符合 Obsidian 的设计原则
-        return window.confirm(`确定要删除词汇 "${this.word}" 吗？\n\n此操作不可撤销。`);
+        return window.confirm(t('modals.delete_confirmation').replace('{0}', this.word));
     }
     
     onClose() {

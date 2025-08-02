@@ -28,6 +28,8 @@ export default {
         total_books: "Total vocabulary books: {0}",
         enabled_books: "Enabled vocabulary books: {0}",
         total_words: "Total words: {0}",
+        enable_mastered_feature: "Enable mastered feature",
+        enable_mastered_feature_desc: "Mark mastered words to stop highlighting them. Sidebar shows grouped words",
     },
     
     // Sidebar
@@ -38,6 +40,10 @@ export default {
         found: "Found",
         words: "words",
         no_definition: "No definition available.",
+        vocabulary_book: "Vocabulary",
+        mastered: "Mastered",
+        no_learning_words: "No words to learn",
+        no_mastered_words: "No mastered words",
     },
     
     // Commands
@@ -68,6 +74,10 @@ export default {
         book_added: "Added vocabulary book: {0}",
         book_reloaded: "Reloaded vocabulary book: {0}",
         book_removed: "Removed vocabulary book: {0}",
+        deleting_word: "Deleting word...",
+        word_deleted: "Word deleted",
+        delete_word_failed: "Failed to delete word, please check the vocabulary book file",
+        error_deleting_word: "Error occurred while deleting word",
     },
     
     // Modals
@@ -93,5 +103,6 @@ export default {
         save_button: "Save",
         cancel_button: "Cancel",
         select_canvas_file: "Select vocabulary book file",
+        delete_confirmation: "Are you sure you want to delete the word \"{0}\"?\nThis action cannot be undone.",
     },
 }
