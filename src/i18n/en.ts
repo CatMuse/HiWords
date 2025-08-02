@@ -78,6 +78,15 @@ export default {
         word_deleted: "Word deleted",
         delete_word_failed: "Failed to delete word, please check the vocabulary book file",
         error_deleting_word: "Error occurred while deleting word",
+        mastered_feature_disabled: "Mastered feature is not enabled",
+        update_word_status_failed: "Failed to update word status",
+        move_to_mastered_group_failed: "Failed to move to mastered group",
+        word_marked_as_mastered: "\"{0}\" marked as mastered",
+        mark_mastered_failed: "Failed to mark as mastered, please try again",
+        remove_from_mastered_group_failed: "Failed to remove from mastered group",
+        word_unmarked_as_mastered: "\"{0}\" unmarked as mastered",
+        unmark_mastered_failed: "Failed to unmark as mastered, please try again",
+        batch_marked_success: "Successfully marked {0} words as mastered",
     },
     
     // Modals

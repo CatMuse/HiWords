@@ -219,13 +219,13 @@ export class HiWordsSidebarView extends ItemView {
             if (unmasteredWords.length > 0) {
                 this.createWordList(container, unmasteredWords, false);
             } else {
-                this.showEmptyState(t('sidebar.no_learning_words'));
+                this.createEmptyState(container, t('sidebar.no_learning_words'));
             }
         } else if (this.activeTab === 'mastered') {
             if (masteredWords.length > 0) {
                 this.createWordList(container, masteredWords, true);
             } else {
-                this.showEmptyState(t('sidebar.no_mastered_words'));
+                this.createEmptyState(container, t('sidebar.no_mastered_words'));
             }
         }
     }
@@ -396,7 +396,15 @@ export class HiWordsSidebarView extends ItemView {
     }
 
     /**
-     * 显示空状态
+     * 在容器中创建空状态（不清空Tab导航）
+     */
+    private createEmptyState(container: HTMLElement, message: string) {
+        const emptyState = container.createEl('div', { cls: 'hi-words-empty-state' });
+        emptyState.createEl('div', { text: message, cls: 'hi-words-empty-text' });
+    }
+
+    /**
+     * 显示空状态（用于全局空状态，会清空整个容器）
      */
     private showEmptyState(message: string) {
         const container = this.containerEl.querySelector('.hi-words-sidebar');

@@ -78,6 +78,15 @@ export default {
         word_deleted: "词汇已删除",
         delete_word_failed: "删除词汇失败，请检查生词本文件",
         error_deleting_word: "删除词汇时发生错误",
+        mastered_feature_disabled: "已掌握功能未启用",
+        update_word_status_failed: "更新单词状态失败",
+        move_to_mastered_group_failed: "移动到已掌握分组失败",
+        word_marked_as_mastered: "\"{0}\"已标记为已掌握",
+        mark_mastered_failed: "标记失败，请重试",
+        remove_from_mastered_group_failed: "从已掌握分组移除失败",
+        word_unmarked_as_mastered: "\"{0}\"已取消已掌握标记",
+        unmark_mastered_failed: "取消标记失败，请重试",
+        batch_marked_success: "成功标记 {0} 个单词为已掌握",
     },
     
     // 模态框

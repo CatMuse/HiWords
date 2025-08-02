@@ -6,6 +6,7 @@
 import { Notice } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
 import { MasteredGroupManager } from './mastered-group-manager';
+import { t } from './i18n';
 import HiWordsPlugin from '../main';
 
 export class MasteredService {
@@ -35,7 +36,7 @@ export class MasteredService {
      */
     async markWordAsMastered(bookPath: string, nodeId: string, word: string): Promise<boolean> {
         if (!this.isEnabled) {
-            new Notice('已掌握功能未启用');
+            new Notice(t('notices.mastered_feature_disabled'));
             return false;
         }
 
@@ -43,7 +44,7 @@ export class MasteredService {
             // 1. 更新内存缓存中的已掌握状态
             const success = await this.updateWordMasteredStatus(bookPath, nodeId, true);
             if (!success) {
-                new Notice('更新单词状态失败');
+                new Notice(t('notices.update_word_status_failed'));
                 return false;
             }
 
@@ -52,7 +53,7 @@ export class MasteredService {
             if (!moveSuccess) {
                 // 如果移动失败，回滚内存状态
                 await this.updateWordMasteredStatus(bookPath, nodeId, false);
-                new Notice('移动到已掌握分组失败');
+                new Notice(t('notices.move_to_mastered_group_failed'));
                 return false;
             }
 
@@ -63,12 +64,12 @@ export class MasteredService {
             this.plugin.app.workspace.trigger('hi-words:mastered-changed');
 
             // 5. 显示成功提示
-            new Notice(`"${word}" 已标记为已掌握`);
+            new Notice(t('notices.word_marked_as_mastered').replace('{0}', word));
 
             return true;
         } catch (error) {
             console.error('标记已掌握失败:', error);
-            new Notice('标记失败，请重试');
+            new Notice(t('notices.mark_mastered_failed'));
             return false;
         }
     }
@@ -82,7 +83,7 @@ export class MasteredService {
      */
     async unmarkWordAsMastered(bookPath: string, nodeId: string, word: string): Promise<boolean> {
         if (!this.isEnabled) {
-            new Notice('已掌握功能未启用');
+            new Notice(t('notices.mastered_feature_disabled'));
             return false;
         }
 
@@ -90,7 +91,7 @@ export class MasteredService {
             // 1. 更新内存缓存中的已掌握状态
             const success = await this.updateWordMasteredStatus(bookPath, nodeId, false);
             if (!success) {
-                new Notice('更新单词状态失败');
+                new Notice(t('notices.update_word_status_failed'));
                 return false;
             }
 
@@ -99,7 +100,7 @@ export class MasteredService {
             if (!removeSuccess) {
                 // 如果移除失败，回滚内存状态
                 await this.updateWordMasteredStatus(bookPath, nodeId, true);
-                new Notice('从已掌握分组移除失败');
+                new Notice(t('notices.remove_from_mastered_group_failed'));
                 return false;
             }
 
@@ -110,12 +111,12 @@ export class MasteredService {
             this.plugin.app.workspace.trigger('hi-words:mastered-changed');
 
             // 5. 显示成功提示
-            new Notice(`"${word}" 已取消已掌握标记`);
+            new Notice(t('notices.word_unmarked_as_mastered').replace('{0}', word));
 
             return true;
         } catch (error) {
             console.error('取消已掌握标记失败:', error);
-            new Notice('取消标记失败，请重试');
+            new Notice(t('notices.unmark_mastered_failed'));
             return false;
         }
     }
@@ -228,7 +229,7 @@ export class MasteredService {
         }
 
         if (successCount > 0) {
-            new Notice(`成功标记 ${successCount} 个单词为已掌握`);
+            new Notice(t('notices.batch_marked_success').replace('{0}', successCount.toString()));
         }
 
         return successCount;
