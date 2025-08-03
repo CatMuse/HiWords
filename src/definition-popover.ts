@@ -1,4 +1,4 @@
-import { App, MarkdownRenderer, MarkdownView, Notice, setIcon } from 'obsidian';
+import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
 import { MasteredService } from './mastered-service';
 import { t } from './i18n';
@@ -263,7 +263,8 @@ export class DefinitionPopover {
                                 await this.masteredService!.markWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
                             }
                             
-
+                            // 点击已掌握按钮后清理预览框
+                            this.removeTooltip();
                         } catch (error) {
                             console.error('切换已掌握状态失败:', error);
                         }
@@ -273,19 +274,23 @@ export class DefinitionPopover {
                     titleContainer.appendChild(buttonContainer);
                 }
                 
-                // 创建底部容器（只包含源信息）
-                const footerEl = document.createElement('div');
-                footerEl.className = 'hi-words-tooltip-footer';
-                
                 // 源信息
                 const sourceEl = document.createElement('div');
                 sourceEl.className = 'hi-words-tooltip-source';
                 const fileName = detailDef.source.split('/').pop() || '';
                 const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
                 sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
-                footerEl.appendChild(sourceEl);
                 
-                tooltip.appendChild(footerEl);
+                // 添加点击事件到来源信息：导航到源文件
+                sourceEl.style.cursor = 'pointer';
+                sourceEl.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    this.navigateToSource(detailDef);
+                    // 点击跳转后清理预览框
+                    this.removeTooltip();
+                });
+                
+                tooltip.appendChild(sourceEl);
             }
         }
 
@@ -321,6 +326,41 @@ export class DefinitionPopover {
         if (this.activeTooltip && this.activeTooltip.parentNode) {
             this.activeTooltip.parentNode.removeChild(this.activeTooltip);
             this.activeTooltip = null;
+        }
+    }
+
+    /**
+     * 导航到单词源文件
+     */
+    private async navigateToSource(wordDef: any) {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(wordDef.source);
+            if (file instanceof TFile) {
+                // 如果是 Canvas 文件，直接打开
+                if (file.extension === 'canvas') {
+                    await this.app.workspace.openLinkText(file.path, '');
+                } else {
+                    // 如果是 Markdown 文件，打开并尝试定位到单词
+                    await this.app.workspace.openLinkText(file.path, '');
+                    // 等待一个短暂时间让文件加载
+                    setTimeout(() => {
+                        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                        if (activeView && activeView.file?.path === file.path) {
+                            // 尝试在文件中查找单词
+                            const editor = activeView.editor;
+                            const content = editor.getValue();
+                            const wordIndex = content.toLowerCase().indexOf(wordDef.word.toLowerCase());
+                            if (wordIndex !== -1) {
+                                const pos = editor.offsetToPos(wordIndex);
+                                editor.setCursor(pos);
+                                editor.scrollIntoView({ from: pos, to: pos }, true);
+                            }
+                        }
+                    }, 100);
+                }
+            }
+        } catch (error) {
+            console.error('导航到源文件失败:', error);
         }
     }
 

@@ -36,7 +36,7 @@ export default {
     
     // Sidebar
     sidebar: {
-        title: "Vocabulary",
+        title: "HiWords",
         empty_state: "No words found. Add words to your vocabulary books to see them here.",
         source_prefix: "From: ",
         found: "Found",

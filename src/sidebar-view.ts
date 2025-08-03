@@ -390,11 +390,8 @@ export class HiWordsSidebarView extends ItemView {
             }
         }
         
-        // 来源信息和已掌握按钮容器
-        const footer = card.createEl('div', { cls: 'hi-words-word-footer' });
-        
         // 来源信息
-        const source = footer.createEl('div', { cls: 'hi-words-word-source' });
+        const source = card.createEl('div', { cls: 'hi-words-word-source' });
         const bookName = this.getBookNameFromPath(wordDef.source);
         source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
         

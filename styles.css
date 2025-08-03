@@ -104,9 +104,15 @@
     color: var(--text-faint);
     margin-top: 6px;
     padding-top: 4px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: background-color 0.2s ease;
 }
 
-
+.hi-words-tooltip-source:hover {
+    background-color: var(--background-modifier-hover);
+}
 
 /* Markdown 内容样式 - Tooltip */
 .hi-words-tooltip-content p {
@@ -559,10 +565,15 @@
     margin-top: 6px;
     position: relative;
     z-index: 1;
+    flex: 1;
+    min-width: 0; /* 允许文本截断 */
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: background-color 0.2s ease;
 }
 
 .hi-words-source-text {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-faint);
     font-weight: 400;
     text-transform: uppercase;
@@ -699,25 +710,12 @@
     color: var(--color-green);
 }
 
-/* 单词卡片底部容器 */
-.hi-words-word-footer {
-    margin-top: 8px;
-}
-
 .hi-words-word-source {
-    flex: 1;
-    min-width: 0; /* 允许文本截断 */
-    border-radius: 4px;
-    padding: 2px 4px;
-    transition: background-color 0.2s ease;
+    margin-top: 8px;
 }
 
 .hi-words-word-source:hover {
     background-color: var(--background-modifier-hover);
-}
-
-.hi-words-word-source:active {
-    background-color: var(--background-modifier-active);
 }
 
 /* 已掌握单词卡片样式 */
@@ -745,11 +743,5 @@
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .hi-words-word-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-    }
-    
-
+    /* 在小屏幕上的特定样式可以在这里添加 */
 }

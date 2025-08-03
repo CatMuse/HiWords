@@ -36,7 +36,7 @@ export default {
     
     // 侧边栏
     sidebar: {
-        title: "生词本",
+        title: "HiWords",
         empty_state: "未找到单词。添加单词到您的生词本以在此处查看。",
         source_prefix: "来自: ",
         found: "发现",
