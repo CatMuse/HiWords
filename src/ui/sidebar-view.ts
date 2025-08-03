@@ -1,8 +1,7 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon } from 'obsidian';
-import HiWordsPlugin from '../main';
-import { WordDefinition } from './types';
-import { mapCanvasColorToCSSVar, getColorWithOpacity } from './color-utils';
-import { t } from './i18n';
+import HiWordsPlugin from '../../main';
+import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity } from '../utils';
+import { t } from '../i18n';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -328,8 +327,10 @@ export class HiWordsSidebarView extends ItemView {
         // 已掌握按钮（如果启用了功能）
         if (this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
             const buttonContainer = wordTitle.createEl('div', { 
-                cls: 'hi-words-title-mastered-button'
-                // 移除 aria-label 以避免悬停提示重叠
+                cls: 'hi-words-title-mastered-button',
+                attr: {
+                    'aria-label': isMastered ? '忘记了' : '已掌握'
+                }
             });
             
             // 设置图标（未掌握显示smile供用户点击标记为已掌握，已掌握显示frown供用户点击取消）

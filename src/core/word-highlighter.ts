@@ -15,9 +15,7 @@ import {
     WidgetType
 } from '@codemirror/view';
 import { VocabularyManager } from './vocabulary-manager';
-import { WordMatch, WordDefinition } from './types';
-import { mapCanvasColorToCSSVar } from './color-utils';
-import { Trie, TrieMatch } from './trie';
+import { WordMatch, WordDefinition, mapCanvasColorToCSSVar, Trie, TrieMatch } from '../utils';
 
 // 防抖延迟时间（毫秒）
 const DEBOUNCE_DELAY = 300;

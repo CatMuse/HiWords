@@ -1,15 +1,10 @@
 import { App, Plugin, TFile, MarkdownView, Notice, Modal, WorkspaceLeaf, ItemView } from 'obsidian';
 import { Extension } from '@codemirror/state';
-import { HiWordsSettings, VocabularyBook } from './src/types';
-import { VocabularyManager } from './src/vocabulary-manager';
-import { WordHighlighter, createWordHighlighterExtension, getWordUnderCursor } from './src/word-highlighter';
-import { DefinitionPopover } from './src/definition-popover';
-import { HiWordsSettingTab } from './src/settings-tab';
-import { HiWordsSidebarView, SIDEBAR_VIEW_TYPE } from './src/sidebar-view';
-import { AddWordModal } from './src/add-word-modal';
-import { MasteredService } from './src/mastered-service';
+// 使用新的模块化导入
+import { HiWordsSettings, VocabularyBook } from './src/utils';
+import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, getWordUnderCursor, highlighterManager } from './src/core';
+import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
 import { i18n, t } from './src/i18n';
-import { highlighterManager } from './src/word-highlighter';
 
 // 默认设置
 const DEFAULT_SETTINGS: HiWordsSettings = {

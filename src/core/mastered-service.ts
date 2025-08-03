@@ -5,9 +5,9 @@
 
 import { Notice } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
-import { MasteredGroupManager } from './mastered-group-manager';
-import { t } from './i18n';
-import HiWordsPlugin from '../main';
+import { MasteredGroupManager } from '../canvas';
+import { t } from '../i18n';
+import HiWordsPlugin from '../../main';
 
 export class MasteredService {
     private plugin: HiWordsPlugin;

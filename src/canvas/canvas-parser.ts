@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { CanvasData, CanvasNode, WordDefinition } from './types';
+import { CanvasData, CanvasNode, WordDefinition } from '../utils';
 
 export class CanvasParser {
     private app: App;

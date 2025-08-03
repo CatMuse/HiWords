@@ -4,7 +4,7 @@
  */
 
 import { App, TFile } from 'obsidian';
-import { CanvasData, CanvasNode } from './types';
+import { CanvasData, CanvasNode } from '../utils';
 import { CanvasParser } from './canvas-parser';
 
 export class MasteredGroupManager {

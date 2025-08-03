@@ -1,8 +1,7 @@
 import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile } from 'obsidian';
-import { VocabularyManager } from './vocabulary-manager';
-import { MasteredService } from './mastered-service';
-import { t } from './i18n';
-import HiWordsPlugin from '../main';
+import { VocabularyManager, MasteredService } from '../core';
+import { t } from '../i18n';
+import HiWordsPlugin from '../../main';
 
 export class DefinitionPopover {
     private app: App;

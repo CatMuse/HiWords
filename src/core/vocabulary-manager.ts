@@ -1,7 +1,6 @@
 import { App, TFile, Notice } from 'obsidian';
-import { WordDefinition, VocabularyBook, HiWordsSettings } from './types';
-import { CanvasParser } from './canvas-parser';
-import { CanvasEditor } from './canvas-editor';
+import { WordDefinition, VocabularyBook, HiWordsSettings } from '../utils';
+import { CanvasParser, CanvasEditor } from '../canvas';
 
 export class VocabularyManager {
     private app: App;

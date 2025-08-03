@@ -1,8 +1,8 @@
 import { App, PluginSettingTab, Setting, TFile, Notice, Modal } from 'obsidian';
-import HiWordsPlugin from '../main';
-import { VocabularyBook, HighlightStyle } from './types';
-import { CanvasParser } from './canvas-parser';
-import { t } from './i18n';
+import HiWordsPlugin from '../../main';
+import { VocabularyBook, HighlightStyle } from '../utils';
+import { CanvasParser } from '../canvas';
+import { t } from '../i18n';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;

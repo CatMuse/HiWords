@@ -1,7 +1,7 @@
 import { App, Modal, Notice, setIcon } from 'obsidian';
-import type { VocabularyBook, WordDefinition } from './types';
-import HiWordsPlugin from '../main';
-import { t } from './i18n';
+import type { VocabularyBook, WordDefinition } from '../utils';
+import HiWordsPlugin from '../../main';
+import { t } from '../i18n';
 
 /**
  * 添加或编辑词汇的模态框
