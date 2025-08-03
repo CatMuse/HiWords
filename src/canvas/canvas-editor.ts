@@ -86,8 +86,8 @@ export class CanvasEditor {
                 type: 'text',
                 x: x,
                 y: y,
-                width: 250,
-                height: 150,
+                width: 360,
+                height: 160,
                 text: nodeText,
                 color: color !== undefined ? color.toString() : undefined
             };
