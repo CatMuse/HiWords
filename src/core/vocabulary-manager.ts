@@ -761,12 +761,9 @@ export class VocabularyManager {
             // 构建纯文本内容，不包含 frontmatter
             let textContent = wordDef.word;
             
-            // 添加别名（如果有）
+            // 添加别名（如果有）- 使用斜体格式
             if (wordDef.aliases && wordDef.aliases.length > 0) {
-                textContent += '\n';
-                for (const alias of wordDef.aliases) {
-                    textContent += `- ${alias}\n`;
-                }
+                textContent += `\n*${wordDef.aliases.join(', ')}*`;
             }
             
             // 添加定义
