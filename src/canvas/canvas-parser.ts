@@ -77,12 +77,6 @@ export class CanvasParser {
     }
 
     /**
-     * 解析文本节点，提取词汇和定义
-     * 支持两种格式：
-     * 1. 第一行为词汇，后面的行为定义
-     * 2. 第一行为词汇 [别名1, 别名2, ...]，后面的行为定义
-     */
-    /**
      * 解析文本节点，提取单词、别名和定义
      * 优化版本：支持主名字换行后的斜体格式作为别名格式
      */
@@ -115,19 +109,16 @@ export class CanvasParser {
                 // 解析别名（第二行开始）
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (line.startsWith('- ') || line.startsWith('* ')) {
-                        // 列表项作为别名
-                        const alias = line.substring(2).trim();
-                        if (alias && !aliases.includes(alias)) {
-                            aliases.push(alias);
-                        }
-                    } else if (line !== '') {
-                        // 非空行作为定义的开始
-                        definition = lines.slice(i).join('\n').trim();
-                        // 找到别名行后跳出循环
-                        break;
-                    } else {
-                        // 如果不是别名行，则这是定义的开始
+                    
+                    // 检查斜体格式别名 *alias1, alias2, alias3*
+                    if (line.startsWith('*') && line.endsWith('*') && line.length > 2) {
+                        const aliasText = line.slice(1, -1); // 去掉首尾的 *
+                        const aliasArray = aliasText.split(',').map(a => a.trim()).filter(a => a);
+                        aliases.push(...aliasArray);
+                        aliasLineIndex = i;
+                    }
+                    // 如果不是别名行且不是空行，则这是定义的开始
+                    else if (line !== '') {
                         definitionStartIndex = i;
                         break;
                     }

@@ -42,7 +42,6 @@ export class MasteredGroupManager {
 
             return masteredGroup.id;
         } catch (error) {
-            console.error('确保 Mastered 分组失败:', error);
             return null;
         }
     }
@@ -66,26 +65,21 @@ export class MasteredGroupManager {
             const masteredGroup = canvasData.nodes.find(node => node.id === masteredGroupId);
             
             if (!targetNode) {
-                console.error(`未找到节点: ${nodeId}`);
                 return false;
             }
             if (!masteredGroup) {
-                console.error(`未找到Mastered分组: ${masteredGroupId}`);
                 return false;
             }
 
             // 使用优化的两阶段定位方案
             const success = await this.moveNodeToGroupOptimized(targetNode, masteredGroup, canvasData);
             if (!success) {
-                console.error('节点定位失败');
                 return false;
             }
 
             await this.saveCanvas(bookPath, canvasData);
-            console.log(`成功将节点 ${nodeId} 移动到Mastered分组`);
             return true;
         } catch (error) {
-            console.error('移动到 Mastered 分组失败:', error);
             return false;
         }
     }
@@ -119,7 +113,6 @@ export class MasteredGroupManager {
             await this.saveCanvas(bookPath, canvasData);
             return true;
         } catch (error) {
-            console.error('从 Mastered 分组移除失败:', error);
             return false;
         }
     }
@@ -148,7 +141,6 @@ export class MasteredGroupManager {
             // 使用坐标位置判断节点是否在分组内
             return this.canvasParser.isNodeInGroup(targetNode, masteredGroup);
         } catch (error) {
-            console.error('检查节点分组失败:', error);
             return false;
         }
     }
@@ -233,14 +225,12 @@ export class MasteredGroupManager {
             // 第一阶段：计算和准备
             const preparation = this.prepareNodePlacement(node, group, canvasData);
             if (!preparation.success) {
-                console.error('节点放置准备失败:', preparation.error);
                 return false;
             }
 
             // 第二阶段：执行定位和验证
             return this.executeNodePlacement(node, group, canvasData, preparation);
         } catch (error) {
-            console.error('优化节点移动失败:', error);
             return false;
         }
     }
@@ -291,27 +281,22 @@ export class MasteredGroupManager {
             // 3. 验证节点是否正确在分组内
             const isInGroup = this.canvasParser.isNodeInGroup(node, group);
             if (!isInGroup) {
-                console.warn('节点验证失败，尝试修正位置');
                 // 尝试修正位置
                 const correctedPosition = this.correctNodePosition(node, group);
                 node.x = correctedPosition.x;
                 node.y = correctedPosition.y;
                 
                 // 再次验证
-                const isInGroupAfterCorrection = this.canvasParser.isNodeInGroup(node, group);
-                if (!isInGroupAfterCorrection) {
-                    console.error('节点位置修正后仍然验证失败');
+                const isNodeInGroupAfterCorrection = this.canvasParser.isNodeInGroup(node, group);
+                if (!isNodeInGroupAfterCorrection) {
                     return false;
                 }
             }
             
             // 4. 最终调整分组尺寸确保包含所有节点
             this.adjustGroupSizeToFitContent(group, canvasData);
-            
-            console.log(`节点成功放置在位置 (${node.x}, ${node.y})，分组尺寸: ${group.width}x${group.height}`);
             return true;
         } catch (error) {
-            console.error('执行节点放置失败:', error);
             return false;
         }
     }
@@ -329,7 +314,6 @@ export class MasteredGroupManager {
     ): Promise<void> {
         const group = canvasData.nodes.find(n => n.id === groupId);
         if (!group) {
-            console.error(`找不到分组: ${groupId}`);
             return;
         }
 
@@ -472,8 +456,6 @@ export class MasteredGroupManager {
         const minRequiredHeight = nodeHeight + 2 * safePadding;
         
         if (safeAreaWidth < nodeWidth || safeAreaHeight < nodeHeight) {
-            // 需要扩大分组
-            console.log('分组空间不足，需要扩大');
             return this.calculatePositionWithGroupExpansion(node, group, existingMembers);
         }
         
@@ -636,14 +618,12 @@ export class MasteredGroupManager {
         try {
             const file = this.app.vault.getAbstractFileByPath(bookPath);
             if (!(file instanceof TFile)) {
-                console.error(`Canvas 文件不存在: ${bookPath}`);
                 return null;
             }
 
             const content = await this.app.vault.read(file);
             return JSON.parse(content) as CanvasData;
         } catch (error) {
-            console.error(`加载 Canvas 文件失败: ${bookPath}`, error);
             return null;
         }
     }
@@ -658,14 +638,12 @@ export class MasteredGroupManager {
         try {
             const file = this.app.vault.getAbstractFileByPath(bookPath);
             if (!(file instanceof TFile)) {
-                console.error(`Canvas 文件不存在: ${bookPath}`);
                 return false;
             }
 
             await this.app.vault.modify(file, JSON.stringify(canvasData));
             return true;
         } catch (error) {
-            console.error(`保存 Canvas 文件失败: ${bookPath}`, error);
             return false;
         }
     }
