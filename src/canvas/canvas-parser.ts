@@ -173,10 +173,18 @@ export class CanvasParser {
     async validateCanvasFile(file: TFile): Promise<boolean> {
         try {
             const content = await this.app.vault.read(file);
-            const data = JSON.parse(content);
-            return Array.isArray(data.nodes) && Array.isArray(data.edges);
+            const trimmed = content?.trim() ?? '';
+            // 新建但尚未写入内容的空 Canvas 也视为有效
+            if (trimmed === '') return true;
+
+            const data = JSON.parse(trimmed);
+            // 若字段缺失，视为默认空数组也有效
+            const nodesOk = !('nodes' in data) || Array.isArray(data.nodes);
+            const edgesOk = !('edges' in data) || Array.isArray(data.edges);
+            return nodesOk && edgesOk;
         } catch {
-            return false;
+            // 解析失败，但既然是 .canvas 文件，允许添加，后续解析将返回空结果
+            return true;
         }
     }
 
