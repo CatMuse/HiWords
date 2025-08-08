@@ -32,6 +32,22 @@ export default {
         enable_mastered_feature_desc: "Mark mastered words to stop highlighting them. Sidebar shows grouped words",
         blur_definitions: "Blur content",
         blur_definitions_desc: "Blur content by default, reveal on hover. Great for learning—recall before seeing the answer",
+        // Auto layout
+        auto_layout: "Auto Layout",
+        enable_auto_layout: "Enable auto layout",
+        enable_auto_layout_desc: "Automatically normalize layout after add/update/delete and group changes",
+        card_size: "Card size (left area)",
+        card_size_desc: "Width/height of cards for non-group nodes on the left",
+        grid_gaps: "Grid gaps",
+        grid_gaps_desc: "Horizontal/vertical gaps for the left grid",
+        left_padding: "Left padding & min X",
+        left_padding_desc: "Left padding from Mastered group and minimum X for the left area",
+        columns_auto: "Auto columns",
+        columns_auto_desc: "Auto determine columns (bounded by max columns)",
+        columns: "Fixed columns / Max columns",
+        columns_desc: "Specify fixed columns and max columns (effective when auto columns off)",
+        group_inner_layout: "Group inner layout",
+        group_inner_layout_desc: "Inner padding, gaps and columns for nodes inside groups",
     },
     
     // Sidebar

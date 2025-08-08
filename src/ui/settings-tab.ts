@@ -12,12 +12,185 @@ export class HiWordsSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
+    /**
+     * 添加自动布局设置
+     */
+    private addAutoLayoutSettings() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.auto_layout'))
+            .setHeading();
+
+        // 启用自动布局
+        new Setting(containerEl)
+            .setName(t('settings.enable_auto_layout'))
+            .setDesc(t('settings.enable_auto_layout_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoLayoutEnabled ?? true)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoLayoutEnabled = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // 左侧区域卡片尺寸
+        const sizeSetting = new Setting(containerEl)
+            .setName(t('settings.card_size'))
+            .setDesc(t('settings.card_size_desc'));
+        sizeSetting.addText(text => text
+            .setPlaceholder('width')
+            .setValue(String(this.plugin.settings.cardWidth ?? 260))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num > 60) {
+                    this.plugin.settings.cardWidth = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+        sizeSetting.addText(text => text
+            .setPlaceholder('height')
+            .setValue(String(this.plugin.settings.cardHeight ?? 120))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num > 40) {
+                    this.plugin.settings.cardHeight = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+
+        // 网格间距
+        const gapSetting = new Setting(containerEl)
+            .setName(t('settings.grid_gaps'))
+            .setDesc(t('settings.grid_gaps_desc'));
+        gapSetting.addText(text => text
+            .setPlaceholder('horizontal')
+            .setValue(String(this.plugin.settings.horizontalGap ?? 24))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= 0) {
+                    this.plugin.settings.horizontalGap = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+        gapSetting.addText(text => text
+            .setPlaceholder('vertical')
+            .setValue(String(this.plugin.settings.verticalGap ?? 16))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= 0) {
+                    this.plugin.settings.verticalGap = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+
+        // 左侧留白与最小X
+        const padSetting = new Setting(containerEl)
+            .setName(t('settings.left_padding'))
+            .setDesc(t('settings.left_padding_desc'));
+        padSetting.addText(text => text
+            .setPlaceholder('leftPadding')
+            .setValue(String(this.plugin.settings.leftPadding ?? 24))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= 0) {
+                    this.plugin.settings.leftPadding = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+        padSetting.addText(text => text
+            .setPlaceholder('minLeftX')
+            .setValue(String(this.plugin.settings.minLeftX ?? 0))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num)) {
+                    this.plugin.settings.minLeftX = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+
+        // 列数设置
+        new Setting(containerEl)
+            .setName(t('settings.columns_auto'))
+            .setDesc(t('settings.columns_auto_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.columnsAuto ?? true)
+                .onChange(async (value) => {
+                    this.plugin.settings.columnsAuto = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        if (!(this.plugin.settings.columnsAuto ?? true)) {
+            const colSetting = new Setting(containerEl)
+                .setName(t('settings.columns'))
+                .setDesc(t('settings.columns_desc'));
+            colSetting.addText(text => text
+                .setPlaceholder('columns')
+                .setValue(String(this.plugin.settings.columns ?? 3))
+                .onChange(async (val) => {
+                    const num = parseInt(val, 10);
+                    if (!isNaN(num) && num > 0) {
+                        this.plugin.settings.columns = num;
+                        await this.plugin.saveSettings();
+                    }
+                }));
+            colSetting.addText(text => text
+                .setPlaceholder('maxColumns')
+                .setValue(String(this.plugin.settings.maxColumns ?? 6))
+                .onChange(async (val) => {
+                    const num = parseInt(val, 10);
+                    if (!isNaN(num) && num > 0) {
+                        this.plugin.settings.maxColumns = num;
+                        await this.plugin.saveSettings();
+                    }
+                }));
+        }
+
+        // 分组内布局
+        const innerSetting = new Setting(containerEl)
+            .setName(t('settings.group_inner_layout'))
+            .setDesc(t('settings.group_inner_layout_desc'));
+        innerSetting.addText(text => text
+            .setPlaceholder('innerPadding')
+            .setValue(String(this.plugin.settings.groupInnerPadding ?? 24))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= 0) {
+                    this.plugin.settings.groupInnerPadding = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+        innerSetting.addText(text => text
+            .setPlaceholder('innerGap')
+            .setValue(String(this.plugin.settings.groupInnerGap ?? 12))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= 0) {
+                    this.plugin.settings.groupInnerGap = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+        innerSetting.addText(text => text
+            .setPlaceholder('innerColumns')
+            .setValue(String(this.plugin.settings.groupInnerColumns ?? 2))
+            .onChange(async (val) => {
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num > 0) {
+                    this.plugin.settings.groupInnerColumns = num;
+                    await this.plugin.saveSettings();
+                }
+            }));
+    }
+
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
 
         // 基础设置
         this.addBasicSettings();
+        
+        // 自动布局设置
+        this.addAutoLayoutSettings();
         
         // 生词本管理
         this.addVocabularyBooksSection();

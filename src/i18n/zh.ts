@@ -32,6 +32,22 @@ export default {
         enable_mastered_feature_desc: "标记已掌握单词以停止高亮显示。侧边栏显示分组单词",
         blur_definitions: "模糊内容",
         blur_definitions_desc: "默认模糊显示内容，鼠标悬停时显示清晰内容。适合学习时先回忆再查看答案",
+        // 自动布局
+        auto_layout: "自动布局",
+        enable_auto_layout: "启用自动布局",
+        enable_auto_layout_desc: "在添加/更新/删除节点和分组变更后自动规范化布局",
+        card_size: "卡片尺寸（左侧区域）",
+        card_size_desc: "用于左侧非分组节点的卡片宽/高",
+        grid_gaps: "网格间距",
+        grid_gaps_desc: "左侧区域网格的水平/垂直间距",
+        left_padding: "左侧留白与最小X",
+        left_padding_desc: "Mastered 分组左侧的留白与左侧区域的最小 X 位置",
+        columns_auto: "自动列数",
+        columns_auto_desc: "根据内容自适应列数（受最大列数限制）",
+        columns: "固定列数/最大列数",
+        columns_desc: "指定固定列数与最大列数（当关闭自动列数时生效）",
+        group_inner_layout: "分组内布局",
+        group_inner_layout_desc: "分组内部的内边距、间距与列数设置",
     },
     
     // 侧边栏

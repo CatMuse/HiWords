@@ -24,7 +24,7 @@ export class VocabularyManager {
     constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
         this.canvasParser = new CanvasParser(app);
-        this.canvasEditor = new CanvasEditor(app);
+        this.canvasEditor = new CanvasEditor(app, settings);
         this.settings = settings;
     }
 
@@ -231,6 +231,10 @@ export class VocabularyManager {
         this.settings = settings;
         // 设置变更可能影响词汇，使缓存失效
         this.invalidateCache();
+        // 同步给 CanvasEditor
+        if (this.canvasEditor && (this.canvasEditor as any).updateSettings) {
+            this.canvasEditor.updateSettings(settings);
+        }
     }
 
     /**

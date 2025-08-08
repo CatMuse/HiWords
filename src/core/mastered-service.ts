@@ -17,7 +17,12 @@ export class MasteredService {
     constructor(plugin: HiWordsPlugin, vocabularyManager: VocabularyManager) {
         this.plugin = plugin;
         this.vocabularyManager = vocabularyManager;
-        this.masteredGroupManager = new MasteredGroupManager(plugin.app);
+        this.masteredGroupManager = new MasteredGroupManager(plugin.app, plugin.settings);
+    }
+
+    updateSettings() {
+        // 使用插件当前设置更新分组管理器
+        this.masteredGroupManager.updateSettings(this.plugin.settings);
     }
 
     /**

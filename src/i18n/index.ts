@@ -31,6 +31,26 @@ export interface LanguagePack {
         total_books: string;
         enabled_books: string;
         total_words: string;
+        enable_mastered_feature: string;
+        enable_mastered_feature_desc: string;
+        blur_definitions: string;
+        blur_definitions_desc: string;
+        // Auto layout section
+        auto_layout: string;
+        enable_auto_layout: string;
+        enable_auto_layout_desc: string;
+        card_size: string;
+        card_size_desc: string;
+        grid_gaps: string;
+        grid_gaps_desc: string;
+        left_padding: string;
+        left_padding_desc: string;
+        columns_auto: string;
+        columns_auto_desc: string;
+        columns: string;
+        columns_desc: string;
+        group_inner_layout: string;
+        group_inner_layout_desc: string;
     };
     sidebar: {
         title: string;

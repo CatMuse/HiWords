@@ -1,8 +1,8 @@
-import { App, Plugin, TFile, MarkdownView, Notice, Modal, WorkspaceLeaf, ItemView } from 'obsidian';
+import { App, Plugin, TFile, Notice, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
-import { HiWordsSettings, VocabularyBook } from './src/utils';
-import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, getWordUnderCursor, highlighterManager } from './src/core';
+import { HiWordsSettings } from './src/utils';
+import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, highlighterManager } from './src/core';
 import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
 import { i18n, t } from './src/i18n';
 
@@ -14,7 +14,21 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     highlightStyle: 'underline', // 默认使用下划线样式
     enableMasteredFeature: true, // 默认启用已掌握功能
     showMasteredInSidebar: true,  // 跟随 enableMasteredFeature 的值
-    blurDefinitions: false // 默认不启用模糊效果
+    blurDefinitions: false, // 默认不启用模糊效果
+    // 自动布局默认值
+    autoLayoutEnabled: true,
+    cardWidth: 260,
+    cardHeight: 120,
+    horizontalGap: 24,
+    verticalGap: 16,
+    leftPadding: 24,
+    columnsAuto: true,
+    columns: 3,
+    minLeftX: 0,
+    maxColumns: 6,
+    groupInnerPadding: 24,
+    groupInnerColumns: 2,
+    groupInnerGap: 12
 };
 
 export default class HiWordsPlugin extends Plugin {
@@ -273,6 +287,9 @@ export default class HiWordsPlugin extends Plugin {
     async saveSettings() {
         await this.saveData(this.settings);
         this.vocabularyManager.updateSettings(this.settings);
+        if (this.masteredService && (this.masteredService as any).updateSettings) {
+            this.masteredService.updateSettings();
+        }
     }
 
     /**

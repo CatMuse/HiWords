@@ -49,6 +49,22 @@ export interface HiWordsSettings {
     enableMasteredFeature: boolean; // 启用已掌握功能
     showMasteredInSidebar: boolean; // 在侧边栏显示已掌握单词
     blurDefinitions: boolean; // 模糊定义内容，悬停时显示
+    // 自动布局设置
+    autoLayoutEnabled?: boolean; // 是否启用自动布局
+    // 左侧区域布局
+    cardWidth?: number; // 节点卡片宽度
+    cardHeight?: number; // 节点卡片高度
+    horizontalGap?: number; // 列间距
+    verticalGap?: number; // 行间距
+    leftPadding?: number; // 分组左侧留白
+    columnsAuto?: boolean; // 是否自动计算列数
+    columns?: number; // 固定列数（当 columnsAuto=false 时生效）
+    minLeftX?: number; // 左侧最小X边界（可选）
+    maxColumns?: number; // 最大列数限制（可选）
+    // 分组内部布局
+    groupInnerPadding?: number; // 分组内边距
+    groupInnerColumns?: number; // 分组内部列数
+    groupInnerGap?: number; // 分组内部行列间距
 }
 
 // 词汇匹配信息

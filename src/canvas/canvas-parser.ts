@@ -187,52 +187,57 @@ export class CanvasParser {
      * @returns 是否在分组内
      */
     public isNodeInGroup(node: CanvasNode, group: CanvasNode): boolean {
-        // 检查节点是否有必要的坐标信息
-        if (typeof node.x !== 'number' || typeof node.y !== 'number' ||
-            typeof node.width !== 'number' || typeof node.height !== 'number' ||
-            typeof group.x !== 'number' || typeof group.y !== 'number' ||
-            typeof group.width !== 'number' || typeof group.height !== 'number') {
+        // 1) 优先使用 node.group 字段（若存在）
+        if (Array.isArray((node as any).group)) {
+            const groups = (node as any).group as string[];
+            if (groups.includes(group.id)) return true;
+            // 若存在 group 字段但不包含该组，直接判定不在组内
             return false;
         }
 
-        // 计算节点的边界
-        const nodeLeft = node.x;
-        const nodeRight = node.x + node.width;
-        const nodeTop = node.y;
-        const nodeBottom = node.y + node.height;
+        // 2) 宽高与坐标兜底（几何判定）
+        const nodeX = typeof node.x === 'number' ? node.x : 0;
+        const nodeY = typeof node.y === 'number' ? node.y : 0;
+        const nodeW = typeof node.width === 'number' ? node.width : 200; // 文本默认宽
+        const nodeH = typeof node.height === 'number' ? node.height : 60; // 文本默认高
 
-        // 计算分组的边界
-        const groupLeft = group.x;
-        const groupRight = group.x + group.width;
-        const groupTop = group.y;
-        const groupBottom = group.y + group.height;
+        const groupX = typeof group.x === 'number' ? group.x : 0;
+        const groupY = typeof group.y === 'number' ? group.y : 0;
+        const groupW = typeof group.width === 'number' ? group.width : 300; // 分组默认宽
+        const groupH = typeof group.height === 'number' ? group.height : 150; // 分组默认高
 
-        // 检查节点是否完全在分组内（或者至少有重叠）
-        const isInside = nodeLeft >= groupLeft && 
-                        nodeRight <= groupRight && 
-                        nodeTop >= groupTop && 
-                        nodeBottom <= groupBottom;
+        const nodeLeft = nodeX;
+        const nodeRight = nodeX + nodeW;
+        const nodeTop = nodeY;
+        const nodeBottom = nodeY + nodeH;
 
-        // 如果不完全在内，检查是否有重叠（更宽松的判断）
+        const groupLeft = groupX;
+        const groupRight = groupX + groupW;
+        const groupTop = groupY;
+        const groupBottom = groupY + groupH;
+
+        const isInside =
+            nodeLeft >= groupLeft &&
+            nodeRight <= groupRight &&
+            nodeTop >= groupTop &&
+            nodeBottom <= groupBottom;
+
         if (!isInside) {
-            const hasOverlap = nodeLeft < groupRight && 
-                              nodeRight > groupLeft && 
-                              nodeTop < groupBottom && 
-                              nodeBottom > groupTop;
-            
-            // 只有当重叠面积超过节点面积的 50% 时才认为在分组内
+            const hasOverlap =
+                nodeLeft < groupRight &&
+                nodeRight > groupLeft &&
+                nodeTop < groupBottom &&
+                nodeBottom > groupTop;
+
             if (hasOverlap) {
                 const overlapLeft = Math.max(nodeLeft, groupLeft);
                 const overlapRight = Math.min(nodeRight, groupRight);
                 const overlapTop = Math.max(nodeTop, groupTop);
                 const overlapBottom = Math.min(nodeBottom, groupBottom);
-                
                 const overlapArea = (overlapRight - overlapLeft) * (overlapBottom - overlapTop);
-                const nodeArea = node.width * node.height;
-                
+                const nodeArea = nodeW * nodeH;
                 return overlapArea >= nodeArea * 0.5;
             }
-            
             return false;
         }
 
