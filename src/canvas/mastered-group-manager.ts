@@ -270,25 +270,6 @@ export class MasteredGroupManager {
     }
 
     /**
-     * 第一阶段：准备节点放置
-     */
-    private prepareNodePlacement(node: CanvasNode, group: CanvasNode, canvasData: CanvasData) {
-        // 方案2：该方法不再承担布局职责，返回最小信息
-        const padding = this.settings?.groupInnerPadding ?? 24;
-        return {
-            success: true,
-            existingMembers: [],
-            safePosition: { x: group.x + padding, y: group.y + padding },
-            newGroupBounds: { x: group.x, y: group.y, width: group.width, height: group.height },
-            error: null
-        };
-    }
-
-    
-
-    
-
-    /**
      * 将节点移动到分组外的合适位置
      * @param node 要移动的节点
      * @param canvasData Canvas 数据
