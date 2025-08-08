@@ -180,6 +180,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }
             }));
+
     }
 
     display(): void {
@@ -188,12 +189,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         // 基础设置
         this.addBasicSettings();
-        
-        // 自动布局设置
-        this.addAutoLayoutSettings();
-        
+
         // 生词本管理
         this.addVocabularyBooksSection();
+
+        // 自动布局设置（移动到最后）
+        this.addAutoLayoutSettings();
     }
 
     /**
@@ -426,9 +427,21 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setHeading();
         
         const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
-        statsEl.createEl('p', { text: t('settings.total_books').replace('{0}', stats.totalBooks.toString()) });
-        statsEl.createEl('p', { text: t('settings.enabled_books').replace('{0}', stats.enabledBooks.toString()) });
-        statsEl.createEl('p', { text: t('settings.total_words').replace('{0}', stats.totalWords.toString()) });
+
+        // 总单词本数量
+        const totalBooksItem = statsEl.createEl('div', { cls: 'stat-item' });
+        totalBooksItem.createEl('div', { cls: 'stat-value', text: stats.totalBooks.toString() });
+        totalBooksItem.createEl('div', { cls: 'stat-label', text: t('settings.total_books').split(':')[0] });
+
+        // 已启用单词本
+        const enabledBooksItem = statsEl.createEl('div', { cls: 'stat-item' });
+        enabledBooksItem.createEl('div', { cls: 'stat-value', text: stats.enabledBooks.toString() });
+        enabledBooksItem.createEl('div', { cls: 'stat-label', text: t('settings.enabled_books').split(':')[0] });
+
+        // 总单词数
+        const totalWordsItem = statsEl.createEl('div', { cls: 'stat-item' });
+        totalWordsItem.createEl('div', { cls: 'stat-value', text: stats.totalWords.toString() });
+        totalWordsItem.createEl('div', { cls: 'stat-label', text: t('settings.total_words').split(':')[0] });
     }
 }
 
