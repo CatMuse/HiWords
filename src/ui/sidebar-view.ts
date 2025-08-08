@@ -11,6 +11,7 @@ export class HiWordsSidebarView extends ItemView {
     private activeTab: 'learning' | 'mastered' = 'learning';
     private currentFile: TFile | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null; // 缓存最后一个活动的MarkdownView
+    private firstLoadForFile: boolean = false; // 仅在切换到新文件后的首次渲染生效
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -103,7 +104,12 @@ export class HiWordsSidebarView extends ItemView {
             return;
         }
 
+        // 记录是否为切换到新文件
+        const isFileChanged = activeFile !== this.currentFile;
         this.currentFile = activeFile;
+        if (isFileChanged) {
+            this.firstLoadForFile = true;
+        }
         await this.scanCurrentDocument();
         this.renderWordList();
     }
@@ -179,10 +185,12 @@ export class HiWordsSidebarView extends ItemView {
         const masteredWords = this.currentWords.filter(word => word.mastered);
         
 
-        // 智能初始标签页选择：只在首次加载且没有待学习单词时切换到已掌握
-        if (this.activeTab === 'learning' && unmasteredWords.length === 0 && masteredWords.length > 0) {
+        // 智能初始标签页选择：仅在切换到新文件后的首次加载时进行
+        if (this.firstLoadForFile && this.activeTab === 'learning' && unmasteredWords.length === 0 && masteredWords.length > 0) {
             this.activeTab = 'mastered';
         }
+        // 首次渲染完成后，重置标记，避免用户点击时被强制切回
+        this.firstLoadForFile = false;
         
         // 创建 Tab 导航
         this.createTabNavigation(container as HTMLElement, unmasteredWords.length, masteredWords.length);
