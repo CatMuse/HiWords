@@ -33,7 +33,7 @@ export default {
         blur_definitions: "Blur content",
         blur_definitions_desc: "Blur content by default, reveal on hover. Great for learning—recall before seeing the answer",
         // Auto layout
-        auto_layout: "Auto Layout",
+        auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
         enable_auto_layout_desc: "Automatically normalize layout after add/update/delete and group changes",
         card_size: "Card size (left area)",

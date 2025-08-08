@@ -1,9 +1,13 @@
 import { App } from 'obsidian';
 import en from './en';
 import zh from './zh';
+import es from './es';
+import fr from './fr';
+import de from './de';
+import ja from './ja';
 
 // 支持的语言
-export type SupportedLocale = 'en' | 'zh';
+export type SupportedLocale = 'en' | 'zh' | 'es' | 'fr' | 'de' | 'ja';
 
 // 语言包接口
 export interface LanguagePack {
@@ -100,7 +104,11 @@ export interface LanguagePack {
 // 语言包集合
 const languagePacks: Record<SupportedLocale, LanguagePack> = {
     en,
-    zh
+    zh,
+    es,
+    fr,
+    de,
+    ja,
 };
 
 /**
@@ -137,6 +145,18 @@ export class I18n {
         // 将 Obsidian 语言设置映射到我们支持的语言
         if (obsidianLocale.startsWith('zh')) {
             return 'zh';
+        }
+        if (obsidianLocale.startsWith('es')) {
+            return 'es';
+        }
+        if (obsidianLocale.startsWith('fr')) {
+            return 'fr';
+        }
+        if (obsidianLocale.startsWith('de')) {
+            return 'de';
+        }
+        if (obsidianLocale.startsWith('ja') || obsidianLocale.startsWith('jp')) {
+            return 'ja';
         }
         
         // 默认返回英文

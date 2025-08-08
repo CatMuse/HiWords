@@ -2,12 +2,12 @@
 
 export default {
     // 通用
-    plugin_name: "生词本",
+    plugin_name: "HiWords",
     
     // 设置
     settings: {
-        vocabulary_books: "生词本",
-        add_vocabulary_book: "添加生词本",
+        vocabulary_books: "单词本",
+        add_vocabulary_book: "添加单词本",
         remove_vocabulary_book: "移除",
         show_definition_on_hover: "悬停显示释义",
         show_definition_on_hover_desc: "鼠标悬停在高亮词汇上时显示定义",
@@ -21,19 +21,19 @@ export default {
         style_dotted: "点状下划线",
         style_wavy: "波浪线",
         save_settings: "保存设置",
-        no_vocabulary_books: "暂无生词本，请添加 Canvas 文件作为生词本",
+        no_vocabulary_books: "暂无单词本，请添加 Canvas 文件作为单词本",
         path: "路径",
-        reload_book: "重新解析该生词本",
+        reload_book: "重新解析该单词本",
         statistics: "统计信息",
-        total_books: "总生词本数量: {0}",
-        enabled_books: "已启用生词本: {0}",
+        total_books: "总单词本数量: {0}",
+        enabled_books: "已启用单词本: {0}",
         total_words: "总词汇数量: {0}",
         enable_mastered_feature: "启用已掌握功能",
         enable_mastered_feature_desc: "标记已掌握单词以停止高亮显示。侧边栏显示分组单词",
         blur_definitions: "模糊内容",
         blur_definitions_desc: "默认模糊显示内容，鼠标悬停时显示清晰内容。适合学习时先回忆再查看答案",
         // 自动布局
-        auto_layout: "自动布局",
+        auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
         enable_auto_layout_desc: "在添加/更新/删除节点和分组变更后自动规范化布局",
         card_size: "卡片尺寸（左侧区域）",
@@ -111,10 +111,10 @@ export default {
     modals: {
         add_word_title: "添加 ",
         edit_word_title: "编辑 ",
-        word_label: "词汇",
+        word_label: "单词",
         definition_label: "释义",
-        book_label: "生词本",
-        select_book: "选择生词本",
+        book_label: "单词本",
+        select_book: "选择单词本",
         color_label: "卡片颜色",
         color_gray: "灰色",
         color_red: "红色",
