@@ -32,6 +32,9 @@ export default {
         enable_mastered_feature_desc: "标记已掌握单词以停止高亮显示。侧边栏显示分组单词",
         blur_definitions: "模糊内容",
         blur_definitions_desc: "默认模糊显示内容，鼠标悬停时显示清晰内容。适合学习时先回忆再查看答案",
+        // 发音地址模板
+        tts_template: "发音地址模板",
+        tts_template_desc: "使用 {{word}} 作为占位符，例如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
         // 自动布局
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",

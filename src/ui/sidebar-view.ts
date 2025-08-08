@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
-import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity } from '../utils';
+import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
@@ -130,14 +130,16 @@ export class HiWordsSidebarView extends ItemView {
             // 扫描文档内容，查找生词并记录位置
             for (const wordDef of allWordDefinitions) {
                 // 检查主单词
-                let regex = new RegExp(`\\b${this.escapeRegExp(wordDef.word)}\\b`, 'gi');
+                // 使用 Unicode 感知的匹配：
+                // 英文等拉丁词使用 \b 边界；含日语/CJK 的词不使用 \b，以便能在无空格文本中命中
+                let regex = this.buildSearchRegex(wordDef.word);
                 let match = regex.exec(content);
                 let position = match ? match.index : -1;
                 
                 // 检查别名
                 if (position === -1 && wordDef.aliases) {
                     for (const alias of wordDef.aliases) {
-                        regex = new RegExp(`\\b${this.escapeRegExp(alias)}\\b`, 'gi');
+                        regex = this.buildSearchRegex(alias);
                         match = regex.exec(content);
                         if (match) {
                             position = match.index;
@@ -330,7 +332,14 @@ export class HiWordsSidebarView extends ItemView {
 
         // 词汇标题
         const wordTitle = card.createEl('div', { cls: 'hi-words-word-title' });
-        wordTitle.createEl('span', { text: wordDef.word, cls: 'hi-words-word-text' });
+        const wordTextEl = wordTitle.createEl('span', { text: wordDef.word, cls: 'hi-words-word-text' });
+        // 点击主词发音
+        wordTextEl.style.cursor = 'pointer';
+        wordTextEl.title = '点击发音';
+        wordTextEl.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await playWordTTS(this.plugin, wordDef.word);
+        });
         
         // 已掌握按钮（如果启用了功能）
         if (this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
@@ -458,6 +467,20 @@ export class HiWordsSidebarView extends ItemView {
      */
     private escapeRegExp(string: string): string {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    /**
+     * 构建用于扫描文档的正则。
+     * - 对仅包含拉丁字符的词：使用 \b 边界避免误匹配，如 "art" 不匹配 "start"。
+     * - 对包含日语/CJK 的词：不使用 \b（因为 CJK 文本常无空格），并使用 Unicode 标志。
+     */
+    private buildSearchRegex(term: string): RegExp {
+        const escaped = this.escapeRegExp(term);
+        // 检测是否包含 CJK 或日语脚本
+        const hasCJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(term);
+        const pattern = hasCJK ? `${escaped}` : `\\b${escaped}\\b`;
+        const flags = hasCJK ? 'giu' : 'gi';
+        return new RegExp(pattern, flags);
     }
 
     /**

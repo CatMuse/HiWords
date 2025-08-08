@@ -39,6 +39,9 @@ export interface LanguagePack {
         enable_mastered_feature_desc: string;
         blur_definitions: string;
         blur_definitions_desc: string;
+        // TTS template (optional for backward compatibility)
+        tts_template?: string;
+        tts_template_desc?: string;
         // Auto layout section
         auto_layout: string;
         enable_auto_layout: string;

@@ -272,6 +272,18 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.app.workspace.trigger('hi-words:settings-changed');
                 }));
 
+        // 发音地址模板（点击主词发音）
+        new Setting(containerEl)
+            .setName(t('settings.tts_template') || 'TTS template')
+            .setDesc(t('settings.tts_template_desc') || 'Use {{word}} as placeholder, e.g. https://dict.youdao.com/dictvoice?audio={{word}}&type=2')
+            .addText(text => text
+                .setPlaceholder('https://...{{word}}...')
+                .setValue(this.plugin.settings.ttsTemplate || 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2')
+                .onChange(async (val) => {
+                    this.plugin.settings.ttsTemplate = val.trim();
+                    await this.plugin.saveSettings();
+                }));
+
     }
 
     /**

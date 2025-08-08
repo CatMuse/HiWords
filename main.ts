@@ -15,6 +15,8 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     enableMasteredFeature: true, // 默认启用已掌握功能
     showMasteredInSidebar: true,  // 跟随 enableMasteredFeature 的值
     blurDefinitions: false, // 默认不启用模糊效果
+    // 发音地址模板（用户可在设置里修改）
+    ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
     // 自动布局默认值
     autoLayoutEnabled: true,
     cardWidth: 260,

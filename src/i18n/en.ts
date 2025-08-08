@@ -32,6 +32,9 @@ export default {
         enable_mastered_feature_desc: "Mark mastered words to stop highlighting them. Sidebar shows grouped words",
         blur_definitions: "Blur content",
         blur_definitions_desc: "Blur content by default, reveal on hover. Great for learning—recall before seeing the answer",
+        // TTS template
+        tts_template: "TTS URL template",
+        tts_template_desc: "Use {{word}} as placeholder, e.g. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",

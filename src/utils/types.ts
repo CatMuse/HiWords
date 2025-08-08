@@ -49,6 +49,8 @@ export interface HiWordsSettings {
     enableMasteredFeature: boolean; // 启用已掌握功能
     showMasteredInSidebar: boolean; // 在侧边栏显示已掌握单词
     blurDefinitions: boolean; // 模糊定义内容，悬停时显示
+    // 发音地址模板（如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2）
+    ttsTemplate?: string;
     // 自动布局设置
     autoLayoutEnabled?: boolean; // 是否启用自动布局
     // 左侧区域布局

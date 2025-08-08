@@ -6,3 +6,4 @@ export { Trie } from './trie';
 export type { TrieMatch } from './trie';
 export * from './color-utils';
 export * from './types';
+export * from './tts';

@@ -1,5 +1,6 @@
 import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile } from 'obsidian';
 import { VocabularyManager, MasteredService } from '../core';
+import { playWordTTS } from '../utils';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
 
@@ -199,6 +200,13 @@ export class DefinitionPopover {
         titleEl.className = 'hi-words-tooltip-title';
         titleEl.textContent = word;
         titleContainer.appendChild(titleEl);
+        // 点击标题发音
+        titleEl.style.cursor = 'pointer';
+        titleEl.title = '点击发音';
+        titleEl.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await playWordTTS(this.plugin, word);
+        });
         
         // 先添加标题容器
         tooltip.appendChild(titleContainer);
