@@ -38,6 +38,28 @@ export class CanvasParser {
     }
 
     /**
+     * 去除 Markdown 文本开头的 Frontmatter（YAML）
+     * 仅在文本以 --- 开头时尝试移除首个 frontmatter 块
+     */
+    private removeFrontmatter(text: string): string {
+        if (!text) return text;
+        // 去除 BOM
+        if (text.charCodeAt(0) === 0xFEFF) {
+            text = text.slice(1);
+        }
+        // 仅当以 --- 开头时尝试剥离到下一处 --- 为止
+        if (text.startsWith('---')) {
+            const fmEnd = text.indexOf('\n---');
+            if (fmEnd !== -1) {
+                const after = text.slice(fmEnd + 4); // 跳过 "\n---"
+                // 去掉可能紧随其后的一个换行
+                return after.replace(/^\r?\n/, '');
+            }
+        }
+        return text;
+    }
+
+    /**
      * 解析 Canvas 文件，提取词汇定义
      */
     async parseCanvasFile(file: TFile): Promise<WordDefinition[]> {
@@ -54,16 +76,23 @@ export class CanvasParser {
             const definitions: WordDefinition[] = [];
             
             for (const node of canvasData.nodes) {
+                // 文本节点
                 if (node.type === 'text' && node.text) {
                     const wordDef = this.parseTextNode(node, file.path);
                     if (wordDef) {
-                        // 检查节点是否在 "Mastered" 分组内
                         if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
                             wordDef.mastered = true;
-                            
-
                         }
-                        
+                        definitions.push(wordDef);
+                    }
+                }
+                // 文件节点（Markdown）
+                else if (node.type === 'file' && (node as any).file) {
+                    const wordDef = await this.parseFileNode(node, file.path);
+                    if (wordDef) {
+                        if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
+                            wordDef.mastered = true;
+                        }
                         definitions.push(wordDef);
                     }
                 }
@@ -77,13 +106,13 @@ export class CanvasParser {
     }
 
     /**
-     * 解析文本节点，提取单词、别名和定义
-     * 优化版本：支持主名字换行后的斜体格式作为别名格式
+     * 从任意文本内容解析单词、别名和定义
      */
-    private parseTextNode(node: CanvasNode, sourcePath: string): WordDefinition | null {
-        if (!node.text) return null;
+    private parseFromText(text: string, node: CanvasNode, sourcePath: string): WordDefinition | null {
+        if (!text) return null;
 
-        const text = node.text.trim();
+        // 先移除 Frontmatter，再整体修剪
+        text = this.removeFrontmatter(text).trim();
         let word = '';
         let aliases: string[] = [];
         let definition = '';
@@ -156,6 +185,36 @@ export class CanvasParser {
             return result;
         } catch (error) {
             console.error(`解析节点文本时出错: ${error}`);
+            return null;
+        }
+    }
+
+    /**
+     * 解析文本节点，提取单词、别名和定义（包装通用文本解析）
+     * 优化版本：支持主名字换行后的斜体格式作为别名格式
+     */
+    private parseTextNode(node: CanvasNode, sourcePath: string): WordDefinition | null {
+        if (!node.text) return null;
+        return this.parseFromText(node.text, node, sourcePath);
+    }
+
+    /**
+     * 解析文件节点（Markdown），通过路径读取文件并复用文本解析规则
+     */
+    private async parseFileNode(node: CanvasNode, sourcePath: string): Promise<WordDefinition | null> {
+        try {
+            const filePath = (node as any).file as string | undefined;
+            if (!filePath) return null;
+
+            const abs = this.app.vault.getAbstractFileByPath(filePath);
+            if (!(abs instanceof TFile)) return null;
+            if (abs.extension !== 'md') return null;
+
+            const md = await this.app.vault.read(abs);
+            // 对于文件节点，source 记录为 Markdown 文件路径
+            return this.parseFromText(md, node, abs.path);
+        } catch (error) {
+            console.error('解析文件节点失败:', error);
             return null;
         }
     }

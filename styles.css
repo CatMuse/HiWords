@@ -143,6 +143,13 @@
     color: var(--text-muted);
 }
 
+/* Markdown 内容样式 - Tooltip 分隔线 */
+.hi-words-tooltip-content hr {
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+    margin: 8px 0;
+}
+
 /* Markdown 内容样式 - 侧边栏单词卡片 */
 .hi-words-definition p {
     margin: 0 0 8px 0;
@@ -170,6 +177,13 @@
     margin: 4px 0;
     padding-left: 10px;
     color: var(--text-muted);
+}
+
+/* Markdown 内容样式 - 侧边栏单词卡片 分隔线 */
+.hi-words-definition hr {
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+    margin: 8px 0;
 }
 
 /* 模糊定义内容功能 */
