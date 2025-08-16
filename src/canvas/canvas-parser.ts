@@ -211,8 +211,8 @@ export class CanvasParser {
             if (abs.extension !== 'md') return null;
 
             const md = await this.app.vault.read(abs);
-            // 对于文件节点，source 记录为 Markdown 文件路径
-            return this.parseFromText(md, node, abs.path);
+            // 对于文件节点，source 统一记录为 Canvas 文件路径（生词本路径）
+            return this.parseFromText(md, node, sourcePath);
         } catch (error) {
             console.error('解析文件节点失败:', error);
             return null;
