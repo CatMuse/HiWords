@@ -118,6 +118,76 @@ export class DefinitionPopover {
         processText(remainingText);
     }
 
+    /**
+     * 绑定内部链接与标签的交互：
+     * - internal-link: 悬停触发原生预览，点击打开链接
+     * - tag: 点击打开/复用搜索视图
+     */
+    private bindInternalLinksAndTags(root: HTMLElement, sourcePath: string, hoverParent: HTMLElement) {
+        // 内部链接
+        root.querySelectorAll('a.internal-link').forEach((a) => {
+            const linkEl = a as HTMLAnchorElement;
+            const linktext = (linkEl.getAttribute('href') || (linkEl as any).dataset?.href || '').trim();
+            if (!linktext) return;
+
+            linkEl.addEventListener('mouseover', (evt) => {
+                // 触发原生悬停预览
+                (this.app.workspace as any).trigger('hover-link', {
+                    event: evt,
+                    source: 'hi-words',
+                    hoverParent,
+                    target: linkEl,
+                    linktext,
+                    sourcePath
+                });
+            });
+
+            linkEl.addEventListener('click', (evt) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.app.workspace.openLinkText(linktext, sourcePath);
+                // 关闭 tooltip（若存在）
+                this.removeTooltip();
+            });
+        });
+
+        // 标签
+        root.querySelectorAll('a.tag').forEach((a) => {
+            const tagEl = a as HTMLAnchorElement;
+            const query = (tagEl.getAttribute('href') || tagEl.textContent || '').trim();
+            if (!query) return;
+            tagEl.addEventListener('click', (evt) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.openOrUpdateSearch(query.startsWith('#') ? query : `#${query}`);
+                this.removeTooltip();
+            });
+        });
+    }
+
+    /** 打开或复用全局搜索视图并设置查询 */
+    private openOrUpdateSearch(query: string) {
+        try {
+            const leaves = this.app.workspace.getLeavesOfType('search');
+            if (leaves.length > 0) {
+                const view: any = leaves[0].view;
+                view.setQuery?.(query);
+                this.app.workspace.revealLeaf(leaves[0]);
+                return;
+            }
+
+            const leaf = this.app.workspace.getRightLeaf(false);
+            if (!leaf) return;
+            // 确保全局搜索已启用
+            (this.app as any).internalPlugins?.getPluginById?.('global-search')?.enable?.();
+            (leaf as any).setViewState?.({ type: 'search', active: true });
+            const view: any = (leaf as any).view;
+            view?.setQuery?.(query);
+        } catch (e) {
+            console.error('打开搜索失败:', e);
+        }
+    }
+
     setVocabularyManager(manager: VocabularyManager) {
         this.vocabularyManager = manager;
     }
@@ -227,20 +297,21 @@ export class DefinitionPopover {
         } else {
             try {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (activeView && activeView.file) {
-                    MarkdownRenderer.renderMarkdown(
-                        definition,
-                        contentEl,
-                        activeView.file.path,
-                        activeView
-                    );
-                } else {
-                    const formattedText = this.simpleMarkdownToHtml(definition);
-                    this.setContentSafely(contentEl, formattedText);
-                }
+                const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
+                // 始终优先使用 Obsidian 原生渲染
+                MarkdownRenderer.renderMarkdown(
+                    definition,
+                    contentEl,
+                    sourcePath,
+                    this.plugin
+                );
+                // 渲染完成后绑定交互（异步以确保节点就绪）
+                setTimeout(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip), 0);
             } catch (error) {
                 console.error('Markdown 渲染失败:', error);
-                contentEl.textContent = definition;
+                // 兜底：简易安全渲染
+                const formattedText = this.simpleMarkdownToHtml(definition);
+                this.setContentSafely(contentEl, formattedText);
             }
         }
         tooltip.appendChild(contentEl);
