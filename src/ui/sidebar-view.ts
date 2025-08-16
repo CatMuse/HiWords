@@ -335,7 +335,6 @@ export class HiWordsSidebarView extends ItemView {
         const wordTextEl = wordTitle.createEl('span', { text: wordDef.word, cls: 'hi-words-word-text' });
         // 点击主词发音
         wordTextEl.style.cursor = 'pointer';
-        wordTextEl.title = '点击发音';
         wordTextEl.addEventListener('click', async (e) => {
             e.stopPropagation();
             await playWordTTS(this.plugin, wordDef.word);
@@ -346,7 +345,7 @@ export class HiWordsSidebarView extends ItemView {
             const buttonContainer = wordTitle.createEl('div', { 
                 cls: 'hi-words-title-mastered-button',
                 attr: {
-                    'aria-label': isMastered ? '忘记了' : '已掌握'
+                    'aria-label': isMastered ? t('actions.unmark_mastered') : t('actions.mark_mastered')
                 }
             });
             
@@ -376,21 +375,20 @@ export class HiWordsSidebarView extends ItemView {
         // 定义内容
         if (wordDef.definition && wordDef.definition.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
-            
-            // 创建定义容器
-            const defContainer = definition.createEl('div', { 
+
+            // 外层可折叠容器
+            const collapsible = definition.createEl('div', { cls: 'hi-words-collapsible collapsed' });
+
+            // 真正的 Markdown 内容容器
+            const defContainer = collapsible.createEl('div', {
                 cls: this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition'
             });
-            
-            // 不再限制定义长度，直接显示完整定义
-            
+
             // 渲染 Markdown 内容
             try {
-                // 优先使用当前活动的 MarkdownView，如果没有则使用缓存的最后一个活动视图
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView) || this.lastActiveMarkdownView;
-                
+
                 if (activeView && activeView.file) {
-                    // 直接渲染完整定义
                     MarkdownRenderer.renderMarkdown(
                         wordDef.definition,
                         defContainer,
@@ -398,14 +396,41 @@ export class HiWordsSidebarView extends ItemView {
                         activeView
                     );
                 } else {
-                    // 如果没有可用的 MarkdownView，使用简单的文本显示
                     defContainer.textContent = wordDef.definition;
                 }
             } catch (error) {
-                // 如果渲染失败，回退到纯文本显示
                 console.error('Markdown 渲染失败:', error);
                 defContainer.textContent = wordDef.definition;
             }
+
+            // 渲染完成后异步测量高度，决定是否需要展开/收起控件
+            setTimeout(() => {
+                const MAX_COLLAPSED = 140; // 与 CSS 保持一致
+                const needsToggle = collapsible.scrollHeight > MAX_COLLAPSED + 4; // 容差
+
+                if (!needsToggle) {
+                    collapsible.removeClass('collapsed');
+                    return;
+                }
+
+                // 创建覆盖式展开/收起叠层
+                const overlay = definition.createEl('div', { cls: 'hi-words-expand-overlay', text: t('actions.expand') });
+                const updateText = () => {
+                    overlay.setText(collapsible.hasClass('collapsed') ? t('actions.expand') : t('actions.collapse'));
+                };
+                updateText();
+
+                overlay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // 切换折叠状态
+                    if (collapsible.hasClass('collapsed')) {
+                        collapsible.removeClass('collapsed');
+                    } else {
+                        collapsible.addClass('collapsed');
+                    }
+                    updateText();
+                });
+            }, 0);
         }
         
         // 来源信息

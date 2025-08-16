@@ -97,6 +97,9 @@
     line-height: 1.5;
     font-size: 14px;
     margin-bottom: 6px;
+    /* 限制悬停预览高度，避免过长内容撑开 */
+    max-height: 260px;
+    overflow: auto;
 }
 
 .hi-words-tooltip-source {
@@ -150,6 +153,23 @@
     margin: 8px 0;
 }
 
+/* Markdown 标题间距优化 - Tooltip */
+.hi-words-tooltip-content h1,
+.hi-words-tooltip-content h2,
+.hi-words-tooltip-content h3,
+.hi-words-tooltip-content h4,
+.hi-words-tooltip-content h5,
+.hi-words-tooltip-content h6 {
+    margin: 6px 0 4px 0; /* 减小上下间距 */
+    line-height: 1.25;   /* 更紧凑的行高 */
+}
+.hi-words-tooltip-content > :first-child {
+    margin-top: 0 !important; /* 首元素无多余顶距 */
+}
+.hi-words-tooltip-content > :last-child {
+    margin-bottom: 0 !important; /* 尾元素无多余底距 */
+}
+
 /* Markdown 内容样式 - 侧边栏单词卡片 */
 .hi-words-definition p {
     margin: 0 0 8px 0;
@@ -186,6 +206,38 @@
     margin: 8px 0;
 }
 
+/* Markdown 标题间距优化 - 侧边栏定义 */
+.hi-words-definition h1,
+.hi-words-definition h2,
+.hi-words-definition h3,
+.hi-words-definition h4,
+.hi-words-definition h5,
+.hi-words-definition h6 {
+    margin: 6px 0 4px 0;
+    line-height: 1.25;
+}
+.hi-words-definition > :first-child {
+    margin-top: 0 !important;
+}
+.hi-words-definition > :last-child {
+    margin-bottom: 0 !important;
+}
+
+/* 侧边栏定义内容的可折叠容器 */
+.hi-words-collapsible {
+    position: relative;
+    transition: max-height 0.25s ease;
+}
+
+/* 折叠状态：限制高度并隐藏溢出 */
+.hi-words-collapsible.collapsed {
+    max-height: 140px;
+    overflow: hidden;
+}
+
+/* 渐变遮罩，提示可展开 */
+/* 取消渐变遮罩，交互改为悬停时覆盖叠层按钮 */
+
 /* 模糊定义内容功能 */
 .hi-words-definition.blur-enabled {
     filter: blur(4px);
@@ -221,13 +273,32 @@
     transition: opacity 0.2s ease;
 }
 
-/* 侧边栏单词卡片展开/收起按钮样式 */
-.hi-words-expand-btn {
-    color: var(--text-accent);
-    cursor: pointer;
-    font-size: 0.9em;
+/* 覆盖式展开/收起叠层（覆盖定义区域，卡片悬停时显示） */
+.hi-words-expand-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 26px; /* 仅底部条 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
     font-weight: 500;
-    margin-left: 4px;
+    color: var(--text-accent);
+    background: var(--word-card-bg-color, var(--background-secondary));
+    backdrop-filter: blur(32px);
+    z-index: 2;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none; /* 非悬停时不拦截点击 */
+    user-select: none;
+}
+
+.hi-words-word-card:hover .hi-words-expand-overlay {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* 设置页面样式 */

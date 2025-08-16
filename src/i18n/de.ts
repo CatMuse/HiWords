@@ -132,4 +132,11 @@ export default {
         select_canvas_file: "Datei des Wörterbuchs auswählen",
         delete_confirmation: "Möchten Sie das Wort \"{0}\" wirklich löschen?\nDiese Aktion kann nicht rückgängig gemacht werden.",
     },
+    // Allgemeine Aktionsbeschriftungen
+    actions: {
+        expand: "Erweitern",
+        collapse: "Einklappen",
+        mark_mastered: "Als beherrscht markieren",
+        unmark_mastered: "Beherrschung aufheben",
+    },
 }

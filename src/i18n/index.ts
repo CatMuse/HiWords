@@ -102,6 +102,13 @@ export interface LanguagePack {
         cancel_button: string;
         select_canvas_file: string;
     };
+    // Common action labels used in UI
+    actions?: {
+        expand: string;        // 展开
+        collapse: string;      // 收起
+        mark_mastered: string; // 已掌握
+        unmark_mastered: string; // 忘记了（取消已掌握）
+    };
 }
 
 // 语言包集合

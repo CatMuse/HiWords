@@ -135,4 +135,11 @@ export default {
         select_canvas_file: "Select vocabulary book file",
         delete_confirmation: "Are you sure you want to delete the word \"{0}\"?\nThis action cannot be undone.",
     },
+    // Common action labels
+    actions: {
+        expand: "Expand",
+        collapse: "Collapse",
+        mark_mastered: "Mark mastered",
+        unmark_mastered: "Unmark mastered",
+    },
 }

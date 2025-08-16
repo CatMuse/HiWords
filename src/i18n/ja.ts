@@ -130,6 +130,13 @@ export default {
         save_button: "保存",
         cancel_button: "キャンセル",
         select_canvas_file: "単語帳ファイルを選択",
-        delete_confirmation: "単語 \"{0}\" を削除しますか？\nこの操作は元に戻せません。",
+        delete_confirmation: "単語 \"{0}\" を削除してもよろしいですか？\nこの操作は元に戻せません。",
+    },
+    // 共通アクションラベル
+    actions: {
+        expand: "展開",
+        collapse: "折りたたむ",
+        mark_mastered: "習得済みにする",
+        unmark_mastered: "習得済みを解除",
     },
 }

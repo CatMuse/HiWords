@@ -132,4 +132,11 @@ export default {
         select_canvas_file: "Seleccionar archivo del libro",
         delete_confirmation: "¿Seguro que deseas eliminar la palabra \"{0}\"?\nEsta acción no se puede deshacer.",
     },
+    // Etiquetas comunes de acciones
+    actions: {
+        expand: "Expandir",
+        collapse: "Contraer",
+        mark_mastered: "Marcar como dominado",
+        unmark_mastered: "Desmarcar dominado",
+    },
 }

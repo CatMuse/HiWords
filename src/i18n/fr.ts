@@ -130,6 +130,13 @@ export default {
         save_button: "Enregistrer",
         cancel_button: "Annuler",
         select_canvas_file: "Sélectionner le fichier du livre",
-        delete_confirmation: "Voulez-vous vraiment supprimer le mot \"{0}\" ?\nCette action est irréversible.",
+        delete_confirmation: "Êtes-vous sûr de vouloir supprimer le mot \"{0}\" ?\nCette action est irréversible.",
+    },
+    // Libellés d'actions communs
+    actions: {
+        expand: "Déployer",
+        collapse: "Replier",
+        mark_mastered: "Marquer comme maîtrisé",
+        unmark_mastered: "Retirer le statut maîtrisé",
     },
 }

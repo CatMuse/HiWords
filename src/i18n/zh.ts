@@ -135,4 +135,11 @@ export default {
         select_canvas_file: "选择 Canvas 文件",
         delete_confirmation: "确定要删除词汇 \"{0}\" 吗？\n此操作不可撤销。",
     },
+    // 通用操作文案
+    actions: {
+        expand: "展开",
+        collapse: "收起",
+        mark_mastered: "已掌握",
+        unmark_mastered: "忘记了",
+    },
 }
