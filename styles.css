@@ -276,20 +276,22 @@
 /* 覆盖式展开/收起叠层（覆盖定义区域，卡片悬停时显示） */
 .hi-words-expand-overlay {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 26px; /* 仅底部条 */
+    left: auto;
+    right: 0px;
+    bottom: 0px;
+    height: auto;
+    min-height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
     font-weight: 500;
-    color: var(--text-accent);
-    background: var(--word-card-bg-color, var(--background-secondary));
-    backdrop-filter: blur(32px);
+    color: white;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
     z-index: 2;
-    border-radius: 6px;
+    border-radius: 4px;
+    padding: 2px 8px;
     opacity: 0;
     transition: opacity 0.15s ease;
     pointer-events: none; /* 非悬停时不拦截点击 */
@@ -715,8 +717,6 @@
     overflow-wrap: break-word;
     min-width: 0;
 }
-
-/* 展开/收起按钮样式已删除 */
 
 .hi-words-empty-state {
     display: flex;
