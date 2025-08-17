@@ -30,6 +30,11 @@ export default {
         total_words: "总词汇数量: {0}",
         enable_mastered_feature: "启用已掌握功能",
         enable_mastered_feature_desc: "标记已掌握单词以停止高亮显示。侧边栏显示分组单词",
+        // 已掌握判定模式
+        mastered_detection: "已掌握判定模式",
+        mastered_detection_desc: "选择用于判定“已掌握”的方式：分组或颜色（绿色=4）",
+        mode_group: "分组模式",
+        mode_color: "颜色模式（绿色=4）",
         blur_definitions: "模糊内容",
         blur_definitions_desc: "默认模糊显示内容，鼠标悬停时显示清晰内容。适合学习时先回忆再查看答案",
         // 发音地址模板

@@ -257,7 +257,35 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.refreshHighlighter();
                     // 触发侧边栏更新
                     this.plugin.app.workspace.trigger('hi-words:mastered-changed');
+                    this.display();
                 }));
+
+        // 已掌握判定模式（分组/颜色）
+        const masteredMode = new Setting(containerEl)
+            .setName(t('settings.mastered_detection') || 'Mastered detection mode')
+            .setDesc(t('settings.mastered_detection_desc') || 'Choose how to detect "mastered": by group or by color (green = 4)');
+        masteredMode.addDropdown(dropdown => dropdown
+            .addOption('group', t('settings.mode_group') || 'Group mode')
+            .addOption('color', t('settings.mode_color') || 'Color mode (green = 4)')
+            .setValue(this.plugin.settings.masteredDetection ?? 'group')
+            .onChange(async (value) => {
+                // 保存并同步到各子模块
+                (this.plugin.settings as any).masteredDetection = value as 'group' | 'color';
+                await this.plugin.saveSettings();
+                // 同步给 VocabularyManager/Parser/Editor
+                if (this.plugin.vocabularyManager?.updateSettings) {
+                    this.plugin.vocabularyManager.updateSettings(this.plugin.settings as any);
+                }
+                // 重新加载以按新模式解析 mastered 状态
+                await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                this.plugin.refreshHighlighter();
+                // 通知工作区应用
+                this.plugin.app.workspace.trigger('hi-words:settings-changed');
+            }));
+        // 当功能未启用时禁用选择
+        if (!this.plugin.settings.enableMasteredFeature) {
+            masteredMode.setDisabled(true);
+        }
 
         // 模糊定义内容
         new Setting(containerEl)
@@ -345,7 +373,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         }
 
         // 验证 Canvas 文件
-        const parser = new CanvasParser(this.app);
+        const parser = new CanvasParser(this.app, this.plugin.settings as any);
         const isValid = await parser.validateCanvasFile(file);
         if (!isValid) {
             new Notice(t('notices.invalid_canvas_file'));

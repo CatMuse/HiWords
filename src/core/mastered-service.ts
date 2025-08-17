@@ -46,6 +46,8 @@ export class MasteredService {
         }
 
         try {
+            const mode = this.plugin.settings.masteredDetection ?? 'group';
+
             // 1. 更新内存缓存中的已掌握状态
             const success = await this.updateWordMasteredStatus(bookPath, nodeId, true);
             if (!success) {
@@ -53,13 +55,24 @@ export class MasteredService {
                 return false;
             }
 
-            // 2. 移动到 Canvas 分组
-            const moveSuccess = await this.masteredGroupManager.moveToMasteredGroup(bookPath, nodeId);
-            if (!moveSuccess) {
-                // 如果移动失败，回滚内存状态
-                await this.updateWordMasteredStatus(bookPath, nodeId, false);
-                new Notice(t('notices.move_to_mastered_group_failed'));
-                return false;
+            // 2. 根据模式更新 Canvas
+            if (mode === 'group') {
+                const moveSuccess = await this.masteredGroupManager.moveToMasteredGroup(bookPath, nodeId);
+                if (!moveSuccess) {
+                    // 如果移动失败，回滚内存状态
+                    await this.updateWordMasteredStatus(bookPath, nodeId, false);
+                    new Notice(t('notices.move_to_mastered_group_failed'));
+                    return false;
+                }
+            } else {
+                // 颜色模式：设置为绿色(4)
+                const colorSuccess = await this.vocabularyManager.setNodeColor(bookPath, nodeId, 4);
+                if (!colorSuccess) {
+                    // 回滚内存状态
+                    await this.updateWordMasteredStatus(bookPath, nodeId, false);
+                    new Notice(t('notices.update_word_status_failed'));
+                    return false;
+                }
             }
 
             // 3. 刷新高亮显示（排除已掌握单词）
@@ -93,6 +106,8 @@ export class MasteredService {
         }
 
         try {
+            const mode = this.plugin.settings.masteredDetection ?? 'group';
+
             // 1. 更新内存缓存中的已掌握状态
             const success = await this.updateWordMasteredStatus(bookPath, nodeId, false);
             if (!success) {
@@ -100,13 +115,24 @@ export class MasteredService {
                 return false;
             }
 
-            // 2. 从 Canvas 分组中移除
-            const removeSuccess = await this.masteredGroupManager.removeFromMasteredGroup(bookPath, nodeId);
-            if (!removeSuccess) {
-                // 如果移除失败，回滚内存状态
-                await this.updateWordMasteredStatus(bookPath, nodeId, true);
-                new Notice(t('notices.remove_from_mastered_group_failed'));
-                return false;
+            // 2. 根据模式更新 Canvas
+            if (mode === 'group') {
+                const removeSuccess = await this.masteredGroupManager.removeFromMasteredGroup(bookPath, nodeId);
+                if (!removeSuccess) {
+                    // 如果移除失败，回滚内存状态
+                    await this.updateWordMasteredStatus(bookPath, nodeId, true);
+                    new Notice(t('notices.remove_from_mastered_group_failed'));
+                    return false;
+                }
+            } else {
+                // 颜色模式：清除颜色
+                const colorSuccess = await this.vocabularyManager.setNodeColor(bookPath, nodeId, undefined);
+                if (!colorSuccess) {
+                    // 回滚内存状态
+                    await this.updateWordMasteredStatus(bookPath, nodeId, true);
+                    new Notice(t('notices.update_word_status_failed'));
+                    return false;
+                }
             }
 
             // 3. 刷新高亮显示
@@ -278,17 +304,23 @@ export class MasteredService {
 
         try {
             const allWords = await this.vocabularyManager.getWordDefinitionsByBook(bookPath);
-            
+            const mode = this.plugin.settings.masteredDetection ?? 'group';
+
             for (const wordDef of allWords) {
-                const inMasteredGroup = await this.masteredGroupManager.isNodeInMasteredGroup(bookPath, wordDef.nodeId);
-                
-                // 如果状态不一致，以内存状态为准
-                if (wordDef.mastered && !inMasteredGroup) {
-                    // 内存中已掌握，但不在分组中 -> 移动到分组
-                    await this.masteredGroupManager.moveToMasteredGroup(bookPath, wordDef.nodeId);
-                } else if (!wordDef.mastered && inMasteredGroup) {
-                    // 内存中未掌握，但在分组中 -> 从分组移除
-                    await this.masteredGroupManager.removeFromMasteredGroup(bookPath, wordDef.nodeId);
+                if (mode === 'group') {
+                    const inMasteredGroup = await this.masteredGroupManager.isNodeInMasteredGroup(bookPath, wordDef.nodeId);
+                    if (wordDef.mastered && !inMasteredGroup) {
+                        await this.masteredGroupManager.moveToMasteredGroup(bookPath, wordDef.nodeId);
+                    } else if (!wordDef.mastered && inMasteredGroup) {
+                        await this.masteredGroupManager.removeFromMasteredGroup(bookPath, wordDef.nodeId);
+                    }
+                } else {
+                    // 颜色模式：以内存状态为准写回颜色
+                    if (wordDef.mastered) {
+                        await this.vocabularyManager.setNodeColor(bookPath, wordDef.nodeId, 4);
+                    } else {
+                        await this.vocabularyManager.setNodeColor(bookPath, wordDef.nodeId, undefined);
+                    }
                 }
             }
         } catch (error) {

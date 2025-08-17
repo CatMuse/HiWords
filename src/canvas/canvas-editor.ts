@@ -58,7 +58,7 @@ export class CanvasEditor {
             }
 
             // 使用原子更新，避免并发覆盖
-            const parser = new CanvasParser(this.app);
+            const parser = new CanvasParser(this.app, this.settings);
             await this.app.vault.process(file, (current) => {
                 const canvasData: CanvasData = JSON.parse(current || '{"nodes":[],"edges":[]}');
                 if (!Array.isArray(canvasData.nodes)) canvasData.nodes = [];
@@ -241,6 +241,49 @@ export class CanvasEditor {
             return removed;
         } catch (error) {
             console.error(`从 Canvas 中删除词汇失败: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * 仅设置节点颜色（不修改文本、尺寸与位置）
+     */
+    async setNodeColor(bookPath: string, nodeId: string, color?: number): Promise<boolean> {
+        try {
+            const file = this.app.vault.getAbstractFileByPath(bookPath);
+            if (!file || !(file instanceof TFile) || !CanvasParser.isCanvasFile(file)) {
+                console.error(`无效的 Canvas 文件: ${bookPath}`);
+                return false;
+            }
+
+            let updated = false;
+            const parser = new CanvasParser(this.app, this.settings);
+            await this.app.vault.process(file, (current) => {
+                const canvasData: CanvasData = JSON.parse(current || '{"nodes":[],"edges":[]}');
+                if (!Array.isArray(canvasData.nodes)) canvasData.nodes = [];
+
+                const index = canvasData.nodes.findIndex((n) => n.id === nodeId);
+                if (index === -1) {
+                    console.error(`未找到节点: ${nodeId}`);
+                    return JSON.stringify(canvasData);
+                }
+
+                if (color !== undefined) {
+                    canvasData.nodes[index].color = color.toString();
+                } else {
+                    delete (canvasData.nodes[index] as any).color;
+                }
+
+                // 为保持布局一致性，仍调用一次规范化（轻量）
+                normalizeLayout(canvasData, this.settings, parser);
+
+                updated = true;
+                return JSON.stringify(canvasData);
+            });
+
+            return updated;
+        } catch (error) {
+            console.error(`设置节点颜色失败: ${error}`);
             return false;
         }
     }

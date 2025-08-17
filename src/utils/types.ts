@@ -49,6 +49,8 @@ export interface HiWordsSettings {
     enableMasteredFeature: boolean; // 启用已掌握功能
     showMasteredInSidebar: boolean; // 在侧边栏显示已掌握单词
     blurDefinitions: boolean; // 模糊定义内容，悬停时显示
+    // 已掌握判定模式：'group'（根据是否位于 Mastered 分组）或 'color'（根据颜色是否为绿色4）
+    masteredDetection?: 'group' | 'color';
     // 发音地址模板（如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2）
     ttsTemplate?: string;
     // 自动布局设置

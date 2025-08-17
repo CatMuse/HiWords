@@ -37,6 +37,11 @@ export interface LanguagePack {
         total_words: string;
         enable_mastered_feature: string;
         enable_mastered_feature_desc: string;
+        // Mastered detection mode
+        mastered_detection?: string;
+        mastered_detection_desc?: string;
+        mode_group?: string;
+        mode_color?: string;
         blur_definitions: string;
         blur_definitions_desc: string;
         // TTS template (optional for backward compatibility)

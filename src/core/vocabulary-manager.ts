@@ -23,7 +23,7 @@ export class VocabularyManager {
 
     constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
-        this.canvasParser = new CanvasParser(app);
+        this.canvasParser = new CanvasParser(app, settings);
         this.canvasEditor = new CanvasEditor(app, settings);
         this.settings = settings;
     }
@@ -235,6 +235,10 @@ export class VocabularyManager {
         if (this.canvasEditor && (this.canvasEditor as any).updateSettings) {
             this.canvasEditor.updateSettings(settings);
         }
+        // 同步给 CanvasParser（影响掌握判定等）
+        if (this.canvasParser && (this.canvasParser as any).updateSettings) {
+            this.canvasParser.updateSettings(settings);
+        }
     }
 
     /**
@@ -309,6 +313,37 @@ export class VocabularyManager {
             return true;
         } catch (error) {
             console.error('Failed to add word to canvas:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * 仅设置节点颜色，并同步内存缓存的颜色字符串
+     */
+    async setNodeColor(bookPath: string, nodeId: string, color?: number): Promise<boolean> {
+        try {
+            const ok = await this.canvasEditor.setNodeColor(bookPath, nodeId, color);
+            if (!ok) return false;
+
+            // 更新内存缓存中的该节点颜色
+            const defs = this.definitions.get(bookPath);
+            if (defs) {
+                const idx = defs.findIndex(d => d.nodeId === nodeId);
+                if (idx >= 0) {
+                    const def = defs[idx];
+                    def.color = color !== undefined ? this.getColorString(color) : undefined;
+                    // 更新缓存映射
+                    this.wordDefinitionCache.set(def.word, def);
+                    if (def.aliases) {
+                        def.aliases.forEach(alias => this.wordDefinitionCache.set(alias, def));
+                    }
+                    // 标记缓存需要重建（颜色变化可能影响过滤）
+                    this.cacheValid = false;
+                }
+            }
+            return true;
+        } catch (e) {
+            console.error('设置节点颜色失败:', e);
             return false;
         }
     }

@@ -30,6 +30,11 @@ export default {
         total_words: "Total words: {0}",
         enable_mastered_feature: "Enable mastered feature",
         enable_mastered_feature_desc: "Mark mastered words to stop highlighting them. Sidebar shows grouped words",
+        // Mastered detection mode
+        mastered_detection: "Mastered detection mode",
+        mastered_detection_desc: "Choose how to detect 'mastered': by group or by color (green = 4)",
+        mode_group: "Group mode",
+        mode_color: "Color mode (green = 4)",
         blur_definitions: "Blur content",
         blur_definitions_desc: "Blur content by default, reveal on hover. Great for learning—recall before seeing the answer",
         // TTS template

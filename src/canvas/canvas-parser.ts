@@ -1,11 +1,17 @@
 import { App, TFile } from 'obsidian';
-import { CanvasData, CanvasNode, WordDefinition } from '../utils';
+import { CanvasData, CanvasNode, WordDefinition, HiWordsSettings } from '../utils';
 
 export class CanvasParser {
     private app: App;
+    private settings?: HiWordsSettings;
 
-    constructor(app: App) {
+    constructor(app: App, settings?: HiWordsSettings) {
         this.app = app;
+        this.settings = settings;
+    }
+
+    updateSettings(settings: HiWordsSettings) {
+        this.settings = settings;
     }
 
     /**
@@ -67,11 +73,14 @@ export class CanvasParser {
             const content = await this.app.vault.read(file);
             const canvasData: CanvasData = JSON.parse(content);
             
-            // 查找 "Mastered" 分组
-            const masteredGroup = canvasData.nodes.find(node => 
-                node.type === 'group' && 
-                (node.label === 'Mastered' || node.label === '已掌握')
-            );
+            const detectionMode = this.settings?.masteredDetection ?? 'group';
+            // 查找 "Mastered" 分组（当使用分组模式时）
+            const masteredGroup = detectionMode === 'group'
+                ? canvasData.nodes.find(node => 
+                    node.type === 'group' && 
+                    (node.label === 'Mastered' || node.label === '已掌握')
+                )
+                : undefined;
             
             const definitions: WordDefinition[] = [];
             
@@ -80,8 +89,14 @@ export class CanvasParser {
                 if (node.type === 'text' && node.text) {
                     const wordDef = this.parseTextNode(node, file.path);
                     if (wordDef) {
-                        if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
-                            wordDef.mastered = true;
+                        if (detectionMode === 'group') {
+                            if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
+                                wordDef.mastered = true;
+                            }
+                        } else if (detectionMode === 'color') {
+                            if (node.color === '4') {
+                                wordDef.mastered = true;
+                            }
                         }
                         definitions.push(wordDef);
                     }
@@ -90,8 +105,14 @@ export class CanvasParser {
                 else if (node.type === 'file' && (node as any).file) {
                     const wordDef = await this.parseFileNode(node, file.path);
                     if (wordDef) {
-                        if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
-                            wordDef.mastered = true;
+                        if (detectionMode === 'group') {
+                            if (masteredGroup && this.isNodeInGroup(node, masteredGroup)) {
+                                wordDef.mastered = true;
+                            }
+                        } else if (detectionMode === 'color') {
+                            if (node.color === '4') {
+                                wordDef.mastered = true;
+                            }
                         }
                         definitions.push(wordDef);
                     }
