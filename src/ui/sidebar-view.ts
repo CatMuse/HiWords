@@ -15,6 +15,7 @@ export class HiWordsSidebarView extends ItemView {
     private updateTimer: number | null = null; // 合并/防抖更新
     private measureQueue: HTMLElement[] = []; // 批量测量的队列
     private measureScheduled = false; // 是否已安排 RAF 测量
+    private delegatedBound = false; // 是否已绑定根级事件委托
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -82,13 +83,15 @@ export class HiWordsSidebarView extends ItemView {
         const container = this.containerEl.children[1];
         container.empty();
         container.addClass('hi-words-sidebar');
+        this.bindDelegatedHandlers(container as HTMLElement);
         
         // 初始化显示
         this.scheduleUpdate(0);
 
-        // 监听活动文件变化
+        // 监听活动文件变化（忽略自身视图激活，避免首次点击被重渲打断）
         this.registerEvent(
-            this.app.workspace.on('active-leaf-change', () => {
+            this.app.workspace.on('active-leaf-change', (leaf: WorkspaceLeaf | null) => {
+                if (leaf === this.leaf) return; // 自身变为激活视图时不刷新
                 this.scheduleUpdate(120);
             })
         );
@@ -238,6 +241,8 @@ export class HiWordsSidebarView extends ItemView {
         if (!container) return;
 
         container.empty();
+        // 确保事件委托已绑定（容器清空后仍然存在于同一根上）
+        this.bindDelegatedHandlers(container as HTMLElement);
 
         if (this.currentWords.length === 0) {
             this.showEmptyState(t('sidebar.empty_state'));
@@ -508,6 +513,92 @@ export class HiWordsSidebarView extends ItemView {
         container.empty();
         const emptyState = container.createEl('div', { cls: 'hi-words-empty-state' });
         emptyState.createEl('div', { text: message, cls: 'hi-words-empty-text' });
+    }
+
+    /**
+     * 根级事件委托：使用捕获阶段的 mousedown，解决首次点击 click 丢失
+     */
+    private bindDelegatedHandlers(root: HTMLElement) {
+        if (this.delegatedBound) return;
+        root.addEventListener(
+            'mousedown',
+            (e) => {
+                const target = e.target as HTMLElement | null;
+                if (!target) return;
+
+                // Tab 切换
+                const tabEl = target.closest('.hi-words-tab') as HTMLElement | null;
+                if (tabEl && root.contains(tabEl)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const tab = (tabEl.getAttr('data-tab') as 'learning' | 'mastered') || 'learning';
+                    if (tab !== this.activeTab) this.switchTab(tab);
+                    return;
+                }
+
+                // 展开/收起：覆盖层
+                const overlay = target.closest('.hi-words-expand-overlay') as HTMLElement | null;
+                if (overlay && root.contains(overlay)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const definition = overlay.parentElement as HTMLElement | null;
+                    const collapsible = definition?.querySelector('.hi-words-collapsible') as HTMLElement | null;
+                    const el = collapsible || definition;
+                    if (el) {
+                        const nextCollapsed = !el.hasClass('collapsed');
+                        el.toggleClass('collapsed', nextCollapsed);
+                        overlay.setText(nextCollapsed ? t('actions.expand') : t('actions.collapse'));
+                    }
+                    return;
+                }
+
+                // 已掌握/取消按钮
+                const masteredBtn = target.closest('.hi-words-title-mastered-button') as HTMLElement | null;
+                if (masteredBtn && root.contains(masteredBtn)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const card = masteredBtn.closest('.hi-words-word-card') as HTMLElement | null;
+                    const isMastered = !!card?.hasClass('hi-words-word-card-mastered');
+                    const wordText = card?.querySelector('.hi-words-word-text') as HTMLElement | null;
+                    const word = wordText?.textContent?.trim();
+                    if (word && this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
+                        const detail = this.currentWords.find((w) => w.word === word);
+                        if (detail) {
+                            (async () => {
+                                try {
+                                    if (isMastered) {
+                                        await this.plugin.masteredService!.unmarkWordAsMastered(detail.source, detail.nodeId, detail.word);
+                                    } else {
+                                        await this.plugin.masteredService!.markWordAsMastered(detail.source, detail.nodeId, detail.word);
+                                    }
+                                    setTimeout(() => this.updateView(), 100);
+                                } catch (err) {
+                                    console.error('切换已掌握状态失败:', err);
+                                }
+                            })();
+                        }
+                    }
+                    return;
+                }
+
+                // 来源跳转
+                const sourceEl = target.closest('.hi-words-word-source') as HTMLElement | null;
+                if (sourceEl && root.contains(sourceEl)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const card = sourceEl.closest('.hi-words-word-card') as HTMLElement | null;
+                    const wordText = card?.querySelector('.hi-words-word-text') as HTMLElement | null;
+                    const word = wordText?.textContent?.trim();
+                    if (word) {
+                        const detail = this.currentWords.find((w) => w.word === word);
+                        if (detail) this.navigateToSource(detail);
+                    }
+                    return;
+                }
+            },
+            { capture: true } as any
+        );
+        this.delegatedBound = true;
     }
 
     /**

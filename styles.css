@@ -294,7 +294,7 @@
     padding: 2px 8px;
     opacity: 0;
     transition: opacity 0.15s ease;
-    pointer-events: none; /* 非悬停时不拦截点击 */
+    pointer-events: auto; /* 始终可点击，避免首次点击丢失 */
     user-select: none;
 }
 
