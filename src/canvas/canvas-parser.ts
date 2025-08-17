@@ -254,15 +254,7 @@ export class CanvasParser {
      * @returns 是否在分组内
      */
     public isNodeInGroup(node: CanvasNode, group: CanvasNode): boolean {
-        // 1) 优先使用 node.group 字段（若存在）
-        if (Array.isArray((node as any).group)) {
-            const groups = (node as any).group as string[];
-            if (groups.includes(group.id)) return true;
-            // 若存在 group 字段但不包含该组，直接判定不在组内
-            return false;
-        }
-
-        // 2) 宽高与坐标兜底（几何判定）
+        // 仅使用几何判定，避免与 node.group 字段产生二义性
         const nodeX = typeof node.x === 'number' ? node.x : 0;
         const nodeY = typeof node.y === 'number' ? node.y : 0;
         const nodeW = typeof node.width === 'number' ? node.width : 200; // 文本默认宽
