@@ -12,6 +12,11 @@ export class DefinitionPopover {
     private masteredService: MasteredService | null = null;
     private eventHandlers: {[key: string]: EventListener} = {};
     private tooltipHideTimeout: number | undefined;
+    private currentTargetEl: HTMLElement | null = null; // 当前已显示 tooltip 的高亮元素，避免重复创建
+    private hoverIntentTimer: number | null = null; // 悬停意图定时器，避免频繁抖动
+    private lastShowTs = 0; // 上一次显示时间戳，做最小间隔限制
+    private static readonly SHOW_DELAY_MS = 120; // 悬停到显示的延迟
+    private static readonly MIN_INTERVAL_MS = 150; // 两次显示的最小间隔
 
     constructor(plugin: HiWordsPlugin) {
         this.app = plugin.app;
@@ -20,6 +25,8 @@ export class DefinitionPopover {
         this.eventHandlers = {
             mouseover: this.handleMouseOver.bind(this),
             mouseout: this.handleMouseOut.bind(this),
+            scroll: (() => this.removeTooltip()).bind(this),
+            resize: (() => this.removeTooltip()).bind(this),
         };
 
         this.registerEvents();
@@ -199,6 +206,9 @@ export class DefinitionPopover {
     private registerEvents() {
         document.addEventListener('mouseover', this.eventHandlers.mouseover);
         document.addEventListener('mouseout', this.eventHandlers.mouseout);
+        // 滚动或窗口尺寸变化时，直接关闭 tooltip，避免频繁重定位
+        window.addEventListener('scroll', this.eventHandlers.scroll as EventListener, { passive: true } as AddEventListenerOptions);
+        window.addEventListener('resize', this.eventHandlers.resize as EventListener);
     }
 
     /**
@@ -206,6 +216,10 @@ export class DefinitionPopover {
      */
     private handleMouseOut(event: MouseEvent) {
         clearTimeout(this.tooltipHideTimeout);
+        if (this.hoverIntentTimer !== null) {
+            clearTimeout(this.hoverIntentTimer);
+            this.hoverIntentTimer = null;
+        }
         const from = event.target as HTMLElement;
         const to = event.relatedTarget as HTMLElement | null;
 
@@ -244,14 +258,32 @@ export class DefinitionPopover {
     }
 
     private handleMouseOver(event: MouseEvent) {
-        const target = event.target as HTMLElement;
+        const raw = event.target as HTMLElement;
+        const target = raw?.closest?.('.hi-words-highlight') as HTMLElement | null;
 
-        if (target && target.classList.contains('hi-words-highlight')) {
+        if (target) {
+            // 如果当前已有 tooltip 且目标相同则忽略
+            if (this.currentTargetEl === target && this.activeTooltip) return;
+            // 先取消上一个 hoverIntent
+            if (this.hoverIntentTimer !== null) {
+                clearTimeout(this.hoverIntentTimer);
+                this.hoverIntentTimer = null;
+            }
+            this.currentTargetEl = target;
             const word = target.getAttribute('data-word');
             const definition = target.getAttribute('data-definition');
-            if (word && definition) {
+            if (!word || !definition) return;
+
+            // 悬停意图：延迟展示，避免快速划过时频繁创建
+            this.hoverIntentTimer = window.setTimeout(() => {
+                this.hoverIntentTimer = null;
+                const now = Date.now();
+                if (now - this.lastShowTs < DefinitionPopover.MIN_INTERVAL_MS) {
+                    return; // 限流：距离上次显示太近
+                }
+                this.lastShowTs = now;
                 this.createTooltip(target, word, definition);
-            }
+            }, DefinitionPopover.SHOW_DELAY_MS);
         }
     }
 
@@ -305,8 +337,8 @@ export class DefinitionPopover {
                     sourcePath,
                     this.plugin
                 );
-                // 渲染完成后绑定交互（异步以确保节点就绪）
-                setTimeout(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip), 0);
+                // 渲染完成后绑定交互（下一帧，确保节点已生成）
+                requestAnimationFrame(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip));
             } catch (error) {
                 console.error('Markdown 渲染失败:', error);
                 // 兜底：简易安全渲染
@@ -374,22 +406,29 @@ export class DefinitionPopover {
 
         document.body.appendChild(tooltip);
 
-        // 定位
-        const rect = target.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        tooltip.style.left = (rect.left + scrollLeft) + 'px';
-        tooltip.style.top = (rect.bottom + scrollTop + 5) + 'px';
-
-        // 防止右边溢出
-        setTimeout(() => {
-            const tooltipRect = tooltip.getBoundingClientRect();
+        // 使用 rAF 统一完成定位与溢出修正，减少多次布局抖动
+        requestAnimationFrame(() => {
+            // 读：目标位置与视口
+            const rect = target.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
             const viewportWidth = window.innerWidth;
+
+            // 写：初始定位
+            const left = rect.left + scrollLeft;
+            const top = rect.bottom + scrollTop + 5;
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+
+            // 读：tooltip 自身尺寸
+            const tooltipRect = tooltip.getBoundingClientRect();
+
+            // 写：右侧溢出修正
             if (tooltipRect.right > viewportWidth - 10) {
                 const overflow = tooltipRect.right - viewportWidth + 10;
-                tooltip.style.left = (parseFloat(tooltip.style.left) - overflow) + 'px';
+                tooltip.style.left = (left - overflow) + 'px';
             }
-        }, 0);
+        });
 
         // 只有 mouseleave 时真正关闭（不会一闪一闪了）
         tooltip.addEventListener('mouseleave', (e) => {
@@ -405,6 +444,7 @@ export class DefinitionPopover {
             this.activeTooltip.parentNode.removeChild(this.activeTooltip);
             this.activeTooltip = null;
         }
+        this.currentTargetEl = null;
     }
 
     /**
@@ -445,6 +485,8 @@ export class DefinitionPopover {
     unload() {
         document.removeEventListener('mouseover', this.eventHandlers.mouseover);
         document.removeEventListener('mouseout', this.eventHandlers.mouseout);
+        window.removeEventListener('scroll', this.eventHandlers.scroll as EventListener);
+        window.removeEventListener('resize', this.eventHandlers.resize as EventListener);
         this.removeTooltip();
     }
 }

@@ -12,10 +12,58 @@ export class HiWordsSidebarView extends ItemView {
     private currentFile: TFile | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null; // 缓存最后一个活动的MarkdownView
     private firstLoadForFile: boolean = false; // 仅在切换到新文件后的首次渲染生效
+    private updateTimer: number | null = null; // 合并/防抖更新
+    private measureQueue: HTMLElement[] = []; // 批量测量的队列
+    private measureScheduled = false; // 是否已安排 RAF 测量
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
         this.plugin = plugin;
+    }
+
+    /**
+     * 安排一次 requestAnimationFrame，把所有待测量的 collapsible 高度一次性计算并写回
+     */
+    private scheduleMeasure() {
+        if (this.measureScheduled) return;
+        this.measureScheduled = true;
+        requestAnimationFrame(() => {
+            this.measureScheduled = false;
+            if (this.measureQueue.length === 0) return;
+
+            const MAX_COLLAPSED = 140; // 与 CSS 保持一致
+            const items = this.measureQueue.splice(0, this.measureQueue.length);
+
+            // 先读后写：先生成读集
+            const results: Array<{ el: HTMLElement; needsToggle: boolean }> = items.map((el) => ({
+                el,
+                needsToggle: el.scrollHeight > MAX_COLLAPSED + 4,
+            }));
+
+            // 再统一写
+            for (const { el, needsToggle } of results) {
+                if (!needsToggle) {
+                    el.removeClass('collapsed');
+                    continue;
+                }
+                const definition = el.parentElement as HTMLElement; // collapsible 的父级就是 definition 容器
+                if (!definition) continue;
+                const overlay = definition.createEl('div', { cls: 'hi-words-expand-overlay', text: t('actions.expand') });
+                const updateText = () => {
+                    overlay.setText(el.hasClass('collapsed') ? t('actions.expand') : t('actions.collapse'));
+                };
+                updateText();
+                overlay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (el.hasClass('collapsed')) {
+                        el.removeClass('collapsed');
+                    } else {
+                        el.addClass('collapsed');
+                    }
+                    updateText();
+                });
+            }
+        });
     }
 
     getViewType(): string {
@@ -36,12 +84,12 @@ export class HiWordsSidebarView extends ItemView {
         container.addClass('hi-words-sidebar');
         
         // 初始化显示
-        this.updateView();
+        this.scheduleUpdate(0);
 
         // 监听活动文件变化
         this.registerEvent(
             this.app.workspace.on('active-leaf-change', () => {
-                this.updateView();
+                this.scheduleUpdate(120);
             })
         );
 
@@ -49,7 +97,7 @@ export class HiWordsSidebarView extends ItemView {
         this.registerEvent(
             this.app.workspace.on('editor-change', () => {
                 // 延迟更新，避免频繁刷新
-                setTimeout(() => this.updateView(), 500);
+                this.scheduleUpdate(500);
             })
         );
         
@@ -58,7 +106,7 @@ export class HiWordsSidebarView extends ItemView {
             this.app.vault.on('modify', (file) => {
                 // 如果修改的是 Canvas 文件，则刷新侧边栏
                 if (file instanceof TFile && file.extension === 'canvas') {
-                    setTimeout(() => this.updateView(), 200);
+                    this.scheduleUpdate(250);
                 }
             })
         );
@@ -66,14 +114,14 @@ export class HiWordsSidebarView extends ItemView {
         // 监听已掌握功能状态变化
         this.registerEvent(
             this.app.workspace.on('hi-words:mastered-changed' as any, () => {
-                this.updateView();
+                this.scheduleUpdate(100);
             })
         );
         
         // 监听设置变化（如模糊效果开关）
         this.registerEvent(
             this.app.workspace.on('hi-words:settings-changed' as any, () => {
-                this.updateView();
+                this.scheduleUpdate(100);
             })
         );
     }
@@ -112,6 +160,20 @@ export class HiWordsSidebarView extends ItemView {
         }
         await this.scanCurrentDocument();
         this.renderWordList();
+    }
+
+    /**
+     * 合并/防抖更新：多事件密集触发时，避免排队大量 setTimeout
+     */
+    private scheduleUpdate(delay: number) {
+        if (this.updateTimer !== null) {
+            clearTimeout(this.updateTimer);
+            this.updateTimer = null;
+        }
+        this.updateTimer = window.setTimeout(() => {
+            this.updateTimer = null;
+            void this.updateView();
+        }, Math.max(0, delay));
     }
 
     /**
@@ -251,6 +313,9 @@ export class HiWordsSidebarView extends ItemView {
                 this.createEmptyState(container, t('sidebar.no_mastered_words'));
             }
         }
+
+        // 在完成当前 Tab 的所有渲染后，统一安排一次测量折叠高度
+        this.scheduleMeasure();
     }
     
     /**
@@ -395,42 +460,16 @@ export class HiWordsSidebarView extends ItemView {
                     sourcePath,
                     this
                 );
-                // 渲染完成后绑定交互（异步确保节点已生成）
-                setTimeout(() => this.bindInternalLinksAndTags(defContainer, sourcePath, defContainer), 0);
+                // 渲染完成后绑定交互（下一帧确保节点已生成）
+                requestAnimationFrame(() => this.bindInternalLinksAndTags(defContainer, sourcePath, defContainer));
             } catch (error) {
                 console.error('Markdown 渲染失败:', error);
                 // 兜底文本
                 defContainer.textContent = wordDef.definition;
             }
 
-            // 渲染完成后异步测量高度，决定是否需要展开/收起控件
-            setTimeout(() => {
-                const MAX_COLLAPSED = 140; // 与 CSS 保持一致
-                const needsToggle = collapsible.scrollHeight > MAX_COLLAPSED + 4; // 容差
-
-                if (!needsToggle) {
-                    collapsible.removeClass('collapsed');
-                    return;
-                }
-
-                // 创建覆盖式展开/收起叠层
-                const overlay = definition.createEl('div', { cls: 'hi-words-expand-overlay', text: t('actions.expand') });
-                const updateText = () => {
-                    overlay.setText(collapsible.hasClass('collapsed') ? t('actions.expand') : t('actions.collapse'));
-                };
-                updateText();
-
-                overlay.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // 切换折叠状态
-                    if (collapsible.hasClass('collapsed')) {
-                        collapsible.removeClass('collapsed');
-                    } else {
-                        collapsible.addClass('collapsed');
-                    }
-                    updateText();
-                });
-            }, 0);
+            // 交由批量测量队列统一处理折叠逻辑，避免逐卡片触发布局计算
+            this.measureQueue.push(collapsible);
         }
         
         // 来源信息
@@ -623,6 +662,6 @@ export class HiWordsSidebarView extends ItemView {
      */
     public refresh() {
         this.currentFile = null; // 强制重新扫描
-        this.updateView();
+        this.scheduleUpdate(0);
     }
 }
