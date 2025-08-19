@@ -11,6 +11,9 @@ export class AddWordModal extends Modal {
     private word: string;
     private isEditMode: boolean;
     private definition: WordDefinition | null;
+    
+    // 静态变量，记住用户上次选择的生词本（重启后丢失）
+    private static lastSelectedBookPath: string | null = null;
 
     /**
      * 构造函数
@@ -48,13 +51,27 @@ export class AddWordModal extends Modal {
         const bookSelect = bookSelectContainer.createEl('select', { cls: 'dropdown' });
         bookSelect.createEl('option', { text: t('modals.select_book'), value: '' });
         
-        this.plugin.settings.vocabularyBooks.forEach(book => {
-            if (book.enabled) {
-                const option = bookSelect.createEl('option', { text: book.name, value: book.path });
-                
-                // 如果是编辑模式且当前词汇来自此生词本，则选中该选项
-                if (this.isEditMode && this.definition && this.definition.source === book.path) {
+        const enabledBooks = this.plugin.settings.vocabularyBooks.filter(book => book.enabled);
+        let defaultBookSelected = false;
+        enabledBooks.forEach((book, index) => {
+            const option = bookSelect.createEl('option', { text: book.name, value: book.path });
+            
+            // 如果是编辑模式且当前词汇来自此生词本，则选中该选项
+            if (this.isEditMode && this.definition && this.definition.source === book.path) {
+                option.selected = true;
+                defaultBookSelected = true;
+            }
+            // 如果是添加模式，优先选择上次使用的生词本
+            else if (!this.isEditMode && !defaultBookSelected) {
+                // 优先选择上次使用的生词本
+                if (AddWordModal.lastSelectedBookPath && book.path === AddWordModal.lastSelectedBookPath) {
                     option.selected = true;
+                    defaultBookSelected = true;
+                }
+                // 如果没有缓存或缓存的生词本不可用，选择第一个
+                else if (!AddWordModal.lastSelectedBookPath && index === 0) {
+                    option.selected = true;
+                    defaultBookSelected = true;
                 }
             }
         });
@@ -63,7 +80,7 @@ export class AddWordModal extends Modal {
         if (this.isEditMode && this.definition) {
             bookSelect.disabled = true;
         }
-        
+
         // 颜色选择
         const colorSelectContainer = contentEl.createDiv({ cls: 'form-item' });
         colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'form-item-label' });
@@ -243,6 +260,8 @@ export class AddWordModal extends Modal {
                     loadingNotice.hide();
                     
                     if (success) {
+                        // 保存用户选择的生词本到缓存
+                        AddWordModal.lastSelectedBookPath = selectedBook;
                         // 使用格式化字符串替换
                         const successMessage = t('notices.word_added_success').replace('{0}', this.word);
                         new Notice(successMessage);
