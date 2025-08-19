@@ -2,6 +2,7 @@ import { App, Plugin, TFile, Notice, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings } from './src/utils';
+import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, highlighterManager } from './src/core';
 import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
 import { i18n, t } from './src/i18n';
@@ -81,6 +82,9 @@ export default class HiWordsPlugin extends Plugin {
         
         // 注册事件
         this.registerEvents();
+
+        // 注册阅读模式（Markdown）后处理器，实现阅读模式高亮
+        registerReadingModeHighlighter(this);
         
         // 添加设置页面
         this.addSettingTab(new HiWordsSettingTab(this.app, this));
@@ -223,6 +227,7 @@ export default class HiWordsPlugin extends Plugin {
             })
         );
     }
+
 
     /**
      * 刷新高亮器
