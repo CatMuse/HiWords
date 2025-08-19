@@ -114,6 +114,24 @@ export function registerReadingModeHighlighter(plugin: {
   plugin.registerMarkdownPostProcessor((el) => {
     try {
       if (!plugin.settings.enableAutoHighlight) return;
+      
+      // 检查是否在主编辑器的阅读模式中
+      // 排除侧边栏、悬停预览等其他容器
+      const isInMainEditor = !el.closest('.workspace-leaf-content[data-type="hover-editor"]') && // 排除悬停预览
+                            !el.closest('.workspace-leaf-content[data-type="file-explorer"]') && // 排除文件浏览器
+                            !el.closest('.workspace-leaf-content[data-type="outline"]') && // 排除大纲
+                            !el.closest('.workspace-leaf-content[data-type="backlink"]') && // 排除反向链接
+                            !el.closest('.workspace-leaf-content[data-type="tag"]') && // 排除标签面板
+                            !el.closest('.workspace-leaf-content[data-type="search"]') && // 排除搜索结果
+                            !el.closest('.hover-popover') && // 排除悬停弹出框
+                            !el.closest('.popover') && // 排除其他弹出框
+                            !el.closest('.suggestion-container') && // 排除建议容器
+                            !el.closest('.modal') && // 排除模态框
+                            !el.closest('.workspace-split.mod-right-split') && // 排除右侧边栏
+                            !el.closest('.workspace-split.mod-left-split'); // 排除左侧边栏
+      
+      if (!isInMainEditor) return;
+      
       const trie = buildTrie();
       processElement(el, trie);
     } catch (e) {
