@@ -866,7 +866,105 @@
     color: var(--text-normal);
 }
 
+/* PDF 高亮特定样式 */
+.hi-words-pdf-highlight {
+    /* 继承基础高亮样式，但针对 PDF 做优化 */
+    position: relative;
+    z-index: 1;
+}
+
+/* PDF 中的下划线样式 - 更明显的视觉效果 */
+.hi-words-pdf-highlight[data-style="underline"] {
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
+    text-decoration: none; /* 避免与 PDF.js 的样式冲突 */
+}
+
+.hi-words-pdf-highlight[data-style="underline"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
+}
+
+/* PDF 中的背景高亮样式 */
+.hi-words-pdf-highlight[data-style="background"] {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 80%, transparent);
+    border-radius: 2px;
+    padding: 1px 2px;
+}
+
+.hi-words-pdf-highlight[data-style="background"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 100%, transparent);
+}
+
+/* PDF 中的粗体样式 */
+.hi-words-pdf-highlight[data-style="bold"] {
+    font-weight: 700;
+    color: var(--word-highlight-color, var(--text-muted));
+}
+
+.hi-words-pdf-highlight[data-style="bold"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+}
+
+/* PDF 中的点状下划线样式 */
+.hi-words-pdf-highlight[data-style="dotted"] {
+    border-bottom: 2px dotted var(--word-highlight-color, var(--text-muted));
+    text-decoration: none;
+}
+
+.hi-words-pdf-highlight[data-style="dotted"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
+}
+
+/* PDF 中的波浪线样式 */
+.hi-words-pdf-highlight[data-style="wavy"] {
+    text-decoration: wavy underline var(--word-highlight-color, var(--text-muted));
+    text-decoration-thickness: 1.5px;
+}
+
+.hi-words-pdf-highlight[data-style="wavy"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+}
+
+/* PDF 文本层特殊处理 */
+.textLayer .hi-words-pdf-highlight {
+    /* 确保在 PDF 文本层中正确显示 */
+    display: inline;
+    line-height: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* PDF 容器中的高亮优化 */
+.pdf-container .hi-words-pdf-highlight,
+.mod-pdf .hi-words-pdf-highlight {
+    /* 在 PDF 视图中的特殊优化 */
+    transition: all 0.2s ease;
+}
+
+/* 暗色主题下的 PDF 高亮优化 */
+.theme-dark .hi-words-pdf-highlight {
+    /* 在暗色主题下提供更好的对比度 */
+    opacity: 1;
+}
+
+.theme-dark .hi-words-pdf-highlight[data-style="background"] {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 25%, transparent);
+}
+
+.theme-dark .hi-words-pdf-highlight[data-style="background"]:hover {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 35%, transparent);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
-    /* 在小屏幕上的特定样式可以在这里添加 */
+    /* PDF 高亮在移动设备上的优化 */
+    .hi-words-pdf-highlight {
+        /* 在小屏幕上稍微增加点击区域 */
+        padding: 1px 1px;
+    }
+    
+    .hi-words-pdf-highlight[data-style="background"] {
+        padding: 2px 3px;
+    }
 }

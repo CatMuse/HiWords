@@ -139,8 +139,8 @@ export class HiWordsSidebarView extends ItemView {
     private async updateView() {
         const activeFile = this.app.workspace.getActiveFile();
         
-        if (!activeFile || activeFile.extension !== 'md') {
-            this.showEmptyState('请打开一个 Markdown 文档');
+        if (!activeFile || (activeFile.extension !== 'md' && activeFile.extension !== 'pdf')) {
+            this.showEmptyState('请打开一个 Markdown 文档或 PDF 文件');
             return;
         }
 
@@ -186,7 +186,15 @@ export class HiWordsSidebarView extends ItemView {
         if (!this.currentFile) return;
 
         try {
-            const content = await this.app.vault.read(this.currentFile);
+            let content: string;
+            
+            // 根据文件类型提取内容
+            if (this.currentFile.extension === 'pdf') {
+                content = await this.extractPDFText();
+            } else {
+                content = await this.app.vault.read(this.currentFile);
+            }
+
             const allWordDefinitions = await this.plugin.vocabularyManager.getAllWordDefinitions();
 
             // 创建一个数组来存储找到的单词及其位置
@@ -625,6 +633,52 @@ export class HiWordsSidebarView extends ItemView {
     }
 
     /**
+     * 从 PDF 文件中提取文本内容
+     */
+    private async extractPDFText(): Promise<string> {
+        try {
+            // 等待 PDF 视图加载并获取文本层内容
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 查找所有 PDF 文本层
+            const textLayers = document.querySelectorAll('.textLayer');
+            let extractedText = '';
+            
+            textLayers.forEach((textLayer: Element) => {
+                // 检查是否在当前活动的 PDF 视图中
+                const pdfContainer = textLayer.closest('.pdf-container, .mod-pdf');
+                if (pdfContainer) {
+                    // 获取文本层中的所有文本内容
+                    const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
+                    textSpans.forEach((span: Element) => {
+                        const text = span.textContent || '';
+                        if (text.trim()) {
+                            extractedText += text + ' ';
+                        }
+                    });
+                    extractedText += '\n'; // 每个文本层后添加换行
+                }
+            });
+            
+            // 如果没有找到文本层，尝试从 PDF 视图中提取
+            if (!extractedText.trim()) {
+                const pdfViews = document.querySelectorAll('.pdf-container, .mod-pdf');
+                pdfViews.forEach((pdfView: Element) => {
+                    const allText = pdfView.textContent || '';
+                    if (allText.trim()) {
+                        extractedText += allText + '\n';
+                    }
+                });
+            }
+            
+            return extractedText.trim();
+        } catch (error) {
+            console.error('PDF 文本提取失败:', error);
+            return '';
+        }
+    }
+
+    /**
      * 构建用于扫描文档的正则。
      * - 对仅包含拉丁字符的词：使用 \b 边界避免误匹配，如 "art" 不匹配 "start"。
      * - 对包含日语/CJK 的词：不使用 \b（因为 CJK 文本常无空格），并使用 Unicode 标志。
@@ -737,6 +791,7 @@ export class HiWordsSidebarView extends ItemView {
             console.error('导航到源文件失败:', error);
         }
     }
+
 
     /**
      * 打开生词本文件

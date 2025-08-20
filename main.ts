@@ -3,6 +3,7 @@ import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings } from './src/utils';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
+import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, highlighterManager } from './src/core';
 import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
 import { i18n, t } from './src/i18n';
@@ -85,6 +86,9 @@ export default class HiWordsPlugin extends Plugin {
 
         // 注册阅读模式（Markdown）后处理器，实现阅读模式高亮
         registerReadingModeHighlighter(this);
+        
+        // 注册 PDF 高亮功能
+        registerPDFHighlighter(this);
         
         // 添加设置页面
         this.addSettingTab(new HiWordsSettingTab(this.app, this));
@@ -329,5 +333,7 @@ export default class HiWordsPlugin extends Plugin {
         }
         // 清理全局高亮器管理器
         highlighterManager.clear();
+        // 清理 PDF 高亮器资源
+        cleanupPDFHighlighter(this);
     }
 }
