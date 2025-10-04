@@ -45,8 +45,8 @@ export class AddWordModal extends Modal {
         contentEl.createEl('h2', { text: `${t(titleKey)} "${this.word}"` });
         
         // 生词本选择
-        const bookSelectContainer = contentEl.createDiv({ cls: 'form-item' });
-        bookSelectContainer.createEl('label', { text: t('modals.book_label'), cls: 'form-item-label' });
+        const bookSelectContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
+        bookSelectContainer.createEl('label', { text: t('modals.book_label'), cls: 'hiwords-form-item-label' });
         
         const bookSelect = bookSelectContainer.createEl('select', { cls: 'dropdown' });
         bookSelect.createEl('option', { text: t('modals.select_book'), value: '' });
@@ -82,8 +82,8 @@ export class AddWordModal extends Modal {
         }
 
         // 颜色选择
-        const colorSelectContainer = contentEl.createDiv({ cls: 'form-item' });
-        colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'form-item-label' });
+        const colorSelectContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
+        colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'hiwords-form-item-label' });
         
         const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown setting-item-select' });
         colorSelect.createEl('option', { text: t('modals.color_gray'), value: '' });
@@ -108,8 +108,8 @@ export class AddWordModal extends Modal {
         });
         
         // 别名输入
-        const aliasesContainer = contentEl.createDiv({ cls: 'form-item' });
-        aliasesContainer.createEl('label', { text: t('modals.aliases_label'), cls: 'form-item-label' });
+        const aliasesContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
+        aliasesContainer.createEl('label', { text: t('modals.aliases_label'), cls: 'hiwords-form-item-label' });
         
         const aliasesInput = aliasesContainer.createEl('input', { 
             type: 'text',
@@ -123,12 +123,12 @@ export class AddWordModal extends Modal {
         }
         
         // 定义输入
-        const definitionContainer = contentEl.createDiv({ cls: 'form-item' });
-        definitionContainer.createEl('label', { text: t('modals.definition_label'), cls: 'form-item-label' });
+        const definitionContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
+        definitionContainer.createEl('label', { text: t('modals.definition_label'), cls: 'hiwords-form-item-label' });
         
         const definitionInput = definitionContainer.createEl('textarea', { 
             placeholder: t('modals.definition_placeholder'),
-            cls: 'setting-item-input word-definition-input'
+            cls: 'setting-item-input hiwords-word-definition-input'
         });
         definitionInput.rows = 5;
         
@@ -138,10 +138,10 @@ export class AddWordModal extends Modal {
         }
         
         // 按钮
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+        const buttonContainer = contentEl.createDiv({ cls: 'hiwords-modal-button-container' });
         
         // 创建左侧容器（用于删除按钮或占位）
-        const leftButtonGroup = buttonContainer.createDiv({ cls: 'button-group-left' });
+        const leftButtonGroup = buttonContainer.createDiv({ cls: 'hiwords-button-group-left' });
         
         // 在编辑模式下添加删除按钮（左侧）
         if (this.isEditMode && this.definition) {
@@ -183,7 +183,7 @@ export class AddWordModal extends Modal {
         }
         
         // 创建右侧按钮组
-        const rightButtonGroup = buttonContainer.createDiv({ cls: 'button-group-right' });
+        const rightButtonGroup = buttonContainer.createDiv({ cls: 'hiwords-button-group-right' });
         
         const cancelButton = rightButtonGroup.createEl('button', { text: t('modals.cancel_button') });
         cancelButton.onclick = () => this.close();

@@ -1,10 +1,10 @@
-import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile } from 'obsidian';
+import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile, Component } from 'obsidian';
 import { VocabularyManager, MasteredService } from '../core';
 import { playWordTTS } from '../utils';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
 
-export class DefinitionPopover {
+export class DefinitionPopover extends Component {
     private app: App;
     private plugin: HiWordsPlugin;
     private activeTooltip: HTMLElement | null = null;
@@ -19,6 +19,7 @@ export class DefinitionPopover {
     private static readonly MIN_INTERVAL_MS = 150; // 两次显示的最小间隔
 
     constructor(plugin: HiWordsPlugin) {
+        super();
         this.app = plugin.app;
         this.plugin = plugin;
 
@@ -30,99 +31,6 @@ export class DefinitionPopover {
         };
 
         this.registerEvents();
-    }
-
-    private simpleMarkdownToHtml(markdown: string): string {
-        if (!markdown) return '';
-
-        let html = markdown
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
-            .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
-            .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/__(.*?)__/g, '<strong>$1</strong>')
-            .replace(/_(.*?)_/g, '<em>$1</em>')
-            .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-            .replace(/^\* (.*?)$/gm, '<li>$1</li>')
-            .replace(/^\d+\. (.*?)$/gm, '<li>$1</li>')
-            .replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/\n/g, '<br>');
-
-        return html;
-    }
-
-    private setContentSafely(container: HTMLElement, markdownText: string): void {
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
-        const processHeadings = (text: string) => {
-            const headingMatches = text.match(/^(#{1,3}) (.+)$/gm);
-            if (headingMatches) {
-                headingMatches.forEach(match => {
-                    const [_, hashes, content] = match.match(/^(#{1,3}) (.+)$/) || [];
-                    if (hashes && content) {
-                        const level = hashes.length;
-                        const heading = document.createElement(`h${level}`);
-                        heading.textContent = content;
-                        container.appendChild(heading);
-                        text = text.replace(match, '');
-                    }
-                });
-            }
-            return text;
-        };
-        const processText = (text: string) => {
-            if (!text.trim()) return;
-            text = text.replace(/\*\*(.*?)\*\*/g, (_, content) => `[STRONG]${content}[/STRONG]`);
-            text = text.replace(/\*(.*?)\*/g, (_, content) => `[EM]${content}[/EM]`);
-            text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, (_, linkText, url) => `[LINK:${url}]${linkText}[/LINK]`);
-            text = text.replace(/`(.*?)`/g, (_, content) => `[CODE]${content}[/CODE]`);
-            const paragraphs = text.split('\n');
-            paragraphs.forEach(para => {
-                if (!para.trim()) return;
-                const p = document.createElement('p');
-                let paraContent = para;
-                paraContent = paraContent.replace(/\[STRONG\](.*?)\[\/STRONG\]/g, (_, content) => {
-                    const strong = document.createElement('strong');
-                    strong.textContent = content;
-                    p.appendChild(strong);
-                    return '';
-                });
-                paraContent = paraContent.replace(/\[EM\](.*?)\[\/EM\]/g, (_, content) => {
-                    const em = document.createElement('em');
-                    em.textContent = content;
-                    p.appendChild(em);
-                    return '';
-                });
-                paraContent = paraContent.replace(/\[LINK:(.*?)\](.*?)\[\/LINK\]/g, (_, url, content) => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.textContent = content;
-                    a.target = '_blank';
-                    p.appendChild(a);
-                    return '';
-                });
-                paraContent = paraContent.replace(/\[CODE\](.*?)\[\/CODE\]/g, (_, content) => {
-                    const code = document.createElement('code');
-                    code.textContent = content;
-                    p.appendChild(code);
-                    return '';
-                });
-                if (paraContent.trim()) {
-                    p.appendChild(document.createTextNode(paraContent));
-                }
-                if (p.hasChildNodes()) {
-                    container.appendChild(p);
-                }
-            });
-        };
-        let remainingText = processHeadings(markdownText);
-        processText(remainingText);
     }
 
     /**
@@ -183,13 +91,8 @@ export class DefinitionPopover {
                 return;
             }
 
-            const leaf = this.app.workspace.getRightLeaf(false);
-            if (!leaf) return;
-            // 确保全局搜索已启用
-            (this.app as any).internalPlugins?.getPluginById?.('global-search')?.enable?.();
-            (leaf as any).setViewState?.({ type: 'search', active: true });
-            const view: any = (leaf as any).view;
-            view?.setQuery?.(query);
+            // 如果搜索视图不存在，提示用户启用搜索插件
+            new Notice(t('notices.enable_search_plugin') || '请先启用核心搜索插件');
         } catch (e) {
             console.error('打开搜索失败:', e);
         }
@@ -204,11 +107,12 @@ export class DefinitionPopover {
     }
 
     private registerEvents() {
-        document.addEventListener('mouseover', this.eventHandlers.mouseover);
-        document.addEventListener('mouseout', this.eventHandlers.mouseout);
+        // 使用 registerDomEvent 注册事件，确保在组件卸载时自动清理
+        this.registerDomEvent(document, 'mouseover', this.eventHandlers.mouseover);
+        this.registerDomEvent(document, 'mouseout', this.eventHandlers.mouseout);
         // 滚动或窗口尺寸变化时，直接关闭 tooltip，避免频繁重定位
-        window.addEventListener('scroll', this.eventHandlers.scroll as EventListener, { passive: true } as AddEventListenerOptions);
-        window.addEventListener('resize', this.eventHandlers.resize as EventListener);
+        this.registerDomEvent(window, 'scroll', this.eventHandlers.scroll as EventListener, { passive: true });
+        this.registerDomEvent(window, 'resize', this.eventHandlers.resize as EventListener);
     }
 
     /**
@@ -282,12 +186,13 @@ export class DefinitionPopover {
                     return; // 限流：距离上次显示太近
                 }
                 this.lastShowTs = now;
-                this.createTooltip(target, word, definition);
+                // 使用 void 处理 async 函数
+                void this.createTooltip(target, word, definition);
             }, DefinitionPopover.SHOW_DELAY_MS);
         }
     }
 
-    private createTooltip(target: HTMLElement, word: string, definition: string) {
+    private async createTooltip(target: HTMLElement, word: string, definition: string) {
         this.removeTooltip();
 
         const tooltip = document.createElement('div');
@@ -303,7 +208,6 @@ export class DefinitionPopover {
         titleEl.textContent = word;
         titleContainer.appendChild(titleEl);
         // 点击标题发音
-        titleEl.style.cursor = 'pointer';
         titleEl.title = '点击发音';
         titleEl.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -330,20 +234,29 @@ export class DefinitionPopover {
             try {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
-                // 始终优先使用 Obsidian 原生渲染
-                MarkdownRenderer.renderMarkdown(
+                
+                // 创建一个短生命周期的 Component
+                const tempComponent = new Component();
+                tempComponent.load();
+                
+                // 使用新的 render API
+                await MarkdownRenderer.render(
+                    this.app,
                     definition,
                     contentEl,
                     sourcePath,
-                    this.plugin
+                    tempComponent
                 );
+                
                 // 渲染完成后绑定交互（下一帧，确保节点已生成）
                 requestAnimationFrame(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip));
+                
+                // 在 tooltip 被移除时卸载 component
+                tooltip.addEventListener('remove', () => tempComponent.unload(), { once: true });
             } catch (error) {
                 console.error('Markdown 渲染失败:', error);
-                // 兜底：简易安全渲染
-                const formattedText = this.simpleMarkdownToHtml(definition);
-                this.setContentSafely(contentEl, formattedText);
+                // 降级为纯文本显示
+                contentEl.textContent = definition;
             }
         }
         tooltip.appendChild(contentEl);
@@ -392,7 +305,6 @@ export class DefinitionPopover {
                 sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
                 
                 // 添加点击事件到来源信息：导航到源文件
-                sourceEl.style.cursor = 'pointer';
                 sourceEl.addEventListener('click', (e) => {
                     e.stopPropagation(); // 阻止事件冒泡
                     this.navigateToSource(detailDef);
@@ -482,11 +394,8 @@ export class DefinitionPopover {
         }
     }
 
-    unload() {
-        document.removeEventListener('mouseover', this.eventHandlers.mouseover);
-        document.removeEventListener('mouseout', this.eventHandlers.mouseout);
-        window.removeEventListener('scroll', this.eventHandlers.scroll as EventListener);
-        window.removeEventListener('resize', this.eventHandlers.resize as EventListener);
+    onunload() {
+        // registerDomEvent 注册的事件会自动清理，这里只需清理 tooltip
         this.removeTooltip();
     }
 }

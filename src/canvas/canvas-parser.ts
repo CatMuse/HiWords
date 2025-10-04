@@ -70,7 +70,7 @@ export class CanvasParser {
      */
     async parseCanvasFile(file: TFile): Promise<WordDefinition[]> {
         try {
-            const content = await this.app.vault.read(file);
+            const content = await this.app.vault.cachedRead(file);
             const canvasData: CanvasData = JSON.parse(content);
             
             const detectionMode = this.settings?.masteredDetection ?? 'group';
@@ -231,7 +231,7 @@ export class CanvasParser {
             if (!(abs instanceof TFile)) return null;
             if (abs.extension !== 'md') return null;
 
-            const md = await this.app.vault.read(abs);
+            const md = await this.app.vault.cachedRead(abs);
             // 对于文件节点，source 统一记录为 Canvas 文件路径（生词本路径）
             return this.parseFromText(md, node, sourcePath);
         } catch (error) {
@@ -252,7 +252,7 @@ export class CanvasParser {
      */
     async validateCanvasFile(file: TFile): Promise<boolean> {
         try {
-            const content = await this.app.vault.read(file);
+            const content = await this.app.vault.cachedRead(file);
             const trimmed = content?.trim() ?? '';
             // 新建但尚未写入内容的空 Canvas 也视为有效
             if (trimmed === '') return true;

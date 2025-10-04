@@ -84,6 +84,7 @@
     color: var(--text-accent);
     margin-bottom: 4px;
     padding-bottom: 4px;
+    cursor: pointer;
 }
 
 /* 当标题在容器中时，移除下边距以保持对齐 */
@@ -111,6 +112,7 @@
     border-radius: 4px;
     padding: 2px 4px;
     transition: background-color 0.2s ease;
+    cursor: pointer;
 }
 
 .hi-words-tooltip-source:hover {
@@ -375,53 +377,43 @@
     }
 }
 
-/* Canvas 选择器样式 */
-.canvas-picker-item {
-    padding: 12px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 6px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
 /* 添加词汇模态框样式 */
-.word-definition-input {
+.hiwords-word-definition-input {
     width: 100%;
     min-height: 100px;
     margin: 8px 0;
     
 }
 
-.modal-button-container {
+.hiwords-modal-button-container {
     margin-top: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.modal-button-container button.mod-cta {
+.hiwords-modal-button-container button.mod-cta {
     margin-left: 8px;
 }
 
 /* 按钮容器左右分组 */
-.modal-button-container .button-group-left {
+.hiwords-modal-button-container .hiwords-button-group-left {
     display: flex;
     gap: 8px;
 }
 
-.modal-button-container .button-group-right {
+.hiwords-modal-button-container .hiwords-button-group-right {
     display: flex;
     gap: 8px;
     margin-left: auto; /* 确保右侧按钮组始终在右侧 */
 }
 
 /* 表单元素样式 */
-.form-item {
+.hiwords-form-item {
     margin: 8px 0 20px 0;
 }
 
-.form-item-label {
+.hiwords-form-item-label {
     display: block;
     margin-bottom: 6px;
     font-weight: 400;
@@ -430,27 +422,10 @@
     color: var(--text-muted);
 }
 
-.form-item select,
-.form-item textarea,
-.form-item input {
+.hiwords-form-item select,
+.hiwords-form-item textarea,
+.hiwords-form-item input {
     width: 100%;
-}
-
-.canvas-picker-item:hover {
-    background: var(--background-modifier-hover);
-    border-color: var(--text-accent);
-}
-
-.canvas-picker-name {
-    font-weight: 500;
-    color: var(--text-normal);
-    margin-bottom: 4px;
-}
-
-.canvas-picker-path {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: var(--font-monospace);
 }
 
 /* 侧边栏样式 */
@@ -686,6 +661,7 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     min-width: 0;
+    cursor: pointer;
 }
 
 .hi-words-word-source {
@@ -697,6 +673,7 @@
     border-radius: 4px;
     padding: 2px 4px;
     transition: background-color 0.2s ease;
+    cursor: pointer;
 }
 
 .hi-words-source-text {

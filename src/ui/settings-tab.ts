@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, Modal } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle } from '../utils';
 import { CanvasParser } from '../canvas';
@@ -485,8 +485,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 }
 
-// Canvas 文件选择模态框
-class CanvasPickerModal extends Modal {
+// Canvas 文件选择模态框（使用 FuzzySuggestModal 支持模糊搜索）
+class CanvasPickerModal extends FuzzySuggestModal<TFile> {
     private files: TFile[];
     private onSelect: (file: TFile) => void;
 
@@ -494,36 +494,21 @@ class CanvasPickerModal extends Modal {
         super(app);
         this.files = files;
         this.onSelect = onSelect;
+        this.setPlaceholder(t('modals.select_canvas_file'));
     }
 
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-
-        contentEl.createEl('h2', { text: t('modals.select_canvas_file') });
-
-        this.files.forEach(file => {
-            const itemEl = contentEl.createEl('div', { cls: 'canvas-picker-item' });
-            
-            const nameEl = itemEl.createEl('div', { 
-                text: file.basename,
-                cls: 'canvas-picker-name'
-            });
-            
-            const pathEl = itemEl.createEl('div', { 
-                text: file.path,
-                cls: 'canvas-picker-path'
-            });
-
-            itemEl.addEventListener('click', () => {
-                this.onSelect(file);
-                this.close();
-            });
-        });
+    // 返回所有可选项
+    getItems(): TFile[] {
+        return this.files;
     }
 
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
+    // 返回每个项的显示文本（用于搜索匹配）
+    getItemText(file: TFile): string {
+        return file.path;
+    }
+
+    // 当用户选择某项时调用
+    onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent) {
+        this.onSelect(file);
     }
 }

@@ -154,8 +154,15 @@ export class I18n {
      * 获取当前语言
      */
     private getCurrentLocale(): SupportedLocale {
-        // 使用 Obsidian 的语言设置
-        const obsidianLocale = window.localStorage.getItem('language') || 'en';
+        // 使用 Obsidian API 获取语言设置
+        let obsidianLocale = 'en';
+        if (this.app) {
+            // 使用 moment.locale() 获取当前语言
+            obsidianLocale = (window as any).moment?.locale?.() || 'en';
+        } else {
+            // 如果 app 未初始化，使用 moment 作为后备
+            obsidianLocale = (window as any).moment?.locale?.() || 'en';
+        }
         
         // 将 Obsidian 语言设置映射到我们支持的语言
         if (obsidianLocale.startsWith('zh')) {

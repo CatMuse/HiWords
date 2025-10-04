@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon, Notice } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
@@ -10,7 +10,6 @@ export class HiWordsSidebarView extends ItemView {
     private currentWords: WordDefinition[] = [];
     private activeTab: 'learning' | 'mastered' = 'learning';
     private currentFile: TFile | null = null;
-    private lastActiveMarkdownView: MarkdownView | null = null; // 缓存最后一个活动的MarkdownView
     private firstLoadForFile: boolean = false; // 仅在切换到新文件后的首次渲染生效
     private updateTimer: number | null = null; // 合并/防抖更新
     private measureQueue: HTMLElement[] = []; // 批量测量的队列
@@ -144,12 +143,6 @@ export class HiWordsSidebarView extends ItemView {
             return;
         }
 
-        // 缓存当前活动的 MarkdownView（如果有的话）
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (activeView) {
-            this.lastActiveMarkdownView = activeView;
-        }
-
         if (activeFile === this.currentFile && this.currentWords.length > 0) {
             // 文件未变化且已有数据，不需要重新扫描
             return;
@@ -192,7 +185,8 @@ export class HiWordsSidebarView extends ItemView {
             if (this.currentFile.extension === 'pdf') {
                 content = await this.extractPDFText();
             } else {
-                content = await this.app.vault.read(this.currentFile);
+                // 使用 cachedRead 因为只读取不修改
+                content = await this.app.vault.cachedRead(this.currentFile);
             }
 
             const allWordDefinitions = await this.plugin.vocabularyManager.getAllWordDefinitions();
@@ -244,7 +238,7 @@ export class HiWordsSidebarView extends ItemView {
     /**
      * 渲染生词列表
      */
-    private renderWordList() {
+    private async renderWordList() {
         const container = this.containerEl.querySelector('.hi-words-sidebar');
         if (!container) return;
 
@@ -273,7 +267,7 @@ export class HiWordsSidebarView extends ItemView {
         this.createTabNavigation(container as HTMLElement, unmasteredWords.length, masteredWords.length);
         
         // 创建 Tab 内容
-        this.createTabContent(container as HTMLElement, unmasteredWords, masteredWords);
+        await this.createTabContent(container as HTMLElement, unmasteredWords, masteredWords);
     }
 
     /**
@@ -312,16 +306,16 @@ export class HiWordsSidebarView extends ItemView {
     /**
      * 创建 Tab 内容
      */
-    private createTabContent(container: HTMLElement, unmasteredWords: WordDefinition[], masteredWords: WordDefinition[]) {
+    private async createTabContent(container: HTMLElement, unmasteredWords: WordDefinition[], masteredWords: WordDefinition[]) {
         if (this.activeTab === 'learning') {
             if (unmasteredWords.length > 0) {
-                this.createWordList(container, unmasteredWords, false);
+                await this.createWordList(container, unmasteredWords, false);
             } else {
                 this.createEmptyState(container, t('sidebar.no_learning_words'));
             }
         } else if (this.activeTab === 'mastered') {
             if (masteredWords.length > 0) {
-                this.createWordList(container, masteredWords, true);
+                await this.createWordList(container, masteredWords, true);
             } else {
                 this.createEmptyState(container, t('sidebar.no_mastered_words'));
             }
@@ -344,12 +338,12 @@ export class HiWordsSidebarView extends ItemView {
     /**
      * 创建单词列表
      */
-    private createWordList(container: HTMLElement, words: WordDefinition[], isMastered: boolean) {
+    private async createWordList(container: HTMLElement, words: WordDefinition[], isMastered: boolean) {
         const wordList = container.createEl('div', { cls: 'hi-words-word-list' });
         
-        words.forEach(wordDef => {
-            this.createWordCard(wordList, wordDef, isMastered);
-        });
+        for (const wordDef of words) {
+            await this.createWordCard(wordList, wordDef, isMastered);
+        }
     }
 
     /**
@@ -393,12 +387,12 @@ export class HiWordsSidebarView extends ItemView {
      * @param wordDef 单词定义
      * @param isMastered 是否为已掌握单词
      */
-    private createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered: boolean = false) {
+    private async createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered: boolean = false) {
         const card = container.createEl('div', { cls: 'hi-words-word-card' });
         
         // 设置卡片颜色边框，使用Obsidian CSS变量
         const borderColor = mapCanvasColorToCSSVar(wordDef.color, 'var(--color-base-60)');
-        card.style.borderLeftColor = borderColor;
+        card.style.setProperty('border-left-color', borderColor);
         
         // 设置卡片彩色背景
         if (wordDef.color) {
@@ -412,7 +406,6 @@ export class HiWordsSidebarView extends ItemView {
         const wordTitle = card.createEl('div', { cls: 'hi-words-word-title' });
         const wordTextEl = wordTitle.createEl('span', { text: wordDef.word, cls: 'hi-words-word-text' });
         // 点击主词发音
-        wordTextEl.style.cursor = 'pointer';
         wordTextEl.addEventListener('click', async (e) => {
             e.stopPropagation();
             await playWordTTS(this.plugin, wordDef.word);
@@ -464,10 +457,13 @@ export class HiWordsSidebarView extends ItemView {
 
             // 渲染 Markdown 内容
             try {
-                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView) || this.lastActiveMarkdownView;
+                // 使用 getMostRecentLeaf 获取最近的视图
+                const leaf = this.app.workspace.getMostRecentLeaf();
+                const activeView = leaf?.view instanceof MarkdownView ? leaf.view : null;
                 const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
-                // 始终优先使用 Obsidian 原生渲染（第四参使用 this 作为 Component）
-                MarkdownRenderer.renderMarkdown(
+                // 使用新的 render API
+                await MarkdownRenderer.render(
+                    this.plugin.app,
                     wordDef.definition,
                     defContainer,
                     sourcePath,
@@ -491,7 +487,6 @@ export class HiWordsSidebarView extends ItemView {
         source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
         
         // 添加点击事件到来源信息：导航到源文件
-        source.style.cursor = 'pointer';
         source.addEventListener('click', (e) => {
             e.stopPropagation(); // 阻止事件冒泡
             this.navigateToSource(wordDef);
@@ -746,12 +741,8 @@ export class HiWordsSidebarView extends ItemView {
                 return;
             }
 
-            const leaf = this.app.workspace.getRightLeaf(false);
-            if (!leaf) return;
-            (this.app as any).internalPlugins?.getPluginById?.('global-search')?.enable?.();
-            (leaf as any).setViewState?.({ type: 'search', active: true });
-            const view: any = (leaf as any).view;
-            view?.setQuery?.(query);
+            // 如果搜索视图不存在，提示用户启用搜索插件
+            new Notice(t('notices.enable_search_plugin') || '请先启用核心搜索插件');
         } catch (e) {
             console.error('打开搜索失败:', e);
         }

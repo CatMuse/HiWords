@@ -18,7 +18,7 @@ export class VocabularyManager {
     // 增量更新优化
     private memoryOnlyWords: Map<string, WordDefinition[]> = new Map(); // 仅内存中的新词汇
     private pendingSyncWords: Map<string, WordDefinition[]> = new Map(); // 待同步的词汇
-    private syncTimeouts: Map<string, NodeJS.Timeout> = new Map(); // 同步定时器
+    private syncTimeouts: Map<string, number> = new Map(); // 同步定时器
     private tempNodeIdCounter: number = 0; // 临时节点ID计数器
 
     constructor(app: App, settings: HiWordsSettings) {
@@ -540,7 +540,7 @@ export class VocabularyManager {
         // 清除之前的定时器
         const existingTimeout = this.syncTimeouts.get(bookPath);
         if (existingTimeout) {
-            clearTimeout(existingTimeout);
+            window.clearTimeout(existingTimeout);
         }
         
         // 添加到待同步队列
@@ -550,7 +550,7 @@ export class VocabularyManager {
         this.pendingSyncWords.get(bookPath)!.push(wordDef);
         
         // 设置新的定时器（延迟1秒批量同步）
-        const timeout = setTimeout(() => {
+        const timeout = window.setTimeout(() => {
             this.syncPendingWords(bookPath);
         }, 1000);
         
@@ -703,7 +703,7 @@ export class VocabularyManager {
      */
     destroy(): void {
         // 清理所有定时器
-        this.syncTimeouts.forEach(timeout => clearTimeout(timeout));
+        this.syncTimeouts.forEach(timeout => window.clearTimeout(timeout));
         this.syncTimeouts.clear();
         
         // 清理缓存
@@ -788,34 +788,35 @@ export class VocabularyManager {
         }
 
         try {
-            const content = await this.app.vault.read(file);
-            const canvasData = JSON.parse(content);
-            
-            // 找到要更新的节点
-            const node = canvasData.nodes.find((n: any) => n.id === wordDef.nodeId);
-            if (!node) {
-                throw new Error(`找不到节点 ID: ${wordDef.nodeId}`);
-            }
-            
-            // 构建纯文本内容，不包含 frontmatter
-            let textContent = wordDef.word;
-            
-            // 添加别名（如果有）- 使用斜体格式
-            if (wordDef.aliases && wordDef.aliases.length > 0) {
-                textContent += `\n*${wordDef.aliases.join(', ')}*`;
-            }
-            
-            // 添加定义
-            if (wordDef.definition) {
-                textContent += '\n' + wordDef.definition;
-            }
-            
-            // 更新节点内容
-            node.text = textContent;
-            
-            // 保存到文件（使用紧凑JSON格式）
-            await this.app.vault.modify(file, JSON.stringify(canvasData));
-            
+            // 使用 Vault.process 修改文件
+            await this.app.vault.process(file, (content) => {
+                const canvasData = JSON.parse(content);
+                
+                // 找到要更新的节点
+                const node = canvasData.nodes.find((n: any) => n.id === wordDef.nodeId);
+                if (!node) {
+                    throw new Error(`找不到节点 ID: ${wordDef.nodeId}`);
+                }
+                
+                // 构建纯文本内容，不包含 frontmatter
+                let textContent = wordDef.word;
+                
+                // 添加别名（如果有）- 使用斜体格式
+                if (wordDef.aliases && wordDef.aliases.length > 0) {
+                    textContent += `\n*${wordDef.aliases.join(', ')}*`;
+                }
+                
+                // 添加定义
+                if (wordDef.definition) {
+                    textContent += '\n' + wordDef.definition;
+                }
+                
+                // 更新节点内容
+                node.text = textContent;
+                
+                // 返回更新后的内容
+                return JSON.stringify(canvasData);
+            });
         } catch (error) {
             console.error('保存 Canvas 文件失败:', error);
             throw error;

@@ -353,7 +353,7 @@ export class MasteredGroupManager {
                 return null;
             }
 
-            const content = await this.app.vault.read(file);
+            const content = await this.app.vault.cachedRead(file);
             return JSON.parse(content) as CanvasData;
         } catch (error) {
             return null;
@@ -373,8 +373,10 @@ export class MasteredGroupManager {
                 return false;
             }
 
-            // 使用原子更新，避免并发覆盖（此处以提供的数据为准进行写入）
-            await this.app.vault.process(file, () => {
+            // 使用原子更新，基于当前内容进行修改
+            await this.app.vault.process(file, (current) => {
+                // 虽然我们要完全替换内容，但仍需要接收 current 参数
+                // 这样 Obsidian 可以正确处理文件锁和并发
                 return JSON.stringify(canvasData);
             });
             return true;

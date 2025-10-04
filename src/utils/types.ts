@@ -1,23 +1,9 @@
-// Canvas 节点类型定义
-export interface CanvasNode {
-    id: string;
-    type: 'text' | 'group' | string; // 支持分组类型
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    text?: string;      // 文本节点内容
-    file?: string;
-    color?: string;
-    label?: string;     // 分组标签
-    group?: string[];   // 所属分组ID数组
-}
+// 使用 Obsidian 官方 Canvas 类型
+import type { AllCanvasNodeData, CanvasData as ObsidianCanvasData } from 'obsidian/canvas';
 
-// Canvas 数据结构
-export interface CanvasData {
-    nodes: CanvasNode[];
-    edges: any[];
-}
+// 导出官方类型的别名以保持向后兼容
+export type CanvasNode = AllCanvasNodeData;
+export type CanvasData = ObsidianCanvasData;
 
 // 词汇定义
 export interface WordDefinition {

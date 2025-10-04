@@ -1,8 +1,8 @@
 {
 	"id": "hi-words",
 	"name": "HiWords",
-	"version": "0.3.5",
-	"minAppVersion": "0.15.0",
+	"version": "0.4.0",
+	"minAppVersion": "1.8.0",
 	"description": "Effortlessly grow your vocabulary as you read, with automatic highlighting and translation of unfamiliar words.",
 	"author": "Kai",
 	"authorUrl": "https://github.com/CatMuse",
