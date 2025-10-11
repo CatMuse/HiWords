@@ -390,12 +390,9 @@ export class HiWordsSidebarView extends ItemView {
     private async createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered: boolean = false) {
         const card = container.createEl('div', { cls: 'hi-words-word-card' });
         
-        // 设置卡片颜色边框，使用Obsidian CSS变量
-        const borderColor = mapCanvasColorToCSSVar(wordDef.color, 'var(--color-base-60)');
-        card.style.setProperty('border-left-color', borderColor);
-        
-        // 设置卡片彩色背景
+        // 设置 CSS 自定义属性，让 CSS 处理实际样式
         if (wordDef.color) {
+            const borderColor = mapCanvasColorToCSSVar(wordDef.color, 'var(--color-base-60)');
             card.style.setProperty('--word-card-accent-color', borderColor);
             // 设置更明显的彩色背景
             const bgColor = getColorWithOpacity(borderColor, 0.1);
