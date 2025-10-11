@@ -242,9 +242,8 @@ export default class HiWordsPlugin extends Plugin {
         // 刷新侧边栏视图（通过 API 获取）
         const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);
         leaves.forEach(leaf => {
-            const view = leaf.view as HiWordsSidebarView;
-            if (view && view.refresh) {
-                view.refresh();
+            if (leaf.view instanceof HiWordsSidebarView) {
+                leaf.view.refresh();
             }
         });
     }
