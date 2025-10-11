@@ -14,7 +14,8 @@ export class DefinitionPopover extends Component {
     private tooltipHideTimeout: number | undefined;
     private currentTargetEl: HTMLElement | null = null; // 当前已显示 tooltip 的高亮元素，避免重复创建
     private hoverIntentTimer: number | null = null; // 悬停意图定时器，避免频繁抖动
-    private lastShowTs = 0; // 上一次显示时间戳，做最小间隔限制
+    private lastShowTs = 0; // 上一次显示时间戳,做最小间隔限制
+    private currentTooltipComponent: Component | null = null; // 当前 tooltip 使用的 Component
     private static readonly SHOW_DELAY_MS = 120; // 悬停到显示的延迟
     private static readonly MIN_INTERVAL_MS = 150; // 两次显示的最小间隔
 
@@ -237,7 +238,8 @@ export class DefinitionPopover extends Component {
                 
                 // 创建一个短生命周期的 Component
                 const tempComponent = new Component();
-                tempComponent.load();
+                this.addChild(tempComponent);
+                this.currentTooltipComponent = tempComponent;
                 
                 // 使用新的 render API
                 await MarkdownRenderer.render(
@@ -355,6 +357,11 @@ export class DefinitionPopover extends Component {
         if (this.activeTooltip && this.activeTooltip.parentNode) {
             this.activeTooltip.parentNode.removeChild(this.activeTooltip);
             this.activeTooltip = null;
+        }
+        // 清理 tooltip 关联的 Component
+        if (this.currentTooltipComponent) {
+            this.removeChild(this.currentTooltipComponent);
+            this.currentTooltipComponent = null;
         }
         this.currentTargetEl = null;
     }
