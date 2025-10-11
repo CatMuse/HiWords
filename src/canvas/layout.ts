@@ -1,11 +1,22 @@
 import { CanvasData, CanvasNode, HiWordsSettings } from '../utils';
 import { CanvasParser } from './canvas-parser';
 
+// 固定布局参数
+const BASE_X = 50;
+const BASE_Y = 50;
+const CARD_WIDTH = 260;
+const CARD_HEIGHT = 120;
+const GAP = 20;
+const COLUMNS = 3;
+const GROUP_PADDING = 24;
+const GROUP_GAP = 12;
+const GROUP_COLUMNS = 2;
+
 /**
- * 规范化布局：
- * - 不移动 Mastered 分组内节点
- * - 保持 Mastered 分组垂直带及其右侧区域清空
- * - 将左侧区域的文本节点进行网格（Masonry 风格）布局，避免重叠
+ * 简化的布局算法：使用固定参数的网格布局
+ * - 左侧区域：3列固定网格（布局所有非分组节点：text 和 file）
+ * - Mastered 分组内：2列固定网格
+ * - 无复杂计算，位置可预测
  */
 export function normalizeLayout(
   canvasData: CanvasData,
@@ -18,127 +29,60 @@ export function normalizeLayout(
     (n) => n.type === 'group' && n.label === 'Mastered'
   );
 
-  const cardWidth = clamp(settings.cardWidth ?? 260, 120, 800);
-  const cardHeight = clamp(settings.cardHeight ?? 120, 60, 800);
-  const hGap = clamp(settings.horizontalGap ?? 24, 0, 200);
-  const vGap = clamp(settings.verticalGap ?? 16, 0, 200);
-  const leftPadding = clamp(settings.leftPadding ?? 24, 0, 400);
-  const minLeftX = settings.minLeftX ?? 0;
-
-  // 左侧区域可放置的最大X（受 Mastered 分组影响）
-  let leftMaxX = Number.POSITIVE_INFINITY;
-  if (masteredGroup) {
-    leftMaxX = masteredGroup.x - leftPadding;
-  }
-
-  // 需要布局的节点：文本类型且不在 Mastered 分组内
+  // 收集需要布局的节点（不在 Mastered 分组内的 text 和 file 节点）
   const movableNodes = canvasData.nodes.filter((n) => {
-    if (n.type !== 'text') return false;
+    if (n.type === 'group') return false; // 排除分组
     if (masteredGroup && parser.isNodeInGroup(n, masteredGroup)) return false;
     return true;
   });
 
   if (movableNodes.length === 0) return;
 
-  // 列计算
-  const columnsAuto = settings.columnsAuto ?? true;
-  let columns = clamp(settings.columns ?? 3, 1, settings.maxColumns ?? 6);
-
-  // 以现有左侧可用宽度来动态估算列数
-  if (columnsAuto) {
-    const leftNodes = movableNodes;
-    const minX = Math.min(...leftNodes.map((n) => n.x), minLeftX);
-    const availableWidth = Math.max((leftMaxX - minX), cardWidth);
-    const unit = cardWidth + hGap;
-    columns = Math.max(1, Math.min(Math.floor((availableWidth + hGap) / unit), settings.maxColumns ?? 6));
-  }
-
-  // Masonry/网格布局
-  // 先将目标区域内（左侧）的所有节点收集后，按 y/x 排序，逐个分配位置
-  const sorted = movableNodes.slice().sort((a, b) => {
-    if (a.y !== b.y) return a.y - b.y;
-    return a.x - b.x;
-  });
-
-  // 列 x 坐标
-  const baseX = Math.max(minLeftX, (function () {
-    // 取左侧节点的最小 x 作为基准
-    const leftNodes = sorted.length ? sorted : movableNodes;
-    const minX = Math.min(...leftNodes.map((n) => n.x), minLeftX);
-    return minX;
-  })());
-
-  const colX: number[] = [];
-  for (let c = 0; c < columns; c++) {
-    colX.push(baseX + c * (cardWidth + hGap));
-  }
-
-  const colY: number[] = new Array(columns).fill(sorted.length ? Math.min(...sorted.map(n => n.y)) : 0);
-
-  for (const node of sorted) {
-    // 选择当前最小的列进行放置（简单 Masonry）
-    let bestCol = 0;
-    let bestY = colY[0];
-    for (let c = 1; c < columns; c++) {
-      if (colY[c] < bestY) {
-        bestY = colY[c];
-        bestCol = c;
-      }
-    }
-
-    node.x = colX[bestCol];
-    node.y = bestY;
-    node.width = node.width || cardWidth;
-    node.height = node.height || cardHeight;
-
-    colY[bestCol] = bestY + (node.height || cardHeight) + vGap;
+  // 简单网格布局
+  for (let i = 0; i < movableNodes.length; i++) {
+    const node = movableNodes[i];
+    const col = i % COLUMNS;
+    const row = Math.floor(i / COLUMNS);
+    
+    node.x = BASE_X + col * (CARD_WIDTH + GAP);
+    node.y = BASE_Y + row * (CARD_HEIGHT + GAP);
+    node.width = CARD_WIDTH;
+    node.height = CARD_HEIGHT;
   }
 }
 
+/**
+ * 分组内部布局：简单的固定列网格
+ */
 export function layoutGroupInner(
   canvasData: CanvasData,
   group: CanvasNode,
   settings: HiWordsSettings,
   parser: CanvasParser
 ) {
-  // 将 Mastered 分组内的文本节点做简单网格布局，并可适当扩展分组尺寸
-  const padding = clamp(settings.groupInnerPadding ?? 24, 0, 400);
-  const gap = clamp(settings.groupInnerGap ?? 12, 0, 200);
-  const columns = clamp(settings.groupInnerColumns ?? 2, 1, 8);
-  const cardWidth = clamp(settings.cardWidth ?? 260, 120, 800);
-  const cardHeight = clamp(settings.cardHeight ?? 120, 60, 800);
-
   const members = canvasData.nodes.filter(
-    (n) => n.type === 'text' && parser.isNodeInGroup(n, group)
+    (n) => n.type !== 'group' && parser.isNodeInGroup(n, group)
   );
+  
   if (members.length === 0) return;
 
-  let x = group.x + padding;
-  let y = group.y + padding;
-  let col = 0;
-
-  for (const node of members) {
-    node.x = x;
-    node.y = y;
-    node.width = node.width || cardWidth;
-    node.height = node.height || cardHeight;
-
-    col++;
-    if (col >= columns) {
-      col = 0;
-      x = group.x + padding;
-      y += (node.height || cardHeight) + gap;
-    } else {
-      x += (node.width || cardWidth) + gap;
-    }
+  // 简单网格布局
+  for (let i = 0; i < members.length; i++) {
+    const node = members[i];
+    const col = i % GROUP_COLUMNS;
+    const row = Math.floor(i / GROUP_COLUMNS);
+    
+    node.x = group.x + GROUP_PADDING + col * (CARD_WIDTH + GROUP_GAP);
+    node.y = group.y + GROUP_PADDING + row * (CARD_HEIGHT + GROUP_GAP);
+    node.width = CARD_WIDTH;
+    node.height = CARD_HEIGHT;
   }
 
   // 根据内容调整分组尺寸
-  const maxRight = Math.max(...members.map((n) => n.x + (n.width || cardWidth)), group.x + 2 * padding + columns * cardWidth + (columns - 1) * gap);
-  const maxBottom = Math.max(...members.map((n) => n.y + (n.height || cardHeight)), group.y + 2 * padding + Math.ceil(members.length / columns) * cardHeight + (Math.ceil(members.length / columns) - 1) * gap);
-
-  group.width = Math.max(group.width, maxRight - group.x + padding);
-  group.height = Math.max(group.height, maxBottom - group.y + padding);
+  const rows = Math.ceil(members.length / GROUP_COLUMNS);
+  const minWidth = GROUP_PADDING * 2 + GROUP_COLUMNS * CARD_WIDTH + (GROUP_COLUMNS - 1) * GROUP_GAP;
+  const minHeight = GROUP_PADDING * 2 + rows * CARD_HEIGHT + (rows - 1) * GROUP_GAP;
+  
+  group.width = Math.max(group.width, minWidth);
+  group.height = Math.max(group.height, minHeight);
 }
-
-function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }

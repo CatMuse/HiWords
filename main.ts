@@ -19,20 +19,8 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     blurDefinitions: false, // 默认不启用模糊效果
     // 发音地址模板（用户可在设置里修改）
     ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
-    // 自动布局默认值
-    autoLayoutEnabled: true,
-    cardWidth: 260,
-    cardHeight: 120,
-    horizontalGap: 24,
-    verticalGap: 16,
-    leftPadding: 24,
-    columnsAuto: true,
-    columns: 3,
-    minLeftX: 0,
-    maxColumns: 6,
-    groupInnerPadding: 24,
-    groupInnerColumns: 2,
-    groupInnerGap: 12
+    // 自动布局（简化版，使用固定参数）
+    autoLayoutEnabled: true
 };
 
 export default class HiWordsPlugin extends Plugin {

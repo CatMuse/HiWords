@@ -251,9 +251,9 @@ export class MasteredGroupManager {
     ): boolean {
         try {
             // 直接将节点粗放置到分组内部，最终布局交给 layoutGroupInner
-            const padding = this.settings?.groupInnerPadding ?? 24;
-            const cardW = this.settings?.cardWidth ?? 260;
-            const cardH = this.settings?.cardHeight ?? 120;
+            const padding = 24;
+            const cardW = 260;
+            const cardH = 120;
             node.width = node.width || cardW;
             node.height = node.height || cardH;
             node.x = Math.max(group.x + padding, group.x);
@@ -281,10 +281,10 @@ export class MasteredGroupManager {
             return !this.canvasParser.isNodeInGroup(n, masteredGroup);
         });
         
-        const paddingX = this.settings?.leftPadding ?? 24;
-        const paddingY = this.settings?.verticalGap ?? 16;
-        const nodeWidth = node.width || (this.settings?.cardWidth ?? 260);
-        const nodeHeight = node.height || (this.settings?.cardHeight ?? 120);
+        const paddingX = 50;
+        const paddingY = 20;
+        const nodeWidth = node.width || 260;
+        const nodeHeight = node.height || 120;
         
         if (freeTextNodes.length === 0) {
             // 如果没有其他自由节点，放在默认位置
