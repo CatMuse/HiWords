@@ -35,6 +35,7 @@ export function registerReadingModeHighlighter(plugin: {
     '.cm-inline-code',
     '.internal-embed',
     '.file-embed',
+    '.hi-words-tooltip', // 排除 tooltip 内容
   ].join(',');
 
   const processElement = (root: HTMLElement, trie: Trie) => {

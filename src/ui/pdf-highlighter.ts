@@ -46,8 +46,8 @@ export function registerPDFHighlighter(plugin: {
       const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
       
       textSpans.forEach((span: HTMLElement) => {
-        // 跳过已经高亮的元素
-        if (span.closest('.hi-words-highlight')) {
+        // 跳过已经高亮的元素和 tooltip 内容
+        if (span.closest('.hi-words-highlight') || span.closest('.hi-words-tooltip')) {
           return;
         }
 

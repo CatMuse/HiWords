@@ -229,6 +229,10 @@ export class DefinitionPopover extends Component {
             contentEl.classList.add('hi-words-definition');
         }
 
+        // 先将 contentEl 添加到 tooltip，再渲染 Markdown
+        // 这样后处理器可以通过 closest() 检测到 .hi-words-tooltip
+        tooltip.appendChild(contentEl);
+
         if (!definition || definition.trim() === '') {
             contentEl.textContent = t('sidebar.no_definition');
         } else {
@@ -252,16 +256,12 @@ export class DefinitionPopover extends Component {
                 
                 // 渲染完成后绑定交互（下一帧，确保节点已生成）
                 requestAnimationFrame(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip));
-                
-                // 在 tooltip 被移除时卸载 component
-                tooltip.addEventListener('remove', () => tempComponent.unload(), { once: true });
             } catch (error) {
                 console.error('Markdown 渲染失败:', error);
                 // 降级为纯文本显示
                 contentEl.textContent = definition;
             }
         }
-        tooltip.appendChild(contentEl);
 
         // 添加已掌握按钮和源信息
         if (this.vocabularyManager) {
