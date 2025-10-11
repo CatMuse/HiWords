@@ -1,4 +1,4 @@
-import { App } from 'obsidian';
+import { App, getLanguage } from 'obsidian';
 import en from './en';
 import zh from './zh';
 import es from './es';
@@ -154,15 +154,8 @@ export class I18n {
      * 获取当前语言
      */
     private getCurrentLocale(): SupportedLocale {
-        // 使用 Obsidian API 获取语言设置
-        let obsidianLocale = 'en';
-        if (this.app) {
-            // 使用 moment.locale() 获取当前语言
-            obsidianLocale = (window as any).moment?.locale?.() || 'en';
-        } else {
-            // 如果 app 未初始化，使用 moment 作为后备
-            obsidianLocale = (window as any).moment?.locale?.() || 'en';
-        }
+        // 使用 Obsidian 官方 API 获取语言设置 (requires minAppVersion: "1.8.0")
+        const obsidianLocale = getLanguage();
         
         // 将 Obsidian 语言设置映射到我们支持的语言
         if (obsidianLocale.startsWith('zh')) {
