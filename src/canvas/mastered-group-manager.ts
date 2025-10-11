@@ -50,11 +50,17 @@ export class MasteredGroupManager {
             );
 
             if (!masteredGroup) {
-                // 创建新的 Mastered 分组
-                masteredGroup = this.createMasteredGroup(canvasData);
-                // 使用 append，保持节点顺序稳定
-                canvasData.nodes.push(masteredGroup);
-                await this.saveCanvas(bookPath, canvasData);
+                // 需要创建新分组
+                const newGroupId = this.genHex16();
+                
+                await this.modifyCanvas(bookPath, (data) => {
+                    // 基于最新数据计算位置并创建分组
+                    const group = this.createMasteredGroup(data);
+                    group.id = newGroupId; // 使用预生成的 ID
+                    data.nodes.push(group);
+                });
+                
+                return newGroupId;
             }
 
             return masteredGroup.id;
@@ -74,36 +80,29 @@ export class MasteredGroupManager {
             const masteredGroupId = await this.ensureMasteredGroup(bookPath);
             if (!masteredGroupId) return false;
 
-            const canvasData = await this.loadCanvas(bookPath);
-            if (!canvasData) return false;
-
-            // 找到目标节点和分组
-            const targetNode = canvasData.nodes.find(node => node.id === nodeId);
-            const masteredGroup = canvasData.nodes.find(node => node.id === masteredGroupId);
-            
-            if (!targetNode) {
-                return false;
-            }
-            if (!masteredGroup) {
-                return false;
-            }
-
-            // 使用优化的两阶段定位方案
-            const success = await this.moveNodeToGroupOptimized(targetNode, masteredGroup, canvasData);
-            if (!success) {
-                return false;
-            }
-
-            // 分组内布局与整体规范化
-            try {
-                if (this.settings) {
-                    layoutGroupInner(canvasData, masteredGroup, this.settings, this.canvasParser);
-                    normalizeLayout(canvasData, this.settings, this.canvasParser);
+            return await this.modifyCanvas(bookPath, (data) => {
+                // 找到目标节点和分组
+                const targetNode = data.nodes.find(node => node.id === nodeId);
+                const masteredGroup = data.nodes.find(node => node.id === masteredGroupId);
+                
+                if (!targetNode || !masteredGroup) {
+                    return;
                 }
-            } catch {}
 
-            await this.saveCanvas(bookPath, canvasData);
-            return true;
+                // 使用优化的两阶段定位方案
+                const success = this.moveNodeToGroupOptimizedSync(targetNode, masteredGroup, data);
+                if (!success) {
+                    return;
+                }
+
+                // 分组内布局与整体规范化
+                try {
+                    if (this.settings) {
+                        layoutGroupInner(data, masteredGroup, this.settings, this.canvasParser);
+                        normalizeLayout(data, this.settings, this.canvasParser);
+                    }
+                } catch {}
+            });
         } catch (error) {
             return false;
         }
@@ -117,33 +116,29 @@ export class MasteredGroupManager {
      */
     async removeFromMasteredGroup(bookPath: string, nodeId: string): Promise<boolean> {
         try {
-            const canvasData = await this.loadCanvas(bookPath);
-            if (!canvasData) return false;
+            return await this.modifyCanvas(bookPath, (data) => {
+                // 找到目标节点
+                const targetNode = data.nodes.find(node => node.id === nodeId);
+                if (!targetNode) return;
 
-            // 找到目标节点
-            const targetNode = canvasData.nodes.find(node => node.id === nodeId);
-            if (!targetNode) return false;
+                // 找到 Mastered 分组
+                const masteredGroup = data.nodes.find(
+                    node => node.type === 'group' && node.label === this.MASTERED_GROUP_LABEL
+                );
+                if (!masteredGroup) return;
 
-            // 找到 Mastered 分组
-            const masteredGroup = canvasData.nodes.find(
-                node => node.type === 'group' && node.label === this.MASTERED_GROUP_LABEL
-            );
-            if (!masteredGroup) return false;
+                // 注意：不再修改节点的group属性，改为通过坐标位置来判断分组关系
 
-            // 注意：不再修改节点的group属性，改为通过坐标位置来判断分组关系
+                // 将节点移动到分组外的合适位置
+                this.moveNodeOutOfGroupSync(targetNode, data);
 
-            // 将节点移动到分组外的合适位置
-            await this.moveNodeOutOfGroup(targetNode, canvasData);
-
-            // 整体规范化（不移动分组内的节点）
-            try {
-                if (this.settings) {
-                    normalizeLayout(canvasData, this.settings, this.canvasParser);
-                }
-            } catch {}
-
-            await this.saveCanvas(bookPath, canvasData);
-            return true;
+                // 整体规范化（不移动分组内的节点）
+                try {
+                    if (this.settings) {
+                        normalizeLayout(data, this.settings, this.canvasParser);
+                    }
+                } catch {}
+            });
         } catch (error) {
             return false;
         }
@@ -243,17 +238,17 @@ export class MasteredGroupManager {
     }
 
     /**
-     * 优化的节点移动方案：两阶段定位 + 动态扩展
+     * 优化的节点移动方案：两阶段定位 + 动态扩展（同步版本）
      * @param node 要移动的节点
      * @param group 目标分组
      * @param canvasData Canvas 数据
      * @returns 操作是否成功
      */
-    private async moveNodeToGroupOptimized(
+    private moveNodeToGroupOptimizedSync(
         node: CanvasNode, 
         group: CanvasNode, 
         canvasData: CanvasData
-    ): Promise<boolean> {
+    ): boolean {
         try {
             // 直接将节点粗放置到分组内部，最终布局交给 layoutGroupInner
             const padding = this.settings?.groupInnerPadding ?? 24;
@@ -270,11 +265,11 @@ export class MasteredGroupManager {
     }
 
     /**
-     * 将节点移动到分组外的合适位置
+     * 将节点移动到分组外的合适位置（同步版本）
      * @param node 要移动的节点
      * @param canvasData Canvas 数据
      */
-    private async moveNodeOutOfGroup(node: CanvasNode, canvasData: CanvasData): Promise<void> {
+    private moveNodeOutOfGroupSync(node: CanvasNode, canvasData: CanvasData): void {
         // 找到所有非分组节点（不在Mastered分组内的）
         const masteredGroup = canvasData.nodes.find(
             n => n.type === 'group' && n.label === this.MASTERED_GROUP_LABEL
@@ -329,18 +324,6 @@ export class MasteredGroupManager {
         );
     }
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
     /**
      * 加载 Canvas 文件数据
      * @param bookPath Canvas 文件路径
@@ -361,23 +344,26 @@ export class MasteredGroupManager {
     }
 
     /**
-     * 保存 Canvas 文件数据
+     * 原子性修改 Canvas 文件
      * @param bookPath Canvas 文件路径
-     * @param canvasData Canvas 数据
+     * @param modifier 修改函数，接收最新的 Canvas 数据并进行修改
      * @returns 操作是否成功
      */
-    private async saveCanvas(bookPath: string, canvasData: CanvasData): Promise<boolean> {
+    private async modifyCanvas(
+        bookPath: string,
+        modifier: (data: CanvasData) => void
+    ): Promise<boolean> {
         try {
             const file = this.app.vault.getAbstractFileByPath(bookPath);
             if (!(file instanceof TFile)) {
                 return false;
             }
 
-            // 使用原子更新，基于当前内容进行修改
+            // 使用原子更新，基于最新内容进行修改
             await this.app.vault.process(file, (current) => {
-                // 虽然我们要完全替换内容，但仍需要接收 current 参数
-                // 这样 Obsidian 可以正确处理文件锁和并发
-                return JSON.stringify(canvasData);
+                const data = JSON.parse(current) as CanvasData;
+                modifier(data); // 应用修改
+                return JSON.stringify(data);
             });
             return true;
         } catch (error) {

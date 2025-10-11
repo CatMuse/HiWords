@@ -420,24 +420,7 @@ export class HiWordsSidebarView extends ItemView {
             // 设置图标（未掌握显示smile供用户点击标记为已掌握，已掌握显示frown供用户点击取消）
             setIcon(buttonContainer, isMastered ? 'frown' : 'smile');
             
-            // 添加点击事件
-            buttonContainer.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                
-                try {
-                    // 切换已掌握状态
-                    if (isMastered) {
-                        await this.plugin.masteredService.unmarkWordAsMastered(wordDef.source, wordDef.nodeId, wordDef.word);
-                    } else {
-                        await this.plugin.masteredService.markWordAsMastered(wordDef.source, wordDef.nodeId, wordDef.word);
-                    }
-                    
-                    // 刷新侧边栏
-                    setTimeout(() => this.updateView(), 100);
-                } catch (error) {
-                    console.error('切换已掌握状态失败:', error);
-                }
-            });
+            // 注意：点击事件由事件委托统一处理（bindDelegatedHandlers），无需在此添加监听器
         }
         
         // 定义内容
