@@ -66,11 +66,11 @@ export class CanvasEditor {
                 // 生成 16-hex ID
                 const nodeId = this.genHex16();
 
-                // 放置参数（与设置保持一致）
-                const newW = this.settings.cardWidth ?? 260;
-                const newH = this.settings.cardHeight ?? 120;
-                const verticalGap = this.settings.verticalGap ?? 16;
-                const groupPadding = this.settings.leftPadding ?? 24; // 与 Mastered 分组保持的水平间距
+                // 放置参数（使用固定值）
+                const newW = 260;
+                const newH = 120;
+                const verticalGap = 20;
+                const groupPadding = 24; // 与 Mastered 分组保持的水平间距
 
                 // 简易几何工具（带兜底）
                 const num = (v: any, def: number) => (typeof v === 'number' ? v : def);
