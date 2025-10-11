@@ -71,7 +71,9 @@ const highlightState = StateField.define<DecorationSet>({
         return Decoration.none;
     },
     update(decorations, tr) {
-        decorations = decorations.map(tr.changes);
+        // 不使用 map 来自动调整位置，因为这会导致高亮位置错误
+        // 而是依赖 ViewPlugin 重新扫描文档来更新高亮
+        // map 的问题：它只是机械地调整位置，不会重新匹配单词
         
         for (let effect of tr.effects) {
             if (effect.is(forceUpdateEffect)) {
@@ -80,6 +82,7 @@ const highlightState = StateField.define<DecorationSet>({
             }
         }
         
+        // 保持当前装饰器不变，等待 ViewPlugin 更新
         return decorations;
     },
     provide: f => EditorView.decorations.from(f)
@@ -126,9 +129,15 @@ export class WordHighlighter implements PluginValue {
     }
 
     update(update: ViewUpdate) {
-        // 如果词汇管理器中的词汇发生变化，重建前缀树
-        if (update.docChanged || update.viewportChanged || update.focusChanged) {
-            // 使用防抖处理，避免频繁更新
+        // 如果文档内容发生变化，立即更新高亮（不使用防抖）
+        if (update.docChanged) {
+            // 清除缓存，确保重新匹配
+            this.cachedMatches.clear();
+            // 立即重建装饰器
+            this.decorations = this.buildDecorations(update.view);
+        }
+        // 如果只是视口或焦点变化，使用防抖处理
+        else if (update.viewportChanged || update.focusChanged) {
             this.debouncedUpdate(update.view);
         }
     }
