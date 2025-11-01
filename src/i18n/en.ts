@@ -40,8 +40,15 @@ export default {
         // TTS template
         tts_template: "TTS template",
         tts_template_desc: "Use {{word}} as placeholder, e.g. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
-        dictionary_api: "Dictionary API",
-        dictionary_api_desc: "Use {{word}} as placeholder. Default: Youdao, Alternative: Free Dictionary",
+        ai_dictionary: "AI Assistant",
+        ai_api_url: "API URL",
+        ai_api_url_desc: "API endpoint (auto-detects: OpenAI, Claude, Gemini)",
+        ai_api_key: "API Key",
+        ai_api_key_desc: "Your AI API key",
+        ai_model: "Model",
+        ai_model_desc: "AI model name (e.g., gpt-4o-mini, deepseek-chat)",
+        ai_prompt: "Custom Prompt",
+        ai_prompt_desc: "Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions",
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
@@ -142,7 +149,7 @@ export default {
     
     // Modals
     modals: {
-        auto_fill_definition: "Auto-fill definition",
+        auto_fill_definition: "AI Define",
         word_label: "Word",
         word_placeholder: "Enter word to add...",
         definition_label: "Definition",

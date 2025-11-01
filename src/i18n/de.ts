@@ -31,7 +31,18 @@ export default {
         enable_mastered_feature: "Funktion 'Gemeistert' aktivieren",
         enable_mastered_feature_desc: "Gemeisterte Wörter markieren, um sie nicht mehr hervorzuheben. Seitenleiste zeigt Gruppen",
         blur_definitions: "Inhalt verwischen",
-        blur_definitions_desc: "Standardmäßig verwischen, beim Hover anzeigen. Ideal zum Lernen – erinnern vor der Antwort",
+        blur_definitions_desc: "Standardmäßig verwischen, beim Hover anzeigen. Ideal zum Erinnern vor dem Anzeigen der Antwort",
+        tts_template: "TTS-Vorlage",
+        tts_template_desc: "{{word}} als Platzhalter verwenden, z.B. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
+        ai_dictionary: "KI-Assistent",
+        ai_api_url: "API-URL",
+        ai_api_url_desc: "API-Endpunkt (erkennt automatisch: OpenAI, Claude, Gemini)",
+        ai_api_key: "API-Schlüssel",
+        ai_api_key_desc: "Ihr KI-API-Schlüssel",
+        ai_model: "Modell",
+        ai_model_desc: "KI-Modellname (z.B. gpt-4o-mini, deepseek-chat)",
+        ai_prompt: "Benutzerdefinierter Prompt",
+        ai_prompt_desc: "{{word}} und {{sentence}} als Platzhalter verwenden. Die KI wird diesen Prompt verwenden, um Definitionen zu generieren",
         // Auto layout
         auto_layout: "Automatisches Canvas-Layout",
         enable_auto_layout: "Automatisches Layout aktivieren",
@@ -129,6 +140,7 @@ export default {
 
     // Modals
     modals: {
+        auto_fill_definition: "KI-Definition",
         word_label: "Wort",
         word_placeholder: "Wort eingeben...",
         definition_label: "Definition",

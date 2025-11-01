@@ -1,104 +1,239 @@
 import { Notice } from 'obsidian';
 
+interface AIConfig {
+    apiUrl: string;
+    apiKey: string;
+    model: string;
+    prompt: string;
+}
+
+type APIType = 'openai' | 'claude' | 'gemini';
+
 /**
- * 词典服务 - 支持多个 API 源
+ * 词典服务 - 使用 AI API（支持多种格式）
  */
 export class DictionaryService {
-    private apiTemplate: string;
+    private config: AIConfig;
 
-    constructor(apiTemplate?: string) {
-        // 默认使用有道词典 API
-        this.apiTemplate = apiTemplate || 'https://dict.youdao.com/suggest?q={{word}}&le=en&doctype=json';
+    constructor(config: AIConfig) {
+        this.config = config;
+    }
+
+    /**
+     * 自动检测 API 类型
+     */
+    private detectAPIType(): APIType {
+        const url = this.config.apiUrl.toLowerCase();
+        
+        // Claude API
+        if (url.includes('anthropic')) {
+            return 'claude';
+        }
+        
+        // Google Gemini API
+        if (url.includes('googleapis') || url.includes('generativelanguage')) {
+            return 'gemini';
+        }
+        
+        // 默认使用 OpenAI 兼容格式（支持大部分 API）
+        return 'openai';
     }
 
     /**
      * 获取单词释义
      * @param word 要查询的单词
+     * @param sentence 单词所在的句子（可选）
      * @returns 释义文本
      */
-    async fetchDefinition(word: string): Promise<string> {
+    async fetchDefinition(word: string, sentence?: string): Promise<string> {
         if (!word || !word.trim()) {
             throw new Error('Word cannot be empty');
         }
 
-        const cleanWord = word.trim().toLowerCase();
+        if (!this.config.apiKey) {
+            throw new Error('API Key is not configured. Please set it in the plugin settings.');
+        }
+
+        const cleanWord = word.trim();
+        const apiType = this.detectAPIType();
         
-        // 根据配置的 API 模板选择对应的方法
-        if (this.apiTemplate.includes('dict.youdao.com/suggest')) {
-            return await this.fetchFromYoudao(cleanWord);
-        } else {
-            // 自定义 API
-            return await this.fetchFromCustomAPI(cleanWord);
+        // 根据 API 类型调用对应的方法
+        switch (apiType) {
+            case 'claude':
+                return await this.fetchFromClaude(cleanWord, sentence);
+            case 'gemini':
+                return await this.fetchFromGemini(cleanWord, sentence);
+            default:
+                return await this.fetchFromOpenAI(cleanWord, sentence);
         }
     }
 
     /**
-     * 从有道词典 API 获取释义
+     * 从 OpenAI 兼容 API 获取释义
      */
-    private async fetchFromYoudao(word: string): Promise<string> {
-        const url = `https://dict.youdao.com/suggest?q=${encodeURIComponent(word)}&le=en&doctype=json`;
-        const response = await fetch(url);
+    private async fetchFromOpenAI(word: string, sentence?: string): Promise<string> {
+        // 替换 prompt 中的占位符
+        const prompt = this.config.prompt
+            .replace(/\{\{word\}\}/g, word)
+            .replace(/\{\{sentence\}\}/g, sentence || '');
 
-        if (!response.ok) {
-            throw new Error(`Youdao API request failed: ${response.status}`);
-        }
+        const requestBody = {
+            model: this.config.model,
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            temperature: 0.3,
+            max_tokens: 500
+        };
 
-        const data = await response.json();
-        
-        if (data.result?.code !== 200 || !data.data?.entries) {
-            throw new Error('No definition found in Youdao');
-        }
+        try {
+            const response = await fetch(this.config.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.apiKey}`
+                },
+                body: JSON.stringify(requestBody)
+            });
 
-        const entries = data.data.entries;
-        if (entries.length === 0) {
-            throw new Error('No definition found');
-        }
-
-        // 提取释义
-        const definitions: string[] = [];
-        
-        for (let i = 0; i < Math.min(5, entries.length); i++) {
-            const entry = entries[i];
-            if (entry.explain) {
-                definitions.push(`${i + 1}. ${entry.explain}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`AI API request failed (${response.status}): ${errorText}`);
             }
-        }
 
-        if (definitions.length === 0) {
-            throw new Error('No valid definitions found');
-        }
+            const data = await response.json();
+            
+            // 提取 AI 的回复
+            if (data.choices && data.choices.length > 0) {
+                const content = data.choices[0].message?.content;
+                if (content) {
+                    return content.trim();
+                }
+            }
 
-        return definitions.join('\n');
+            throw new Error('Invalid response from OpenAI API');
+        } catch (error) {
+            console.error('Failed to fetch definition from OpenAI:', error);
+            throw error;
+        }
     }
 
     /**
-     * 从自定义 API 获取释义
+     * 从 Anthropic Claude API 获取释义
      */
-    private async fetchFromCustomAPI(word: string): Promise<string> {
-        const url = this.apiTemplate.replace('{{word}}', encodeURIComponent(word));
-        const response = await fetch(url);
+    private async fetchFromClaude(word: string, sentence?: string): Promise<string> {
+        const prompt = this.config.prompt
+            .replace(/\{\{word\}\}/g, word)
+            .replace(/\{\{sentence\}\}/g, sentence || '');
 
-        if (!response.ok) {
-            throw new Error(`Custom API request failed: ${response.status}`);
-        }
+        const requestBody = {
+            model: this.config.model,
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: 1024
+        };
 
-        const data = await response.json();
-        
-        // 尝试从常见的 JSON 结构中提取释义
-        if (typeof data === 'string') {
-            return data;
-        }
-        
-        // 尝试常见的字段名
-        const possibleFields = ['definition', 'meaning', 'translation', 'result', 'data'];
-        for (const field of possibleFields) {
-            if (data[field]) {
-                return typeof data[field] === 'string' ? data[field] : JSON.stringify(data[field], null, 2);
+        try {
+            const response = await fetch(this.config.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': this.config.apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Claude API request failed (${response.status}): ${errorText}`);
             }
+
+            const data = await response.json();
+            
+            // Claude 的响应格式
+            if (data.content && data.content.length > 0) {
+                const content = data.content[0].text;
+                if (content) {
+                    return content.trim();
+                }
+            }
+
+            throw new Error('Invalid response from Claude API');
+        } catch (error) {
+            console.error('Failed to fetch definition from Claude:', error);
+            throw error;
         }
-        
-        // 如果都找不到，返回整个 JSON
-        return JSON.stringify(data, null, 2);
+    }
+
+    /**
+     * 从 Google Gemini API 获取释义
+     */
+    private async fetchFromGemini(word: string, sentence?: string): Promise<string> {
+        const prompt = this.config.prompt
+            .replace(/\{\{word\}\}/g, word)
+            .replace(/\{\{sentence\}\}/g, sentence || '');
+
+        const requestBody = {
+            contents: [
+                {
+                    parts: [
+                        {
+                            text: prompt
+                        }
+                    ]
+                }
+            ]
+        };
+
+        try {
+            // Gemini API URL 格式：.../models/{model}:generateContent
+            let apiUrl = this.config.apiUrl;
+            if (!apiUrl.includes(':generateContent')) {
+                apiUrl = `${apiUrl.replace(/\/$/, '')}/models/${this.config.model}:generateContent`;
+            }
+            
+            // API Key 通过 URL 参数传递
+            const urlWithKey = `${apiUrl}?key=${this.config.apiKey}`;
+
+            const response = await fetch(urlWithKey, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Gemini API request failed (${response.status}): ${errorText}`);
+            }
+
+            const data = await response.json();
+            
+            // Gemini 的响应格式
+            if (data.candidates && data.candidates.length > 0) {
+                const candidate = data.candidates[0];
+                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                    const text = candidate.content.parts[0].text;
+                    if (text) {
+                        return text.trim();
+                    }
+                }
+            }
+
+            throw new Error('Invalid response from Gemini API');
+        } catch (error) {
+            console.error('Failed to fetch definition from Gemini:', error);
+            throw error;
+        }
     }
 
 }

@@ -32,6 +32,19 @@ export default {
         enable_mastered_feature_desc: "Marquer les mots maîtrisés pour arrêter de les surligner. La barre latérale affiche les groupes",
         blur_definitions: "Flouter le contenu",
         blur_definitions_desc: "Flouter par défaut, révéler au survol. Idéal pour mémoriser avant de voir la réponse",
+        // TTS template
+        tts_template: "Modèle TTS",
+        tts_template_desc: "Utiliser {{word}} comme espace réservé, ex. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
+        // AI Dictionary
+        ai_dictionary: "Assistant IA",
+        ai_api_url: "URL de l'API",
+        ai_api_url_desc: "Point de terminaison de l'API (détecte automatiquement : OpenAI, Claude, Gemini)",
+        ai_api_key: "Clé API",
+        ai_api_key_desc: "Votre clé API IA",
+        ai_model: "Modèle",
+        ai_model_desc: "Nom du modèle IA (ex., gpt-4o-mini, deepseek-chat)",
+        ai_prompt: "Prompt personnalisé",
+        ai_prompt_desc: "Utiliser {{word}} et {{sentence}} comme espaces réservés. L'IA utilisera ce prompt pour générer des définitions",
         // Auto layout
         auto_layout: "Disposition auto du canevas",
         enable_auto_layout: "Activer la disposition automatique",
@@ -129,6 +142,7 @@ export default {
 
     // Modals
     modals: {
+        auto_fill_definition: "Définir avec IA",
         word_label: "Mot",
         word_placeholder: "Entrez le mot à ajouter...",
         definition_label: "Définition",

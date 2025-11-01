@@ -273,17 +273,97 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // 词典 API 模板
+        // AI 词典配置
+        containerEl.createEl('h3', { text: t('settings.ai_dictionary') || 'AI Dictionary' });
+
+        // API URL
         new Setting(containerEl)
-            .setName(t('settings.dictionary_api') || 'Dictionary API')
-            .setDesc(t('settings.dictionary_api_desc') || 'Use {{word}} as placeholder. Default: Youdao (https://dict.youdao.com/suggest?q={{word}}&le=en&doctype=json), Alternative: Free Dictionary (https://api.dictionaryapi.dev/api/v2/entries/en/{{word}})')
+            .setName(t('settings.ai_api_url') || 'API URL')
+            .setDesc(t('settings.ai_api_url_desc') || 'API endpoint (auto-detects: OpenAI, Claude, Gemini)')
             .addText(text => text
-                .setPlaceholder('https://...{{word}}...')
-                .setValue(this.plugin.settings.dictionaryAPI || 'https://dict.youdao.com/suggest?q={{word}}&le=en&doctype=json')
+                .setPlaceholder('https://api.openai.com/v1/chat/completions')
+                .setValue(this.plugin.settings.aiDictionary?.apiUrl || '')
                 .onChange(async (val) => {
-                    this.plugin.settings.dictionaryAPI = val.trim();
+                    if (!this.plugin.settings.aiDictionary) {
+                        this.plugin.settings.aiDictionary = {
+                            apiUrl: '',
+                            apiKey: '',
+                            model: 'gpt-4o-mini',
+                            prompt: ''
+                        };
+                    }
+                    this.plugin.settings.aiDictionary.apiUrl = val.trim();
                     await this.plugin.saveSettings();
                 }));
+
+        // API Key
+        new Setting(containerEl)
+            .setName(t('settings.ai_api_key') || 'API Key')
+            .setDesc(t('settings.ai_api_key_desc') || 'Your AI API key')
+            .addText(text => {
+                text.inputEl.type = 'password';
+                text.setPlaceholder('sk-...')
+                    .setValue(this.plugin.settings.aiDictionary?.apiKey || '')
+                    .onChange(async (val) => {
+                        if (!this.plugin.settings.aiDictionary) {
+                            this.plugin.settings.aiDictionary = {
+                                apiUrl: '',
+                                apiKey: '',
+                                model: 'gpt-4o-mini',
+                                prompt: ''
+                            };
+                        }
+                        this.plugin.settings.aiDictionary.apiKey = val.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // Model
+        new Setting(containerEl)
+            .setName(t('settings.ai_model') || 'Model')
+            .setDesc(t('settings.ai_model_desc') || 'AI model name (e.g., gpt-4o-mini, deepseek-chat)')
+            .addText(text => text
+                .setPlaceholder('gpt-4o-mini')
+                .setValue(this.plugin.settings.aiDictionary?.model || '')
+                .onChange(async (val) => {
+                    if (!this.plugin.settings.aiDictionary) {
+                        this.plugin.settings.aiDictionary = {
+                            apiUrl: '',
+                            apiKey: '',
+                            model: 'gpt-4o-mini',
+                            prompt: ''
+                        };
+                    }
+                    this.plugin.settings.aiDictionary.model = val.trim();
+                    await this.plugin.saveSettings();
+                }));
+
+        // Custom Prompt（上下结构）
+        new Setting(containerEl)
+            .setName(t('settings.ai_prompt') || 'Custom Prompt')
+            .setDesc(t('settings.ai_prompt_desc') || 'Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions.');
+        
+        // 创建全宽文本域
+        const promptContainer = containerEl.createDiv({ cls: 'hi-words-textarea-container' });
+        const promptTextArea = promptContainer.createEl('textarea');
+        const defaultPrompt = 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)';
+        promptTextArea.placeholder = defaultPrompt;
+        promptTextArea.value = this.plugin.settings.aiDictionary?.prompt || defaultPrompt;
+        promptTextArea.rows = 6;
+        
+        // 使用 blur 事件，避免频繁保存
+        promptTextArea.addEventListener('blur', async () => {
+            if (!this.plugin.settings.aiDictionary) {
+                this.plugin.settings.aiDictionary = {
+                    apiUrl: '',
+                    apiKey: '',
+                    model: 'gpt-4o-mini',
+                    prompt: ''
+                };
+            }
+            this.plugin.settings.aiDictionary.prompt = promptTextArea.value;
+            await this.plugin.saveSettings();
+        });
 
     }
 

@@ -6,6 +6,7 @@ import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighte
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, highlighterManager } from './src/core';
 import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
+import { extractSentenceFromEditor } from './src/utils/sentence-extractor';
 import { i18n, t } from './src/i18n';
 
 // 默认设置
@@ -19,8 +20,13 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     blurDefinitions: false, // 默认不启用模糊效果
     // 发音地址模板（用户可在设置里修改）
     ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
-    // 词典 API 模板（默认使用有道词典）
-    dictionaryAPI: 'https://dict.youdao.com/suggest?q={{word}}&le=en&doctype=json',
+    // AI 词典配置
+    aiDictionary: {
+        apiUrl: 'https://api.openai.com/v1/chat/completions',
+        apiKey: '',
+        model: 'gpt-4o-mini',
+        prompt: 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)'
+    },
     // 自动布局（简化版，使用固定参数）
     autoLayoutEnabled: true,
     // 卡片尺寸设置
@@ -143,9 +149,11 @@ export default class HiWordsPlugin extends Plugin {
             editorCallback: (editor) => {
                 const selection = editor.getSelection();
                 const word = selection ? selection.trim() : '';
+                // 提取句子
+                const sentence = extractSentenceFromEditor(editor);
                 // 无论是否有选中文本，都打开模态框
                 // 有选中文本时预填充，没有时让用户手动输入
-                this.addOrEditWord(word);
+                this.addOrEditWord(word, sentence);
             }
         });
     }
@@ -391,17 +399,18 @@ export default class HiWordsPlugin extends Plugin {
      * 添加或编辑单词
      * 检查单词是否已存在，如果存在则打开编辑模式，否则打开添加模式
      * @param word 要添加或编辑的单词
+     * @param sentence 单词所在的句子（可选）
      */
-    addOrEditWord(word: string) {
+    addOrEditWord(word: string, sentence: string = '') {
         // 检查单词是否已存在
         const exists = this.vocabularyManager.hasWord(word);
         
         if (exists) {
             // 如果单词已存在，打开编辑模式
-            new AddWordModal(this.app, this, word, true).open();
+            new AddWordModal(this.app, this, word, sentence, true).open();
         } else {
             // 如果单词不存在，打开添加模式
-            new AddWordModal(this.app, this, word).open();
+            new AddWordModal(this.app, this, word, sentence).open();
         }
     }
 

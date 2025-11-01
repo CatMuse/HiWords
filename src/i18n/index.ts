@@ -47,6 +47,16 @@ export interface LanguagePack {
         // TTS template (optional for backward compatibility)
         tts_template?: string;
         tts_template_desc?: string;
+        // AI Dictionary
+        ai_dictionary?: string;
+        ai_api_url?: string;
+        ai_api_url_desc?: string;
+        ai_api_key?: string;
+        ai_api_key_desc?: string;
+        ai_model?: string;
+        ai_model_desc?: string;
+        ai_prompt?: string;
+        ai_prompt_desc?: string;
         // Auto layout section
         auto_layout: string;
         enable_auto_layout: string;
@@ -109,6 +119,7 @@ export interface LanguagePack {
         book_removed: string;
     };
     modals: {
+        auto_fill_definition?: string;
         word_label: string;
         word_placeholder: string;
         definition_label: string;

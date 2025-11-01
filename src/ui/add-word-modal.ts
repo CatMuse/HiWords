@@ -10,6 +10,7 @@ import { DictionaryService } from '../services/dictionary-service';
 export class AddWordModal extends Modal {
     private plugin: HiWordsPlugin;
     private word: string;
+    private sentence: string;
     private isEditMode: boolean;
     private definition: WordDefinition | null;
     private dictionaryService: DictionaryService;
@@ -22,14 +23,16 @@ export class AddWordModal extends Modal {
      * @param app Obsidian 应用实例
      * @param plugin 插件实例
      * @param word 要添加或编辑的单词
+     * @param sentence 单词所在的句子（可选）
      * @param isEditMode 是否为编辑模式
      */
-    constructor(app: App, plugin: HiWordsPlugin, word: string, isEditMode: boolean = false) {
+    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence: string = '', isEditMode: boolean = false) {
         super(app);
         this.plugin = plugin;
         this.word = word;
+        this.sentence = sentence;
         this.isEditMode = isEditMode;
-        this.dictionaryService = new DictionaryService(this.plugin.settings.dictionaryAPI);
+        this.dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary!);
         
         // 如果是编辑模式，获取单词的定义
         if (isEditMode) {
@@ -166,7 +169,7 @@ export class AddWordModal extends Modal {
             setIcon(iconContainer, 'loader');
             
             try {
-                const definition = await this.dictionaryService.fetchDefinition(queryWord);
+                const definition = await this.dictionaryService.fetchDefinition(queryWord, this.sentence);
                 definitionInput.value = definition;
                 new Notice(t('notices.definition_fetched'));
             } catch (error) {

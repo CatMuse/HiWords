@@ -30,8 +30,19 @@ export default {
         total_words: "単語の合計: {0}",
         enable_mastered_feature: "習得済み機能を有効化",
         enable_mastered_feature_desc: "習得済みの単語をマークしてハイライトを停止。サイドバーにグループ表示",
-        blur_definitions: "内容をぼかす",
-        blur_definitions_desc: "デフォルトでぼかし、ホバーで表示。学習に最適—答えを見る前に思い出す",
+        blur_definitions: "コンテンツをぼかす",
+        blur_definitions_desc: "デフォルトでぼかし、ホバー時に表示。学習時に答えを見る前に思い出すのに最適",
+        tts_template: "TTSテンプレート",
+        tts_template_desc: "{{word}}をプレースホルダーとして使用、例：https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
+        ai_dictionary: "AIアシスタント",
+        ai_api_url: "API URL",
+        ai_api_url_desc: "APIエンドポイント（自動検出：OpenAI、Claude、Gemini）",
+        ai_api_key: "APIキー",
+        ai_api_key_desc: "あなたのAI APIキー",
+        ai_model: "モデル",
+        ai_model_desc: "AIモデル名（例：gpt-4o-mini、deepseek-chat）",
+        ai_prompt: "カスタムプロンプト",
+        ai_prompt_desc: "{{word}}と{{sentence}}をプレースホルダーとして使用。AIはこのプロンプトを使用して定義を生成します",
         // Auto layout
         auto_layout: "キャンバス自動レイアウト",
         enable_auto_layout: "自動レイアウトを有効化",
@@ -129,6 +140,7 @@ export default {
 
     // Modals
     modals: {
+        auto_fill_definition: "AI定義",
         word_label: "単語",
         word_placeholder: "追加する単語を入力...",
         definition_label: "定義",

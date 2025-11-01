@@ -40,8 +40,15 @@ export default {
         // 发音地址模板
         tts_template: "发音地址模板",
         tts_template_desc: "使用 {{word}} 作为占位符，例如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
-        dictionary_api: "词典 API",
-        dictionary_api_desc: "使用 {{word}} 作为占位符。默认：有道词典，备选：Free Dictionary",
+        ai_dictionary: "AI 助手",
+        ai_api_url: "API 地址",
+        ai_api_url_desc: "API 端点（自动识别：OpenAI、Claude、Gemini）",
+        ai_api_key: "API Key",
+        ai_api_key_desc: "你的 AI API 密钥",
+        ai_model: "模型",
+        ai_model_desc: "AI 模型名称（例如：gpt-4o-mini, deepseek-chat）",
+        ai_prompt: "自定义提示词",
+        ai_prompt_desc: "使用 {{word}} 和 {{sentence}} 作为占位符。AI 将使用此提示词生成释义",
         // 自动布局
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
@@ -142,7 +149,7 @@ export default {
     
     // 模态框
     modals: {
-        auto_fill_definition: "自动填充释义",
+        auto_fill_definition: "AI 释义",
         word_label: "单词",
         word_placeholder: "输入要添加的单词...",
         definition_label: "释义",

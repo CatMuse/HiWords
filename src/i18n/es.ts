@@ -32,6 +32,19 @@ export default {
         enable_mastered_feature_desc: "Marca palabras dominadas para dejar de resaltarlas. La barra lateral muestra grupos",
         blur_definitions: "Difuminar contenido",
         blur_definitions_desc: "Difuminar por defecto, mostrar al pasar el cursor. Ideal para recordar antes de ver la respuesta",
+        // TTS template
+        tts_template: "Plantilla TTS",
+        tts_template_desc: "Usar {{word}} como marcador de posición, ej. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
+        // AI Dictionary
+        ai_dictionary: "Asistente AI",
+        ai_api_url: "URL de API",
+        ai_api_url_desc: "Punto final de API (detecta automáticamente: OpenAI, Claude, Gemini)",
+        ai_api_key: "Clave API",
+        ai_api_key_desc: "Tu clave de API de AI",
+        ai_model: "Modelo",
+        ai_model_desc: "Nombre del modelo de AI (ej., gpt-4o-mini, deepseek-chat)",
+        ai_prompt: "Prompt personalizado",
+        ai_prompt_desc: "Usar {{word}} y {{sentence}} como marcadores de posición. La AI usará este prompt para generar definiciones",
         // Auto layout
         auto_layout: "Diseño automático del lienzo",
         enable_auto_layout: "Habilitar diseño automático",
@@ -129,6 +142,7 @@ export default {
 
     // Modals
     modals: {
+        auto_fill_definition: "Definir con AI",
         word_label: "Palabra",
         word_placeholder: "Ingresa la palabra a agregar...",
         definition_label: "Definición",
