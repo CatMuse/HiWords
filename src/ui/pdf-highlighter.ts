@@ -9,6 +9,7 @@ import type { VocabularyManager } from '../core';
 export function registerPDFHighlighter(plugin: {
   settings: HiWordsSettings;
   vocabularyManager: VocabularyManager;
+  shouldHighlightFile: (filePath: string) => boolean;
   app: any;
   registerEvent: (eventRef: any) => void;
 }): void {
@@ -127,6 +128,12 @@ export function registerPDFHighlighter(plugin: {
     
     debounceTimer = window.setTimeout(() => {
       if (!plugin.settings.enableAutoHighlight) return;
+      
+      // 获取当前活动文件
+      const activeFile = plugin.app.workspace.getActiveFile();
+      if (activeFile && !plugin.shouldHighlightFile(activeFile.path)) {
+        return;
+      }
       
       const trie = buildTrie();
       

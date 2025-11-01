@@ -945,3 +945,25 @@
         padding: 2px 3px;
     }
 }
+
+/* 高亮范围设置文本域样式 */
+.hi-words-textarea-container {
+    margin-top: 8px;
+}
+
+.hi-words-textarea-container textarea {
+    width: 100%;
+    resize: vertical;
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-small);
+    padding: 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.hi-words-textarea-container textarea:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+}

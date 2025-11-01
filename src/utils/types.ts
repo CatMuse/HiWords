@@ -44,6 +44,9 @@ export interface HiWordsSettings {
     // 卡片尺寸设置
     cardWidth?: number; // 卡片宽度（默认 260）
     cardHeight?: number; // 卡片高度（默认 120）
+    // 高亮范围设置
+    highlightMode?: 'all' | 'exclude' | 'include'; // 高亮模式：全部/排除/仅指定
+    highlightPaths?: string; // 文件路径列表（逗号分隔）
 }
 
 // 词汇匹配信息

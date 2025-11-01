@@ -23,7 +23,10 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     autoLayoutEnabled: true,
     // 卡片尺寸设置
     cardWidth: 260,
-    cardHeight: 120
+    cardHeight: 120,
+    // 高亮范围设置
+    highlightMode: 'all',
+    highlightPaths: ''
 };
 
 export default class HiWordsPlugin extends Plugin {
@@ -96,7 +99,10 @@ export default class HiWordsPlugin extends Plugin {
      */
     private setupEditorExtensions() {
         if (this.settings.enableAutoHighlight) {
-            const extension = createWordHighlighterExtension(this.vocabularyManager);
+            const extension = createWordHighlighterExtension(
+                this.vocabularyManager,
+                (filePath) => this.shouldHighlightFile(filePath)
+            );
             this.editorExtensions = [extension];
             this.registerEditorExtension(this.editorExtensions);
         }
@@ -256,6 +262,53 @@ export default class HiWordsPlugin extends Plugin {
         );
     }
 
+
+    /**
+     * 检查文件是否应该被高亮
+     */
+    shouldHighlightFile(filePath: string): boolean {
+        const mode = this.settings.highlightMode || 'all';
+        
+        // 模式1：全部高亮
+        if (mode === 'all') {
+            return true;
+        }
+        
+        // 解析路径列表（逗号分隔，去除空格）
+        const pathsStr = this.settings.highlightPaths || '';
+        const paths = pathsStr
+            .split(',')
+            .map(p => p.trim())
+            .filter(p => p.length > 0);
+        
+        // 如果路径列表为空
+        if (paths.length === 0) {
+            // 排除模式下空列表=全部高亮，包含模式下空列表=全不高亮
+            return mode === 'exclude';
+        }
+        
+        // 标准化当前文件路径
+        const normalizedFile = filePath.replace(/^\/+|\/+$/g, '');
+        
+        // 检查文件路径是否匹配任何规则
+        const isMatched = paths.some(path => {
+            const normalizedPath = path.replace(/^\/+|\/+$/g, '');
+            return normalizedFile === normalizedPath || 
+                   normalizedFile.startsWith(normalizedPath + '/');
+        });
+        
+        // 模式2：排除模式 - 匹配到则不高亮
+        if (mode === 'exclude') {
+            return !isMatched;
+        }
+        
+        // 模式3：仅指定路径 - 匹配到才高亮
+        if (mode === 'include') {
+            return isMatched;
+        }
+        
+        return true;
+    }
 
     /**
      * 刷新高亮器

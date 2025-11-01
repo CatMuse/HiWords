@@ -9,6 +9,7 @@ import type { VocabularyManager } from '../core';
 export function registerReadingModeHighlighter(plugin: {
   settings: HiWordsSettings;
   vocabularyManager: VocabularyManager;
+  shouldHighlightFile: (filePath: string) => boolean;
   registerMarkdownPostProcessor: (
     processor: (el: HTMLElement, ctx: unknown) => void
   ) => void;
@@ -112,9 +113,15 @@ export function registerReadingModeHighlighter(plugin: {
     }
   };
 
-  plugin.registerMarkdownPostProcessor((el) => {
+  plugin.registerMarkdownPostProcessor((el, ctx) => {
     try {
       if (!plugin.settings.enableAutoHighlight) return;
+      
+      // 检查当前文件是否应该被高亮
+      const filePath = (ctx as any)?.sourcePath;
+      if (filePath && !plugin.shouldHighlightFile(filePath)) {
+        return;
+      }
       
       // 检查是否在主编辑器的阅读模式中
       // 排除侧边栏、悬停预览等其他容器

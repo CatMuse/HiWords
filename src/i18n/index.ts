@@ -51,10 +51,6 @@ export interface LanguagePack {
         auto_layout: string;
         enable_auto_layout: string;
         enable_auto_layout_desc: string;
-        card_width?: string;
-        card_width_desc?: string;
-        card_height?: string;
-        card_height_desc?: string;
         card_size: string;
         card_size_desc: string;
         grid_gaps: string;
@@ -67,6 +63,16 @@ export interface LanguagePack {
         columns_desc: string;
         group_inner_layout: string;
         group_inner_layout_desc: string;
+        // Highlight scope settings
+        highlight_scope?: string;
+        highlight_mode?: string;
+        highlight_mode_desc?: string;
+        mode_all?: string;
+        mode_exclude?: string;
+        mode_include?: string;
+        highlight_paths?: string;
+        highlight_paths_desc?: string;
+        highlight_paths_placeholder?: string;
     };
     sidebar: {
         title: string;

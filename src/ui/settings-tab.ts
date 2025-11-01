@@ -13,6 +13,51 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
+     * 添加高亮范围设置
+     */
+    private addHighlightScopeSettings() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.highlight_scope'))
+            .setHeading();
+
+        // 高亮模式选择
+        new Setting(containerEl)
+            .setName(t('settings.highlight_mode'))
+            .setDesc(t('settings.highlight_mode_desc'))
+            .addDropdown(dropdown => dropdown
+                .addOption('all', t('settings.mode_all'))
+                .addOption('exclude', t('settings.mode_exclude'))
+                .addOption('include', t('settings.mode_include'))
+                .setValue(this.plugin.settings.highlightMode || 'all')
+                .onChange(async (value: 'all' | 'exclude' | 'include') => {
+                    this.plugin.settings.highlightMode = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHighlighter();
+                }));
+
+        // 文件路径输入框（上下结构）
+        new Setting(containerEl)
+            .setName(t('settings.highlight_paths'))
+            .setDesc(t('settings.highlight_paths_desc'));
+        
+        // 创建全宽文本域
+        const textAreaContainer = containerEl.createDiv({ cls: 'hi-words-textarea-container' });
+        const textArea = textAreaContainer.createEl('textarea');
+        textArea.placeholder = t('settings.highlight_paths_placeholder') || 'e.g.: Archive, Templates, Private/Diary';
+        textArea.value = this.plugin.settings.highlightPaths || '';
+        textArea.rows = 3;
+        
+        // 使用 change 事件而不是 input 事件，避免频繁保存
+        textArea.addEventListener('blur', async () => {
+            this.plugin.settings.highlightPaths = textArea.value;
+            await this.plugin.saveSettings();
+            this.plugin.refreshHighlighter();
+        });
+    }
+
+    /**
      * 添加自动布局设置
      */
     private addAutoLayoutSettings() {
@@ -65,6 +110,9 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         // 基础设置
         this.addBasicSettings();
+
+        // 高亮范围设置
+        this.addHighlightScopeSettings();
 
         // 生词本管理
         this.addVocabularyBooksSection();
@@ -388,3 +436,4 @@ class CanvasPickerModal extends FuzzySuggestModal<TFile> {
         this.onSelect(file);
     }
 }
+

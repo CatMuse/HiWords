@@ -44,10 +44,6 @@ export default {
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
         enable_auto_layout_desc: "在添加/更新/删除节点和分组变更后自动规范化布局",
-        card_width: "卡片宽度",
-        card_width_desc: "Canvas 卡片的默认宽度（默认：260）",
-        card_height: "卡片高度",
-        card_height_desc: "Canvas 卡片的默认高度（默认：120）",
         card_size: "卡片尺寸",
         card_size_desc: "默认卡片尺寸（宽 × 高，默认：260 × 120）",
         grid_gaps: "网格间距",
@@ -60,6 +56,16 @@ export default {
         columns_desc: "指定固定列数与最大列数（当关闭自动列数时生效）",
         group_inner_layout: "分组内布局",
         group_inner_layout_desc: "分组内部的内边距、间距与列数设置",
+        // 高亮范围设置
+        highlight_scope: "高亮范围",
+        highlight_mode: "高亮模式",
+        highlight_mode_desc: "选择高亮单词的范围模式",
+        mode_all: "全部文件高亮",
+        mode_exclude: "排除指定路径",
+        mode_include: "仅指定路径高亮",
+        highlight_paths: "文件路径",
+        highlight_paths_desc: "多个路径用逗号分隔，支持文件夹路径（包括子文件夹）",
+        highlight_paths_placeholder: "例如：Archive, Templates, Private/Diary",
     },
     
     // 侧边栏

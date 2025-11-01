@@ -14,6 +14,7 @@ import {
     PluginValue,
     WidgetType
 } from '@codemirror/view';
+import { editorViewField } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
 import { WordMatch, WordDefinition, mapCanvasColorToCSSVar, Trie, TrieMatch } from '../utils';
 
@@ -97,10 +98,12 @@ export class WordHighlighter implements PluginValue {
     private debounceTimer: number | null = null;
     private lastRanges: {from: number, to: number}[] = [];
     private cachedMatches: Map<string, WordMatch[]> = new Map();
+    protected shouldHighlightFile?: (filePath: string) => boolean;
 
-    constructor(view: EditorView, vocabularyManager: VocabularyManager) {
+    constructor(view: EditorView, vocabularyManager: VocabularyManager, shouldHighlightFile?: (filePath: string) => boolean) {
         this.editorView = view;
         this.vocabularyManager = vocabularyManager;
+        this.shouldHighlightFile = shouldHighlightFile;
         this.wordTrie = new Trie();
         this.buildWordTrie();
         this.decorations = this.buildDecorations(view);
@@ -177,6 +180,15 @@ export class WordHighlighter implements PluginValue {
      * 构建装饰器
      */
     private buildDecorations(view: EditorView): DecorationSet {
+        // 检查当前文件是否应该被高亮
+        if (this.shouldHighlightFile) {
+            const file = view.state.field(editorViewField);
+            if (file?.file?.path && !this.shouldHighlightFile(file.file.path)) {
+                // 如果文件不应该被高亮，返回空装饰器
+                return Decoration.none;
+            }
+        }
+        
         const startTime = performance.now();
         const builder = new RangeSetBuilder<Decoration>();
         const matches: WordMatch[] = [];
@@ -343,15 +355,18 @@ export class WordHighlighter implements PluginValue {
 }
 
 // 创建编辑器扩展
-export function createWordHighlighterExtension(vocabularyManager: VocabularyManager): Extension {
+export function createWordHighlighterExtension(
+    vocabularyManager: VocabularyManager,
+    shouldHighlightFile?: (filePath: string) => boolean
+): Extension {
     const pluginSpec: PluginSpec<WordHighlighter> = {
         decorations: (value: WordHighlighter) => value.decorations,
     };
 
-    // 创建一个工厂函数来传递 vocabularyManager
+    // 创建一个工厂函数来传递 vocabularyManager 和文件检查函数
     class WordHighlighterWithManager extends WordHighlighter {
         constructor(view: EditorView) {
-            super(view, vocabularyManager);
+            super(view, vocabularyManager, shouldHighlightFile);
         }
     }
 

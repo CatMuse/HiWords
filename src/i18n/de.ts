@@ -35,11 +35,7 @@ export default {
         // Auto layout
         auto_layout: "Automatisches Canvas-Layout",
         enable_auto_layout: "Automatisches Layout aktivieren",
-        enable_auto_layout_desc: "Layout automatisch nach Hinzufügen/Aktualisieren/Löschen und Gruppenänderungen normalisieren",
-        card_width: "Kartenbreite",
-        card_width_desc: "Standardbreite für Canvas-Karten (Standard: 260)",
-        card_height: "Kartenhöhe",
-        card_height_desc: "Standardhöhe für Canvas-Karten (Standard: 120)",
+        enable_auto_layout_desc: "Layout nach Hinzufügen/Aktualisieren/Löschen und Gruppenänderungen automatisch normalisieren",
         card_size: "Kartengröße",
         card_size_desc: "Standard-Kartengröße (Breite × Höhe, Standard: 260 × 120)",
         grid_gaps: "Gitterabstände",
@@ -52,6 +48,15 @@ export default {
         columns_desc: "Feste Spalten und Maximalspalten angeben (wirksam, wenn auto aus)",
         group_inner_layout: "Inneres Gruppenlayout",
         group_inner_layout_desc: "Innenabstand, Abstände und Spalten für Knoten in Gruppen",
+        highlight_scope: "Hervorhebungsbereich",
+        highlight_mode: "Hervorhebungsmodus",
+        highlight_mode_desc: "Wählen Sie den Bereichsmodus für die Wort-Hervorhebung",
+        mode_all: "Alle Dateien",
+        mode_exclude: "Angegebene Pfade ausschließen",
+        mode_include: "Nur angegebene Pfade",
+        highlight_paths: "Dateipfade",
+        highlight_paths_desc: "Mehrere Pfade durch Kommas trennen, unterstützt Ordnerpfade (einschließlich Unterordner)",
+        highlight_paths_placeholder: "z.B.: Archive, Templates, Private/Diary",
     },
 
     // Sidebar

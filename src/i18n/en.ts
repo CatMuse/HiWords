@@ -44,10 +44,6 @@ export default {
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
         enable_auto_layout_desc: "Automatically normalize layout after add/update/delete and group changes",
-        card_width: "Card width",
-        card_width_desc: "Default width for canvas cards (default: 260)",
-        card_height: "Card height",
-        card_height_desc: "Default height for canvas cards (default: 120)",
         card_size: "Card size",
         card_size_desc: "Default card size (Width × Height, default: 260 × 120)",
         grid_gaps: "Grid gaps",
@@ -60,6 +56,16 @@ export default {
         columns_desc: "Specify fixed columns and max columns (effective when auto columns off)",
         group_inner_layout: "Group inner layout",
         group_inner_layout_desc: "Inner padding, gaps and columns for nodes inside groups",
+        // Highlight scope settings
+        highlight_scope: "Highlight scope",
+        highlight_mode: "Highlight mode",
+        highlight_mode_desc: "Choose the scope mode for word highlighting",
+        mode_all: "All files",
+        mode_exclude: "Exclude specified paths",
+        mode_include: "Only specified paths",
+        highlight_paths: "File paths",
+        highlight_paths_desc: "Separate multiple paths with commas, supports folder paths (including subfolders)",
+        highlight_paths_placeholder: "e.g.: Archive, Templates, Private/Diary",
     },
     
     // Sidebar
