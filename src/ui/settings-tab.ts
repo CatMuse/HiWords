@@ -273,6 +273,18 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        // 词典 API 模板
+        new Setting(containerEl)
+            .setName(t('settings.dictionary_api') || 'Dictionary API')
+            .setDesc(t('settings.dictionary_api_desc') || 'Use {{word}} as placeholder. Default: Youdao (https://dict.youdao.com/suggest?q={{word}}&le=en&doctype=json), Alternative: Free Dictionary (https://api.dictionaryapi.dev/api/v2/entries/en/{{word}})')
+            .addText(text => text
+                .setPlaceholder('https://...{{word}}...')
+                .setValue(this.plugin.settings.dictionaryAPI || 'https://dict.youdao.com/suggest?q={{word}}&le=en&doctype=json')
+                .onChange(async (val) => {
+                    this.plugin.settings.dictionaryAPI = val.trim();
+                    await this.plugin.saveSettings();
+                }));
+
     }
 
     /**

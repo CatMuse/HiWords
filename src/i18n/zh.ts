@@ -40,6 +40,8 @@ export default {
         // 发音地址模板
         tts_template: "发音地址模板",
         tts_template_desc: "使用 {{word}} 作为占位符，例如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
+        dictionary_api: "词典 API",
+        dictionary_api_desc: "使用 {{word}} 作为占位符。默认：有道词典，备选：Free Dictionary",
         // 自动布局
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
@@ -97,8 +99,11 @@ export default {
         add_selected_word: "添加单词",
     },
     
-    // 通知
+    // 通知消息
     notices: {
+        enter_word_first: "请先输入单词",
+        definition_fetched: "释义获取成功",
+        definition_fetch_failed: "获取释义失败，请检查网络或尝试其他单词",
         vocabulary_refreshed: "生词本已刷新",
         word_added: "单词已添加到生词本",
         word_exists: "单词已存在于生词本中",
@@ -137,6 +142,7 @@ export default {
     
     // 模态框
     modals: {
+        auto_fill_definition: "自动填充释义",
         word_label: "单词",
         word_placeholder: "输入要添加的单词...",
         definition_label: "释义",

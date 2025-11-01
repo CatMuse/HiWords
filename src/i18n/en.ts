@@ -38,8 +38,10 @@ export default {
         blur_definitions: "Blur content",
         blur_definitions_desc: "Blur content by default, reveal on hover. Great for learning—recall before seeing the answer",
         // TTS template
-        tts_template: "TTS URL template",
+        tts_template: "TTS template",
         tts_template_desc: "Use {{word}} as placeholder, e.g. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
+        dictionary_api: "Dictionary API",
+        dictionary_api_desc: "Use {{word}} as placeholder. Default: Youdao, Alternative: Free Dictionary",
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
@@ -99,6 +101,9 @@ export default {
     
     // Notices
     notices: {
+        enter_word_first: "Please enter a word first",
+        definition_fetched: "Definition fetched successfully",
+        definition_fetch_failed: "Failed to fetch definition. Please check your network or try another word",
         vocabulary_refreshed: "Vocabulary books refreshed",
         word_added: "Word added to vocabulary book",
         word_exists: "Word already exists in vocabulary book",
@@ -137,6 +142,7 @@ export default {
     
     // Modals
     modals: {
+        auto_fill_definition: "Auto-fill definition",
         word_label: "Word",
         word_placeholder: "Enter word to add...",
         definition_label: "Definition",

@@ -1035,3 +1035,54 @@
     width: 16px;
     height: 16px;
 }
+
+/* 自动填充释义按钮样式 */
+.hiwords-definition-label-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.hiwords-auto-fill-btn {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.hiwords-auto-fill-btn:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+}
+
+.hiwords-auto-fill-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hiwords-auto-fill-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 加载状态 */
+.hiwords-auto-fill-btn.hiwords-loading {
+    pointer-events: none;
+}
+
+.hiwords-auto-fill-btn.hiwords-loading .hiwords-auto-fill-icon {
+    animation: hiwords-spin 1s linear infinite;
+}
+
+@keyframes hiwords-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

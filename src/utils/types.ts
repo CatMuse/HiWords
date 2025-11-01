@@ -39,6 +39,8 @@ export interface HiWordsSettings {
     masteredDetection?: 'group' | 'color';
     // 发音地址模板（如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2）
     ttsTemplate?: string;
+    // 词典 API 配置
+    dictionaryAPI?: string; // API 地址模板，使用 {{word}} 作为占位符
     // 自动布局设置（简化版）
     autoLayoutEnabled?: boolean; // 是否启用自动布局（使用固定参数的简单网格）
     // 卡片尺寸设置
