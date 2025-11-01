@@ -70,6 +70,7 @@ export default {
         add_word: "HiWords: Wort hinzufügen",
         edit_word: "HiWords: Wort bearbeiten",
         show_sidebar: "HiWords-Seitenleiste anzeigen",
+        add_selected_word: "Wort hinzufügen",
     },
 
     // Notices
@@ -103,6 +104,8 @@ export default {
         mark_mastered_failed: "Als gemeistert markieren fehlgeschlagen, bitte erneut versuchen",
         remove_from_mastered_group_failed: "Entfernen aus der Gruppe 'Gemeistert' fehlgeschlagen",
         word_unmarked_as_mastered: "\"{0}\" nicht mehr als gemeistert markiert",
+        no_text_selected: "Bitte wählen Sie zuerst ein Wort aus",
+        word_required: "Bitte geben Sie ein Wort ein",
         unmark_mastered_failed: "Markierung aufheben fehlgeschlagen, bitte erneut versuchen",
         batch_marked_success: "{0} Wörter erfolgreich als gemeistert markiert",
     },
@@ -110,8 +113,12 @@ export default {
     // Modals
     modals: {
         add_word_title: "Hinzufügen ",
+        add_word_title_no_word: "Wort hinzufügen",
+        add_word_title_simple: "Wort hinzufügen",
         edit_word_title: "Bearbeiten ",
+        edit_word_title_simple: "Wort bearbeiten",
         word_label: "Wort",
+        word_placeholder: "Wort eingeben...",
         definition_label: "Definition",
         book_label: "Wörterbuch",
         select_book: "Wörterbuch auswählen",

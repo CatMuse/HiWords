@@ -40,9 +40,24 @@ export class AddWordModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         
-        // 标题中包含词汇，根据模式显示不同标题
-        const titleKey = this.isEditMode ? 'modals.edit_word_title' : 'modals.add_word_title';
-        contentEl.createEl('h2', { text: `${t(titleKey)} "${this.word}"` });
+        // 单词输入（仅在添加模式下显示）
+        let wordInput: HTMLInputElement | null = null;
+        if (!this.isEditMode) {
+            const wordContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
+            wordContainer.createEl('label', { text: t('modals.word_label'), cls: 'hiwords-form-item-label' });
+            
+            wordInput = wordContainer.createEl('input', { 
+                type: 'text',
+                placeholder: t('modals.word_placeholder'),
+                cls: 'setting-item-input'
+            });
+            wordInput.value = this.word;
+            
+            // 如果没有预填充单词，自动聚焦到单词输入框
+            if (!this.word) {
+                setTimeout(() => wordInput?.focus(), 50);
+            }
+        }
         
         // 生词本选择
         const bookSelectContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
@@ -192,6 +207,17 @@ export class AddWordModal extends Modal {
         const buttonTextKey = this.isEditMode ? 'modals.save_button' : 'modals.add_button';
         const actionButton = rightButtonGroup.createEl('button', { text: t(buttonTextKey), cls: 'mod-cta' });
         actionButton.onclick = async () => {
+            // 在添加模式下，从输入框获取单词
+            let finalWord = this.word;
+            if (!this.isEditMode && wordInput) {
+                finalWord = wordInput.value.trim();
+                if (!finalWord) {
+                    new Notice(t('notices.word_required'));
+                    wordInput.focus();
+                    return;
+                }
+            }
+            
             const selectedBook = bookSelect.value;
             const definition = definitionInput.value;
             const colorValue = colorSelect.value ? parseInt(colorSelect.value) : undefined;
@@ -227,7 +253,7 @@ export class AddWordModal extends Modal {
                     success = await this.plugin.vocabularyManager.updateWordInCanvas(
                         this.definition.source,
                         this.definition.nodeId,
-                        this.word,
+                        finalWord,
                         definition,
                         colorValue,
                         aliases
@@ -238,7 +264,7 @@ export class AddWordModal extends Modal {
                     
                     if (success) {
                         // 使用格式化字符串替换
-                        const successMessage = t('notices.word_updated_success').replace('{0}', this.word);
+                        const successMessage = t('notices.word_updated_success').replace('{0}', finalWord);
                         new Notice(successMessage);
                         // 刷新高亮器
                         this.plugin.refreshHighlighter();
@@ -250,7 +276,7 @@ export class AddWordModal extends Modal {
                     // 添加模式：调用添加词汇到 Canvas 的方法
                     success = await this.plugin.vocabularyManager.addWordToCanvas(
                         selectedBook,
-                        this.word,
+                        finalWord,
                         definition,
                         colorValue,
                         aliases
@@ -263,7 +289,7 @@ export class AddWordModal extends Modal {
                         // 保存用户选择的生词本到缓存
                         AddWordModal.lastSelectedBookPath = selectedBook;
                         // 使用格式化字符串替换
-                        const successMessage = t('notices.word_added_success').replace('{0}', this.word);
+                        const successMessage = t('notices.word_added_success').replace('{0}', finalWord);
                         new Notice(successMessage);
                         // 刷新高亮器
                         this.plugin.refreshHighlighter();
@@ -286,7 +312,7 @@ export class AddWordModal extends Modal {
      */
     private async showDeleteConfirmation(): Promise<boolean> {
         // 使用原生的 confirm 对话框，更简洁且符合 Obsidian 的设计原则
-        return window.confirm(t('modals.delete_confirmation').replace('{0}', this.word));
+        return window.confirm(t('modals.delete_confirmation').replace('{0}', this.definition?.word || this.word));
     }
     
     onClose() {

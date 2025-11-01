@@ -70,6 +70,7 @@ export default {
         add_word: "HiWords: 単語を追加",
         edit_word: "HiWords: 単語を編集",
         show_sidebar: "HiWords サイドバーを表示",
+        add_selected_word: "単語を追加",
     },
 
     // Notices
@@ -102,7 +103,9 @@ export default {
         word_marked_as_mastered: "\"{0}\" を習得済みに設定しました",
         mark_mastered_failed: "習得済みへの設定に失敗しました。再試行してください",
         remove_from_mastered_group_failed: "習得済みグループからの削除に失敗しました",
-        word_unmarked_as_mastered: "\"{0}\" の習得済みを解除しました",
+        word_unmarked_as_mastered: "\"{0}\" のマスター済みマークを解除しました",
+        no_text_selected: "追加する単語を選択してください",
+        word_required: "単語を入力してください",
         unmark_mastered_failed: "解除に失敗しました。再試行してください",
         batch_marked_success: "{0} 件の単語を習得済みに設定しました",
     },
@@ -110,8 +113,12 @@ export default {
     // Modals
     modals: {
         add_word_title: "追加 ",
+        add_word_title_no_word: "単語を追加",
+        add_word_title_simple: "単語を追加",
         edit_word_title: "編集 ",
+        edit_word_title_simple: "単語を編集",
         word_label: "単語",
+        word_placeholder: "追加する単語を入力...",
         definition_label: "定義",
         book_label: "単語帳",
         select_book: "単語帳を選択",

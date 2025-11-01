@@ -70,6 +70,7 @@ export default {
         add_word: "HiWords : Ajouter un mot",
         edit_word: "HiWords : Éditer un mot",
         show_sidebar: "Afficher la barre latérale HiWords",
+        add_selected_word: "Ajouter un mot",
     },
 
     // Notices
@@ -103,6 +104,8 @@ export default {
         mark_mastered_failed: "Échec du marquage, veuillez réessayer",
         remove_from_mastered_group_failed: "Échec du retrait du groupe maîtrisé",
         word_unmarked_as_mastered: "\"{0}\" retiré du statut maîtrisé",
+        no_text_selected: "Veuillez d'abord sélectionner un mot à ajouter",
+        word_required: "Veuillez entrer un mot",
         unmark_mastered_failed: "Échec du retrait du statut, veuillez réessayer",
         batch_marked_success: "{0} mots marqués comme maîtrisés avec succès",
     },
@@ -110,8 +113,12 @@ export default {
     // Modals
     modals: {
         add_word_title: "Ajouter ",
+        add_word_title_no_word: "Ajouter un mot",
+        add_word_title_simple: "Ajouter un mot",
         edit_word_title: "Éditer ",
+        edit_word_title_simple: "Éditer un mot",
         word_label: "Mot",
+        word_placeholder: "Entrez le mot à ajouter...",
         definition_label: "Définition",
         book_label: "Livre de mots",
         select_book: "Sélectionnez un livre",

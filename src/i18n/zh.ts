@@ -78,6 +78,7 @@ export default {
         add_word: "HiWords: 添加单词",
         edit_word: "HiWords: 编辑单词",
         show_sidebar: "显示 HiWords 侧边栏",
+        add_selected_word: "添加单词",
     },
     
     // 通知
@@ -111,6 +112,8 @@ export default {
         mark_mastered_failed: "标记失败，请重试",
         remove_from_mastered_group_failed: "从已掌握分组移除失败",
         word_unmarked_as_mastered: "\"{0}\"已取消已掌握标记",
+        no_text_selected: "请先选中要添加的单词",
+        word_required: "请输入单词",
         unmark_mastered_failed: "取消标记失败，请重试",
         batch_marked_success: "成功标记 {0} 个单词为已掌握",
     },
@@ -118,8 +121,12 @@ export default {
     // 模态框
     modals: {
         add_word_title: "添加 ",
+        add_word_title_no_word: "添加单词",
+        add_word_title_simple: "添加单词",
         edit_word_title: "编辑 ",
+        edit_word_title_simple: "编辑单词",
         word_label: "单词",
+        word_placeholder: "输入要添加的单词...",
         definition_label: "释义",
         book_label: "单词本",
         select_book: "选择单词本",

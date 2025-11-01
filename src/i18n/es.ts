@@ -70,6 +70,7 @@ export default {
         add_word: "HiWords: Agregar palabra",
         edit_word: "HiWords: Editar palabra",
         show_sidebar: "Mostrar barra lateral de HiWords",
+        add_selected_word: "Agregar palabra",
     },
 
     // Notices
@@ -102,16 +103,23 @@ export default {
         word_marked_as_mastered: "\"{0}\" marcada como dominada",
         mark_mastered_failed: "No se pudo marcar como dominada, inténtalo de nuevo",
         remove_from_mastered_group_failed: "No se pudo quitar del grupo de dominadas",
-        word_unmarked_as_mastered: "\"{0}\" desmarcada como dominada",
+        word_unmarked_as_mastered: "\"{0}\" ya no está marcada como dominada",
+        no_text_selected: "Por favor, selecciona primero una palabra para agregar",
+        word_required: "Por favor, ingresa una palabra",
         unmark_mastered_failed: "No se pudo desmarcar, inténtalo de nuevo",
         batch_marked_success: "Se marcaron correctamente {0} palabras como dominadas",
+        new_notice: "Nuevo aviso",
     },
 
     // Modals
     modals: {
         add_word_title: "Agregar ",
+        add_word_title_no_word: "Agregar palabra",
+        add_word_title_simple: "Agregar palabra",
         edit_word_title: "Editar ",
+        edit_word_title_simple: "Editar palabra",
         word_label: "Palabra",
+        word_placeholder: "Ingresa la palabra a agregar...",
         definition_label: "Definición",
         book_label: "Libro de palabras",
         select_book: "Selecciona un libro",

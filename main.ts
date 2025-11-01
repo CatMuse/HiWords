@@ -122,6 +122,19 @@ export default class HiWordsPlugin extends Plugin {
                 this.activateSidebarView();
             }
         });
+
+        // 添加选中单词到生词本命令
+        this.addCommand({
+            id: 'add-selected-word',
+            name: t('commands.add_selected_word'),
+            editorCallback: (editor) => {
+                const selection = editor.getSelection();
+                const word = selection ? selection.trim() : '';
+                // 无论是否有选中文本，都打开模态框
+                // 有选中文本时预填充，没有时让用户手动输入
+                this.addOrEditWord(word);
+            }
+        });
     }
 
     /**

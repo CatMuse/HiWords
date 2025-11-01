@@ -78,6 +78,7 @@ export default {
         add_word: "HiWords: Add word",
         edit_word: "HiWords: Edit word",
         show_sidebar: "Show HiWords sidebar",
+        add_selected_word: "Add word",
     },
     
     // Notices
@@ -111,6 +112,8 @@ export default {
         mark_mastered_failed: "Failed to mark as mastered, please try again",
         remove_from_mastered_group_failed: "Failed to remove from mastered group",
         word_unmarked_as_mastered: "\"{0}\" unmarked as mastered",
+        no_text_selected: "Please select text to add as a word",
+        word_required: "Please enter a word",
         unmark_mastered_failed: "Failed to unmark as mastered, please try again",
         batch_marked_success: "Successfully marked {0} words as mastered",
     },
@@ -118,8 +121,12 @@ export default {
     // Modals
     modals: {
         add_word_title: "Add ",
+        add_word_title_no_word: "Add Word",
+        add_word_title_simple: "Add Word",
         edit_word_title: "Edit ",
+        edit_word_title_simple: "Edit Word",
         word_label: "Word",
+        word_placeholder: "Enter word to add...",
         definition_label: "Definition",
         book_label: "Vocabulary book",
         select_book: "Select a vocabulary book",
