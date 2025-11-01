@@ -120,11 +120,6 @@ export default {
     
     // 模态框
     modals: {
-        add_word_title: "添加 ",
-        add_word_title_no_word: "添加单词",
-        add_word_title_simple: "添加单词",
-        edit_word_title: "编辑 ",
-        edit_word_title_simple: "编辑单词",
         word_label: "单词",
         word_placeholder: "输入要添加的单词...",
         definition_label: "释义",

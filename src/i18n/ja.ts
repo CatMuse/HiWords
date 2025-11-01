@@ -112,11 +112,6 @@ export default {
 
     // Modals
     modals: {
-        add_word_title: "追加 ",
-        add_word_title_no_word: "単語を追加",
-        add_word_title_simple: "単語を追加",
-        edit_word_title: "編集 ",
-        edit_word_title_simple: "単語を編集",
         word_label: "単語",
         word_placeholder: "追加する単語を入力...",
         definition_label: "定義",

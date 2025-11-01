@@ -112,11 +112,6 @@ export default {
 
     // Modals
     modals: {
-        add_word_title: "Hinzufügen ",
-        add_word_title_no_word: "Wort hinzufügen",
-        add_word_title_simple: "Wort hinzufügen",
-        edit_word_title: "Bearbeiten ",
-        edit_word_title_simple: "Wort bearbeiten",
         word_label: "Wort",
         word_placeholder: "Wort eingeben...",
         definition_label: "Definition",

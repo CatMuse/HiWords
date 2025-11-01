@@ -93,8 +93,8 @@ export interface LanguagePack {
         book_removed: string;
     };
     modals: {
-        add_word_title: string;
         word_label: string;
+        word_placeholder: string;
         definition_label: string;
         book_label: string;
         select_book: string;
@@ -106,6 +106,8 @@ export interface LanguagePack {
         add_button: string;
         cancel_button: string;
         select_canvas_file: string;
+        delete_confirmation: string;
+        save_button: string;
     };
     // Common action labels used in UI
     actions?: {
