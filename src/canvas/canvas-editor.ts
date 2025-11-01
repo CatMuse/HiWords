@@ -66,9 +66,9 @@ export class CanvasEditor {
                 // 生成 16-hex ID
                 const nodeId = this.genHex16();
 
-                // 放置参数（使用固定值）
-                const newW = 260;
-                const newH = 120;
+                // 放置参数（从设置中读取，如果未设置则使用默认值）
+                const newW = this.settings.cardWidth ?? 260;
+                const newH = this.settings.cardHeight ?? 120;
                 const verticalGap = 20;
                 const groupPadding = 24; // 与 Mastered 分组保持的水平间距
 

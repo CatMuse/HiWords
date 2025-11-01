@@ -4,8 +4,8 @@ import { CanvasParser } from './canvas-parser';
 // 固定布局参数
 const BASE_X = 50;
 const BASE_Y = 50;
-const CARD_WIDTH = 260;
-const CARD_HEIGHT = 120;
+const DEFAULT_CARD_WIDTH = 260;
+const DEFAULT_CARD_HEIGHT = 120;
 const GAP = 20;
 const COLUMNS = 3;
 const GROUP_PADDING = 24;
@@ -24,6 +24,10 @@ export function normalizeLayout(
   parser: CanvasParser
 ) {
   if (!settings.autoLayoutEnabled) return;
+
+  // 从设置中读取卡片尺寸，如果未设置则使用默认值
+  const CARD_WIDTH = settings.cardWidth ?? DEFAULT_CARD_WIDTH;
+  const CARD_HEIGHT = settings.cardHeight ?? DEFAULT_CARD_HEIGHT;
 
   const masteredGroup = canvasData.nodes.find(
     (n) => n.type === 'group' && n.label === 'Mastered'
@@ -60,6 +64,10 @@ export function layoutGroupInner(
   settings: HiWordsSettings,
   parser: CanvasParser
 ) {
+  // 从设置中读取卡片尺寸，如果未设置则使用默认值
+  const CARD_WIDTH = settings.cardWidth ?? DEFAULT_CARD_WIDTH;
+  const CARD_HEIGHT = settings.cardHeight ?? DEFAULT_CARD_HEIGHT;
+
   const members = canvasData.nodes.filter(
     (n) => n.type !== 'group' && parser.isNodeInGroup(n, group)
   );

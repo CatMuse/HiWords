@@ -32,6 +32,31 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.plugin.settings.autoLayoutEnabled = value;
                     await this.plugin.saveSettings();
                 }));
+
+        // 卡片尺寸设置（宽度和高度在同一行）
+        new Setting(containerEl)
+            .setName(t('settings.card_size') || 'Card size')
+            .setDesc(t('settings.card_size_desc') || 'Default width and height for canvas cards')
+            .addText(text => text
+                .setPlaceholder('260')
+                .setValue(String(this.plugin.settings.cardWidth ?? 260))
+                .onChange(async (value) => {
+                    const width = parseInt(value);
+                    if (!isNaN(width) && width > 0) {
+                        this.plugin.settings.cardWidth = width;
+                        await this.plugin.saveSettings();
+                    }
+                }))
+            .addText(text => text
+                .setPlaceholder('120')
+                .setValue(String(this.plugin.settings.cardHeight ?? 120))
+                .onChange(async (value) => {
+                    const height = parseInt(value);
+                    if (!isNaN(height) && height > 0) {
+                        this.plugin.settings.cardHeight = height;
+                        await this.plugin.saveSettings();
+                    }
+                }));
     }
 
     display(): void {

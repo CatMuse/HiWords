@@ -41,6 +41,9 @@ export interface HiWordsSettings {
     ttsTemplate?: string;
     // 自动布局设置（简化版）
     autoLayoutEnabled?: boolean; // 是否启用自动布局（使用固定参数的简单网格）
+    // 卡片尺寸设置
+    cardWidth?: number; // 卡片宽度（默认 260）
+    cardHeight?: number; // 卡片高度（默认 120）
 }
 
 // 词汇匹配信息

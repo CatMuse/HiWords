@@ -51,6 +51,10 @@ export interface LanguagePack {
         auto_layout: string;
         enable_auto_layout: string;
         enable_auto_layout_desc: string;
+        card_width?: string;
+        card_width_desc?: string;
+        card_height?: string;
+        card_height_desc?: string;
         card_size: string;
         card_size_desc: string;
         grid_gaps: string;

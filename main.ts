@@ -20,7 +20,10 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     // 发音地址模板（用户可在设置里修改）
     ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
     // 自动布局（简化版，使用固定参数）
-    autoLayoutEnabled: true
+    autoLayoutEnabled: true,
+    // 卡片尺寸设置
+    cardWidth: 260,
+    cardHeight: 120
 };
 
 export default class HiWordsPlugin extends Plugin {
