@@ -112,6 +112,7 @@ export default {
         word_required: "Por favor, ingresa una palabra",
         unmark_mastered_failed: "No se pudo desmarcar, inténtalo de nuevo",
         batch_marked_success: "Se marcaron correctamente {0} palabras como dominadas",
+        book_path_updated: "Ruta del libro actualizada: {0}",
         new_notice: "Nuevo aviso",
     },
 

@@ -209,6 +209,29 @@ export default class HiWordsPlugin extends Plugin {
             })
         );
         
+        // 监听文件重命名/移动
+        this.registerEvent(
+            this.app.vault.on('rename', async (file, oldPath) => {
+                if (file instanceof TFile && file.extension === 'canvas') {
+                    // 检查旧路径是否在单词本列表中
+                    const bookIndex = this.settings.vocabularyBooks.findIndex(book => book.path === oldPath);
+                    if (bookIndex !== -1) {
+                        // 更新为新路径
+                        this.settings.vocabularyBooks[bookIndex].path = file.path;
+                        // 更新名称（使用新的文件名）
+                        this.settings.vocabularyBooks[bookIndex].name = file.basename;
+                        await this.saveSettings();
+                        
+                        // 重新加载该单词本
+                        await this.vocabularyManager.reloadVocabularyBook(file.path);
+                        this.refreshHighlighter();
+                        
+                        new Notice(t('notices.book_path_updated').replace('{0}', file.basename));
+                    }
+                }
+            })
+        );
+        
         // 注册编辑器右键菜单
         this.registerEvent(
             this.app.workspace.on('editor-menu', (menu, editor) => {

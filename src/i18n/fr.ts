@@ -110,8 +110,10 @@ export default {
         word_unmarked_as_mastered: "\"{0}\" retiré du statut maîtrisé",
         no_text_selected: "Veuillez d'abord sélectionner un mot à ajouter",
         word_required: "Veuillez entrer un mot",
-        unmark_mastered_failed: "Échec du retrait du statut, veuillez réessayer",
+        unmark_mastered_failed: "Échec de la suppression de la marque, veuillez réessayer",
         batch_marked_success: "{0} mots marqués comme maîtrisés avec succès",
+        book_path_updated: "Chemin du livre mis à jour : {0}",
+        new_notice: "Nouvelle notification",
     },
 
     // Modals

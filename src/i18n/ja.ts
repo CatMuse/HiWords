@@ -105,13 +105,15 @@ export default {
         update_word_status_failed: "単語のステータス更新に失敗しました",
         move_to_mastered_group_failed: "習得済みグループへの移動に失敗しました",
         word_marked_as_mastered: "\"{0}\" を習得済みに設定しました",
-        mark_mastered_failed: "習得済みへの設定に失敗しました。再試行してください",
+        mark_mastered_failed: "マークに失敗しました。もう一度試してください",
         remove_from_mastered_group_failed: "習得済みグループからの削除に失敗しました",
         word_unmarked_as_mastered: "\"{0}\" のマスター済みマークを解除しました",
         no_text_selected: "追加する単語を選択してください",
         word_required: "単語を入力してください",
-        unmark_mastered_failed: "解除に失敗しました。再試行してください",
-        batch_marked_success: "{0} 件の単語を習得済みに設定しました",
+        unmark_mastered_failed: "マーク解除に失敗しました。もう一度試してください",
+        batch_marked_success: "{0}個の単語を習得済みとしてマークしました",
+        book_path_updated: "単語帳のパスが更新されました: {0}",
+        new_notice: "新しい通知",
     },
 
     // Modals

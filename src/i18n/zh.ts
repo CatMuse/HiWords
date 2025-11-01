@@ -120,6 +120,7 @@ export default {
         word_required: "请输入单词",
         unmark_mastered_failed: "取消标记失败，请重试",
         batch_marked_success: "成功标记 {0} 个单词为已掌握",
+        book_path_updated: "单词本路径已更新: {0}",
     },
     
     // 模态框

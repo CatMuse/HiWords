@@ -110,8 +110,10 @@ export default {
         word_unmarked_as_mastered: "\"{0}\" nicht mehr als gemeistert markiert",
         no_text_selected: "Bitte wählen Sie zuerst ein Wort aus",
         word_required: "Bitte geben Sie ein Wort ein",
-        unmark_mastered_failed: "Markierung aufheben fehlgeschlagen, bitte erneut versuchen",
+        unmark_mastered_failed: "Markierung konnte nicht entfernt werden, bitte erneut versuchen",
         batch_marked_success: "{0} Wörter erfolgreich als gemeistert markiert",
+        book_path_updated: "Wörterbuchpfad aktualisiert: {0}",
+        new_notice: "Neue Benachrichtigung",
     },
 
     // Modals

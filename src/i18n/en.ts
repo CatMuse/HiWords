@@ -120,6 +120,7 @@ export default {
         word_required: "Please enter a word",
         unmark_mastered_failed: "Failed to unmark as mastered, please try again",
         batch_marked_success: "Successfully marked {0} words as mastered",
+        book_path_updated: "Vocabulary book path updated: {0}",
     },
     
     // Modals
