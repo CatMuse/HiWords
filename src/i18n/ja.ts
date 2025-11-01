@@ -57,6 +57,12 @@ export default {
         highlight_paths: "ファイルパス",
         highlight_paths_desc: "複数のパスをカンマで区切り、フォルダパスをサポート（サブフォルダを含む）",
         highlight_paths_placeholder: "例：Archive, Templates, Private/Diary",
+        // File node parse mode
+        file_node_parse_mode: "ファイルノード解析モード",
+        file_node_parse_mode_desc: "Canvas 内のファイルカードの解析方法を選択",
+        mode_filename: "ファイル名のみ",
+        mode_content: "ファイル内容のみ",
+        mode_filename_with_alias: "ファイル名を単語、内容をエイリアスとして",
     },
 
     // Sidebar

@@ -66,6 +66,12 @@ export default {
         highlight_paths: "File paths",
         highlight_paths_desc: "Separate multiple paths with commas, supports folder paths (including subfolders)",
         highlight_paths_placeholder: "e.g.: Archive, Templates, Private/Diary",
+        // File node parse mode
+        file_node_parse_mode: "File node parse mode",
+        file_node_parse_mode_desc: "Choose how to parse file cards in Canvas",
+        mode_filename: "Filename only",
+        mode_content: "File content only",
+        mode_filename_with_alias: "Filename as word, content as alias",
     },
     
     // Sidebar

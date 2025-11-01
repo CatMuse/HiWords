@@ -57,6 +57,12 @@ export default {
         highlight_paths: "Rutas de archivo",
         highlight_paths_desc: "Separar múltiples rutas con comas, admite rutas de carpetas (incluidas subcarpetas)",
         highlight_paths_placeholder: "ej.: Archive, Templates, Private/Diary",
+        // File node parse mode
+        file_node_parse_mode: "Modo de análisis de nodo de archivo",
+        file_node_parse_mode_desc: "Elegir cómo analizar tarjetas de archivo en Canvas",
+        mode_filename: "Solo nombre de archivo",
+        mode_content: "Solo contenido de archivo",
+        mode_filename_with_alias: "Nombre de archivo como palabra, contenido como alias",
     },
 
     // Sidebar

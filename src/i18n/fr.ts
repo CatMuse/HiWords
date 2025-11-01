@@ -57,6 +57,12 @@ export default {
         highlight_paths: "Chemins de fichiers",
         highlight_paths_desc: "Séparer plusieurs chemins par des virgules, prend en charge les chemins de dossiers (y compris les sous-dossiers)",
         highlight_paths_placeholder: "ex : Archive, Templates, Private/Diary",
+        // File node parse mode
+        file_node_parse_mode: "Mode d'analyse de noeud de fichier",
+        file_node_parse_mode_desc: "Choisir comment analyser les cartes de fichiers dans Canvas",
+        mode_filename: "Nom de fichier uniquement",
+        mode_content: "Contenu de fichier uniquement",
+        mode_filename_with_alias: "Nom de fichier comme mot, contenu comme alias",
     },
 
     // Sidebar

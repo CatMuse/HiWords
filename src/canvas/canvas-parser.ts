@@ -220,7 +220,7 @@ export class CanvasParser {
     }
 
     /**
-     * 解析文件节点（Markdown），通过路径读取文件并复用文本解析规则
+     * 解析文件节点（Markdown），根据配置选择解析模式
      */
     private async parseFileNode(node: CanvasNode, sourcePath: string): Promise<WordDefinition | null> {
         try {
@@ -231,9 +231,62 @@ export class CanvasParser {
             if (!(abs instanceof TFile)) return null;
             if (abs.extension !== 'md') return null;
 
+            const mode = this.settings?.fileNodeParseMode || 'filename-with-alias';
+            const fileName = abs.basename; // 文件名（不含扩展名）
+
+            // 模式 1：仅使用文件名
+            if (mode === 'filename') {
+                return {
+                    word: fileName,
+                    aliases: [],
+                    definition: '',
+                    source: sourcePath,
+                    nodeId: node.id,
+                    color: node.color,
+                    mastered: false
+                };
+            }
+
+            // 读取文件内容
             const md = await this.app.vault.cachedRead(abs);
-            // 对于文件节点，source 统一记录为 Canvas 文件路径（生词本路径）
-            return this.parseFromText(md, node, sourcePath);
+
+            // 模式 2：仅使用文件内容（当前行为）
+            if (mode === 'content') {
+                return this.parseFromText(md, node, sourcePath);
+            }
+
+            // 模式 3：文件名作为主词，内容第一行作为别名（默认）
+            if (mode === 'filename-with-alias') {
+                const parsed = this.parseFromText(md, node, sourcePath);
+                
+                if (parsed && parsed.word) {
+                    // 将原来的 word 作为别名
+                    const originalWord = parsed.word;
+                    const existingAliases = parsed.aliases || [];
+                    const newAliases = originalWord !== fileName 
+                        ? [originalWord, ...existingAliases]
+                        : existingAliases; // 如果文件名和内容第一行相同，避免重复
+                    
+                    return {
+                        ...parsed,
+                        word: fileName,
+                        aliases: newAliases
+                    };
+                }
+                
+                // 如果解析失败（文件为空），至少返回文件名
+                return {
+                    word: fileName,
+                    aliases: [],
+                    definition: '',
+                    source: sourcePath,
+                    nodeId: node.id,
+                    color: node.color,
+                    mastered: false
+                };
+            }
+
+            return null;
         } catch (error) {
             console.error('解析文件节点失败:', error);
             return null;

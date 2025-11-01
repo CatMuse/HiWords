@@ -57,6 +57,12 @@ export default {
         highlight_paths: "Dateipfade",
         highlight_paths_desc: "Mehrere Pfade durch Kommas trennen, unterstützt Ordnerpfade (einschließlich Unterordner)",
         highlight_paths_placeholder: "z.B.: Archive, Templates, Private/Diary",
+        // File node parse mode
+        file_node_parse_mode: "Dateiknoten-Analysemodus",
+        file_node_parse_mode_desc: "Wählen Sie, wie Dateikarten in Canvas analysiert werden",
+        mode_filename: "Nur Dateiname",
+        mode_content: "Nur Dateiinhalt",
+        mode_filename_with_alias: "Dateiname als Wort, Inhalt als Alias",
     },
 
     // Sidebar

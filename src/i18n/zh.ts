@@ -66,6 +66,12 @@ export default {
         highlight_paths: "文件路径",
         highlight_paths_desc: "多个路径用逗号分隔，支持文件夹路径（包括子文件夹）",
         highlight_paths_placeholder: "例如：Archive, Templates, Private/Diary",
+        // 文件节点解析模式
+        file_node_parse_mode: "文件节点解析模式",
+        file_node_parse_mode_desc: "选择如何解析 Canvas 中的文件卡片",
+        mode_filename: "仅文件名",
+        mode_content: "仅文件内容",
+        mode_filename_with_alias: "文件名作为主词，内容作为别名",
     },
     
     // 侧边栏

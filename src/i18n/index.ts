@@ -73,6 +73,12 @@ export interface LanguagePack {
         highlight_paths?: string;
         highlight_paths_desc?: string;
         highlight_paths_placeholder?: string;
+        // File node parse mode
+        file_node_parse_mode?: string;
+        file_node_parse_mode_desc?: string;
+        mode_filename?: string;
+        mode_content?: string;
+        mode_filename_with_alias?: string;
     };
     sidebar: {
         title: string;

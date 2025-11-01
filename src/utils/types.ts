@@ -47,6 +47,8 @@ export interface HiWordsSettings {
     // 高亮范围设置
     highlightMode?: 'all' | 'exclude' | 'include'; // 高亮模式：全部/排除/仅指定
     highlightPaths?: string; // 文件路径列表（逗号分隔）
+    // 文件节点解析模式
+    fileNodeParseMode?: 'filename' | 'content' | 'filename-with-alias'; // 文件节点解析模式
 }
 
 // 词汇匹配信息

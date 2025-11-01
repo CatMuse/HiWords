@@ -26,7 +26,9 @@ const DEFAULT_SETTINGS: HiWordsSettings = {
     cardHeight: 120,
     // 高亮范围设置
     highlightMode: 'all',
-    highlightPaths: ''
+    highlightPaths: '',
+    // 文件节点解析模式
+    fileNodeParseMode: 'filename-with-alias'
 };
 
 export default class HiWordsPlugin extends Plugin {

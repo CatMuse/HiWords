@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle } from '../utils';
 import { CanvasParser } from '../canvas';
@@ -13,14 +13,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
-     * 添加高亮范围设置
+     * 添加高亮范围设置（作为高亮设置的子部分）
      */
     private addHighlightScopeSettings() {
         const { containerEl } = this;
-
-        new Setting(containerEl)
-            .setName(t('settings.highlight_scope'))
-            .setHeading();
 
         // 高亮模式选择
         new Setting(containerEl)
@@ -55,6 +51,28 @@ export class HiWordsSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
             this.plugin.refreshHighlighter();
         });
+    }
+
+    /**
+     * 添加文件节点解析模式设置
+     */
+    private addFileNodeParseModeSettings() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.file_node_parse_mode'))
+            .setDesc(t('settings.file_node_parse_mode_desc'))
+            .addDropdown(dropdown => dropdown
+                .addOption('filename-with-alias', t('settings.mode_filename_with_alias'))
+                .addOption('filename', t('settings.mode_filename'))
+                .addOption('content', t('settings.mode_content'))
+                .setValue(this.plugin.settings.fileNodeParseMode || 'filename-with-alias')
+                .onChange(async (value: 'filename' | 'content' | 'filename-with-alias') => {
+                    this.plugin.settings.fileNodeParseMode = value;
+                    await this.plugin.saveSettings();
+                    // 提示用户重新加载插件以应用新的解析模式
+                    new Notice('请重新加载插件以应用新的文件节点解析模式');
+                }));
     }
 
     /**
@@ -108,24 +126,29 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        // 基础设置
-        this.addBasicSettings();
-
-        // 高亮范围设置
-        this.addHighlightScopeSettings();
-
-        // 生词本管理
+        // 1. 生词本管理
         this.addVocabularyBooksSection();
+        this.addFileNodeParseModeSettings();
 
-        // 自动布局设置（移动到最后）
+        // 2. 高亮设置
+        this.addHighlightingSection();
+
+        // 3. 学习功能
+        this.addLearningFeaturesSection();
+
+        // 4. Canvas 设置
         this.addAutoLayoutSettings();
     }
 
     /**
-     * 添加基础设置
+     * 2. 添加高亮设置
      */
-    private addBasicSettings() {
+    private addHighlightingSection() {
         const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.enable_auto_highlight') || 'Highlighting')
+            .setHeading();
 
         // 启用自动高亮
         new Setting(containerEl)
@@ -166,6 +189,20 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.refreshHighlighter();
                 }));
+
+        // 高亮范围设置
+        this.addHighlightScopeSettings();
+    }
+
+    /**
+     * 3. 添加学习功能设置
+     */
+    private addLearningFeaturesSection() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.enable_mastered_feature') || 'Learning Features')
+            .setHeading();
 
         // 启用已掌握功能
         new Setting(containerEl)
@@ -243,21 +280,19 @@ export class HiWordsSettingTab extends PluginSettingTab {
      */
     private addVocabularyBooksSection() {
         const { containerEl } = this;
-        
-        // 添加标题 - 使用 Obsidian 推荐的设置标题样式
-        new Setting(containerEl)
-            .setName(t('settings.vocabulary_books'))
-            .setHeading();
             
-        // 添加生词本按钮 - 使用默认的 setting-item 样式
-        new Setting(containerEl)
-            .setName(t('settings.add_vocabulary_book'))
-            .setDesc('')
-            .addButton(button => button
-                .setIcon('plus-circle')
-                .setTooltip(t('settings.add_vocabulary_book'))
-                .onClick(() => this.showCanvasFilePicker())
-            );
+        // 添加生词本图标按钮
+        const addBookContainer = containerEl.createDiv({ cls: 'hi-words-add-book-container' });
+        addBookContainer.addEventListener('click', () => this.showCanvasFilePicker());
+        
+        const addBookLabel = addBookContainer.createSpan({ 
+            text: t('settings.add_vocabulary_book'),
+            cls: 'hi-words-add-book-label'
+        });
+        
+        const addBookIcon = addBookContainer.createDiv({ cls: 'clickable-icon hi-words-add-book-icon' });
+        setIcon(addBookIcon, 'plus-circle');
+        addBookIcon.setAttribute('aria-label', t('settings.add_vocabulary_book'));
 
         // 显示现有生词本
         this.displayVocabularyBooks();
@@ -339,29 +374,31 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .setName(book.name)
                 .setDesc(`${t('settings.path')}: ${book.path}`);
 
-            // 重新加载按钮
-            setting.addButton(button => button
-                .setIcon('refresh-cw')
-                .setTooltip(t('settings.reload_book'))
-                .onClick(async () => {
-                    await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
-                    this.plugin.refreshHighlighter();
-                    new Notice(t('notices.book_reloaded').replace('{0}', book.name));
-                }));
+            // 创建图标容器
+            const iconsContainer = setting.controlEl.createDiv({ cls: 'hi-words-book-icons' });
+            
+            // 重新加载图标
+            const reloadIcon = iconsContainer.createDiv({ cls: 'clickable-icon' });
+            setIcon(reloadIcon, 'refresh-cw');
+            reloadIcon.setAttribute('aria-label', t('settings.reload_book'));
+            reloadIcon.addEventListener('click', async () => {
+                await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
+                this.plugin.refreshHighlighter();
+                new Notice(t('notices.book_reloaded').replace('{0}', book.name));
+            });
 
-            // 删除按钮
-            setting.addButton(button => button
-                .setIcon('trash')
-                .setTooltip(t('settings.remove_vocabulary_book'))
-                .setWarning()
-                .onClick(async () => {
-                    this.plugin.settings.vocabularyBooks.splice(index, 1);
-                    await this.plugin.saveSettings();
-                    await this.plugin.vocabularyManager.loadAllVocabularyBooks();
-                    this.plugin.refreshHighlighter();
-                    new Notice(t('notices.book_removed').replace('{0}', book.name));
-                    this.display(); // 刷新设置页面
-                }));
+            // 删除图标
+            const deleteIcon = iconsContainer.createDiv({ cls: 'clickable-icon mod-warning' });
+            setIcon(deleteIcon, 'trash');
+            deleteIcon.setAttribute('aria-label', t('settings.remove_vocabulary_book'));
+            deleteIcon.addEventListener('click', async () => {
+                this.plugin.settings.vocabularyBooks.splice(index, 1);
+                await this.plugin.saveSettings();
+                await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                this.plugin.refreshHighlighter();
+                new Notice(t('notices.book_removed').replace('{0}', book.name));
+                this.display(); // 刷新设置页面
+            });
                 
             // 启用/禁用开关
             setting.addToggle(toggle => toggle
@@ -385,10 +422,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
     private displayStats() {
         const { containerEl } = this;
         const stats = this.plugin.vocabularyManager.getStats();
-        
-        new Setting(containerEl)
-            .setName(t('settings.statistics'))
-            .setHeading();
         
         const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
 
