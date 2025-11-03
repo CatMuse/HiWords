@@ -194,6 +194,18 @@ export class AddWordModal extends Modal {
             definitionInput.value = this.definition.definition;
         }
         
+        // 智能聚焦逻辑
+        setTimeout(() => {
+            if (!this.isEditMode && this.word) {
+                // 添加模式且有预填充单词时，聚焦到定义输入框
+                definitionInput.focus();
+            } else if (this.isEditMode && this.definition) {
+                // 编辑模式时，聚焦到定义输入框（方便修改定义）
+                definitionInput.focus();
+            }
+            // 注意：如果是添加模式且没有预填充单词，已经在第 64 行聚焦到单词输入框了
+        }, 50);
+        
         // 按钮
         const buttonContainer = contentEl.createDiv({ cls: 'hiwords-modal-button-container' });
         
