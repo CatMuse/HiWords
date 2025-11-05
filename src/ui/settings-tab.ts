@@ -274,7 +274,9 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 }));
 
         // AI 词典配置
-        containerEl.createEl('h3', { text: t('settings.ai_dictionary') || 'AI Dictionary' });
+        new Setting(containerEl)
+            .setName(t('settings.ai_dictionary') || 'AI Dictionary')
+            .setHeading();
 
         // API URL
         new Setting(containerEl)
