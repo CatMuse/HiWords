@@ -539,12 +539,17 @@
         border-radius: 8px;
         padding: 3px;
     }
+    
+    /* 小屏幕下强制单栏布局 */
+    .hi-words-word-list {
+        column-count: 1;
+    }
 }
 
 .hi-words-word-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    column-count: auto;
+    column-width: 280px;
+    column-gap: 8px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -563,6 +568,9 @@
     width: 100%;
     box-sizing: border-box;
     min-width: 0;
+    break-inside: avoid;
+    margin-bottom: 8px;
+    display: inline-block;
 }
 
 .hi-words-word-card:hover {
