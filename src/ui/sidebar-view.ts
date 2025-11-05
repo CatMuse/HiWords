@@ -15,6 +15,7 @@ export class HiWordsSidebarView extends ItemView {
     private measureQueue: HTMLElement[] = []; // 批量测量的队列
     private measureScheduled = false; // 是否已安排 RAF 测量
     private delegatedBound = false; // 是否已绑定根级事件委托
+    private lastInteractionTime = 0; // 最后一次交互的时间戳
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -48,20 +49,15 @@ export class HiWordsSidebarView extends ItemView {
                 }
                 const definition = el.parentElement as HTMLElement; // collapsible 的父级就是 definition 容器
                 if (!definition) continue;
-                const overlay = definition.createEl('div', { cls: 'hi-words-expand-overlay', text: t('actions.expand') });
-                const updateText = () => {
-                    overlay.setText(el.hasClass('collapsed') ? t('actions.expand') : t('actions.collapse'));
-                };
-                updateText();
-                overlay.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (el.hasClass('collapsed')) {
-                        el.removeClass('collapsed');
-                    } else {
-                        el.addClass('collapsed');
-                    }
-                    updateText();
-                });
+                
+                // 检查是否已存在展开/收起按钮，避免重复创建
+                let overlay = definition.querySelector('.hi-words-expand-overlay') as HTMLElement | null;
+                if (!overlay) {
+                    overlay = definition.createEl('div', { cls: 'hi-words-expand-overlay' });
+                }
+                
+                // 更新按钮文本（根据当前状态）
+                overlay.setText(el.hasClass('collapsed') ? t('actions.expand') : t('actions.collapse'));
             }
         });
     }
@@ -87,10 +83,9 @@ export class HiWordsSidebarView extends ItemView {
         // 初始化显示
         this.scheduleUpdate(0);
 
-        // 监听活动文件变化（忽略自身视图激活，避免首次点击被重渲打断）
+        // 监听文件打开事件（使用 file-open 代替 active-leaf-change，避免侧边栏激活触发更新）
         this.registerEvent(
-            this.app.workspace.on('active-leaf-change', (leaf: WorkspaceLeaf | null) => {
-                if (leaf === this.leaf) return; // 自身变为激活视图时不刷新
+            this.app.workspace.on('file-open', (file: TFile | null) => {
                 this.scheduleUpdate(120);
             })
         );
@@ -162,6 +157,12 @@ export class HiWordsSidebarView extends ItemView {
      * 合并/防抖更新：多事件密集触发时，避免排队大量 setTimeout
      */
     private scheduleUpdate(delay: number) {
+        // 如果用户刚刚交互过（500ms 内），取消更新
+        const timeSinceInteraction = Date.now() - this.lastInteractionTime;
+        if (timeSinceInteraction < 500) {
+            return;
+        }
+        
         if (this.updateTimer !== null) {
             clearTimeout(this.updateTimer);
             this.updateTimer = null;
@@ -290,17 +291,9 @@ export class HiWordsSidebarView extends ItemView {
                 attr: { 'data-tab': 'mastered' }
             });
             masteredTab.createEl('span', { text: `${t('sidebar.mastered')} (${masteredCount})` });
-            
-            // 添加点击事件
-            masteredTab.addEventListener('click', () => {
-                this.switchTab('mastered');
-            });
         }
         
-        // 添加点击事件
-        learningTab.addEventListener('click', () => {
-            this.switchTab('learning');
-        });
+        // 注意：Tab 点击事件由 bindDelegatedHandlers 中的事件委托统一处理，无需在此添加监听器
     }
     
     /**
@@ -344,41 +337,6 @@ export class HiWordsSidebarView extends ItemView {
         for (const wordDef of words) {
             await this.createWordCard(wordList, wordDef, isMastered);
         }
-    }
-
-    /**
-     * 创建单词分组区域
-     * @param container 容器元素
-     * @param title 分组标题
-     * @param words 单词列表
-     * @param icon 图标名称
-     * @param isMastered 是否为已掌握分组
-     */
-    private createWordSection(container: HTMLElement, title: string, words: WordDefinition[], icon: string, isMastered: boolean) {
-        // 创建分组容器
-        const section = container.createEl('div', { 
-            cls: isMastered ? 'hi-words-mastered-section' : 'hi-words-section'
-        });
-        
-        // 创建分组标题
-        const sectionTitle = section.createEl('div', { cls: 'hi-words-section-title' });
-        
-        // 添加图标
-        const iconEl = sectionTitle.createEl('span', { cls: 'hi-words-section-icon' });
-        setIcon(iconEl, icon);
-        
-        // 添加标题文本
-        sectionTitle.createEl('span', { 
-            text: `${title} (${words.length})`,
-            cls: 'hi-words-section-text'
-        });
-        
-        // 创建单词列表
-        const wordList = section.createEl('div', { cls: 'hi-words-word-list' });
-        
-        words.forEach(wordDef => {
-            this.createWordCard(wordList, wordDef, isMastered);
-        });
     }
 
     /**
@@ -524,6 +482,14 @@ export class HiWordsSidebarView extends ItemView {
                 if (overlay && root.contains(overlay)) {
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    // 记录交互时间并取消所有待执行的更新
+                    this.lastInteractionTime = Date.now();
+                    if (this.updateTimer !== null) {
+                        clearTimeout(this.updateTimer);
+                        this.updateTimer = null;
+                    }
+                    
                     const definition = overlay.parentElement as HTMLElement | null;
                     const collapsible = definition?.querySelector('.hi-words-collapsible') as HTMLElement | null;
                     const el = collapsible || definition;
@@ -579,7 +545,7 @@ export class HiWordsSidebarView extends ItemView {
                     return;
                 }
             },
-            { capture: true } as any
+            { capture: true }
         );
         this.delegatedBound = true;
     }
@@ -590,14 +556,6 @@ export class HiWordsSidebarView extends ItemView {
     private getBookNameFromPath(path: string): string {
         const book = this.plugin.settings.vocabularyBooks.find(b => b.path === path);
         return book ? book.name : path.split('/').pop()?.replace('.canvas', '') || '未知';
-    }
-
-    /**
-     * 截断文本
-     */
-    private truncateText(text: string, maxLength: number): string {
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength).trim();
     }
 
     /**
@@ -763,16 +721,6 @@ export class HiWordsSidebarView extends ItemView {
         }
     }
 
-
-    /**
-     * 打开生词本文件
-     */
-    private async openVocabularyBook(wordDef: WordDefinition) {
-        const file = this.app.vault.getAbstractFileByPath(wordDef.source);
-        if (file instanceof TFile) {
-            await this.app.workspace.openLinkText(file.path, '');
-        }
-    }
 
     /**
      * 强制刷新视图
