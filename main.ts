@@ -45,7 +45,6 @@ export default class HiWordsPlugin extends Plugin {
     definitionPopover: DefinitionPopover;
     masteredService: MasteredService;
     editorExtensions: Extension[] = [];
-    highlighterInstance: WordHighlighter | null = null;
     private isSidebarInitialized = false;
 
     async onload() {
@@ -390,9 +389,7 @@ export default class HiWordsPlugin extends Plugin {
     async saveSettings() {
         await this.saveData(this.settings);
         this.vocabularyManager.updateSettings(this.settings);
-        if (this.masteredService && (this.masteredService as any).updateSettings) {
-            this.masteredService.updateSettings();
-        }
+        this.masteredService.updateSettings();
     }
 
     /**

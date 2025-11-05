@@ -21,9 +21,6 @@ import { WordMatch, WordDefinition, mapCanvasColorToCSSVar, Trie, TrieMatch } fr
 // 防抖延迟时间（毫秒）
 const DEBOUNCE_DELAY = 300;
 
-// 性能监控阈值（毫秒）
-const PERFORMANCE_THRESHOLD = 100;
-
 // 状态效果：强制更新高亮
 const forceUpdateEffect = StateEffect.define<boolean>();
 
@@ -116,7 +113,6 @@ export class WordHighlighter implements PluginValue {
      * 构建单词前缀树
      */
     private buildWordTrie() {
-        const startTime = performance.now();
         this.wordTrie.clear();
         
         // 获取未掌握的单词（已掌握的单词不会被高亮）
@@ -189,7 +185,6 @@ export class WordHighlighter implements PluginValue {
             }
         }
         
-        const startTime = performance.now();
         const builder = new RangeSetBuilder<Decoration>();
         const matches: WordMatch[] = [];
         
@@ -280,7 +275,6 @@ export class WordHighlighter implements PluginValue {
      * 使用前缀树进行高效匹配
      */
     private findWordMatches(text: string, offset: number): WordMatch[] {
-        const startTime = performance.now();
         const matches: WordMatch[] = [];
         
         try {
@@ -309,34 +303,12 @@ export class WordHighlighter implements PluginValue {
 
     /**
      * 移除重叠的匹配项，使用游标算法高效处理
+     * 注意：当前实现允许重叠高亮，因为这对于包含关系的单词（如 "art" 和 "start"）更合理
      */
     private removeOverlaps(matches: WordMatch[]): WordMatch[] {
-        // 如果用户设置允许重叠，则直接返回所有匹配
-        // 这里可以根据实际需求修改
-        const allowOverlaps = true;
-        if (allowOverlaps || matches.length === 0) {
-            return matches;
-        }
-        
-        // 使用游标算法高效处理重叠
-        const result: WordMatch[] = [];
-        let cursor = 0;
-        
-        for (const match of matches) {
-            if (match.from >= cursor) {
-                result.push(match);
-                cursor = match.to;
-            }
-        }
-        
-        return result;
-    }
-
-    /**
-     * 转义正则表达式特殊字符
-     */
-    private escapeRegExp(string: string): string {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // 直接返回所有匹配，允许重叠高亮
+        // 这样可以正确处理包含关系的单词，如 "art" 出现在 "start" 中
+        return matches;
     }
 
     destroy() {

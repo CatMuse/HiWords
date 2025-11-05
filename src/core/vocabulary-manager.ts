@@ -32,8 +32,6 @@ export class VocabularyManager {
      * 加载所有启用的生词本
      */
     async loadAllVocabularyBooks(): Promise<void> {
-        const startTime = performance.now();
-        
         this.definitions.clear();
         this.invalidateCache();
         
@@ -45,16 +43,12 @@ export class VocabularyManager {
         
         // 重建缓存
         this.rebuildCache();
-        
-        const endTime = performance.now();
     }
 
     /**
      * 加载单个生词本
      */
     async loadVocabularyBook(book: VocabularyBook): Promise<void> {
-        const startTime = performance.now();
-        
         const file = this.app.vault.getAbstractFileByPath(book.path);
         
         if (!file || !(file instanceof TFile)) {
@@ -73,8 +67,6 @@ export class VocabularyManager {
             
             // 使缓存失效
             this.invalidateCache();
-            
-            const endTime = performance.now();
         } catch (error) {
             console.error(`Failed to load vocabulary book ${book.name}:`, error);
         }
@@ -232,13 +224,9 @@ export class VocabularyManager {
         // 设置变更可能影响词汇，使缓存失效
         this.invalidateCache();
         // 同步给 CanvasEditor
-        if (this.canvasEditor && (this.canvasEditor as any).updateSettings) {
-            this.canvasEditor.updateSettings(settings);
-        }
+        this.canvasEditor.updateSettings(settings);
         // 同步给 CanvasParser（影响掌握判定等）
-        if (this.canvasParser && (this.canvasParser as any).updateSettings) {
-            this.canvasParser.updateSettings(settings);
-        }
+        this.canvasParser.updateSettings(settings);
     }
 
     /**
@@ -364,8 +352,6 @@ export class VocabularyManager {
      * 构建单词到定义的映射和所有单词的列表
      */
     private rebuildCache(): void {
-        const startTime = performance.now();
-        
         // 清空现有缓存
         this.wordDefinitionCache.clear();
         this.allWordsCache = [];
@@ -567,7 +553,7 @@ export class VocabularyManager {
         try {
             // 批量写入Canvas
             for (const wordDef of pendingWords) {
-                const success = await this.canvasEditor.addWordToCanvas(
+                const generatedNodeId = await this.canvasEditor.addWordToCanvas(
                     bookPath,
                     wordDef.word,
                     wordDef.definition,
@@ -575,9 +561,9 @@ export class VocabularyManager {
                     wordDef.aliases
                 );
                 
-                if (success) {
-                    // 成功写入文件，生成真实的nodeId
-                    wordDef.nodeId = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                if (generatedNodeId) {
+                    // 成功写入文件，更新为 Canvas 文件中实际生成的 nodeId
+                    wordDef.nodeId = generatedNodeId;
                 }
             }
             
@@ -602,26 +588,6 @@ export class VocabularyManager {
         const colorNum = parseInt(colorString, 10);
         // 验证是否为有效的 Canvas 颜色数字 (1-6)
         return (colorNum >= 1 && colorNum <= 6) ? colorNum : 0;
-    }
-    
-    /**
-     * 智能缓存失效 - 只影响特定书本
-     */
-    private invalidateCacheForBook(bookPath: string): void {
-        const bookWords = this.definitions.get(bookPath);
-        if (bookWords) {
-            bookWords.forEach(wordDef => {
-                this.wordDefinitionCache.delete(wordDef.word);
-                if (wordDef.aliases) {
-                    wordDef.aliases.forEach(alias => {
-                        this.wordDefinitionCache.delete(alias);
-                    });
-                }
-            });
-        }
-        
-        // 标记缓存需要重建
-        this.cacheValid = false;
     }
 
     /**

@@ -42,13 +42,14 @@ export class CanvasEditor {
     /**
      * 添加词汇到 Canvas 文件
      * 优化版本：限制别名数量，添加错误处理
+     * @returns 成功时返回生成的 nodeId，失败时返回 null
      */
-    async addWordToCanvas(bookPath: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<boolean> {
+    async addWordToCanvas(bookPath: string, word: string, definition: string, color?: number, aliases?: string[]): Promise<string | null> {
         try {
             const file = this.app.vault.getAbstractFileByPath(bookPath);
             if (!file || !(file instanceof TFile) || !CanvasParser.isCanvasFile(file)) {
                 console.error(`无效的 Canvas 文件: ${bookPath}`);
-                return false;
+                return null;
             }
 
             // 过滤空别名
@@ -59,12 +60,14 @@ export class CanvasEditor {
 
             // 使用原子更新，避免并发覆盖
             const parser = new CanvasParser(this.app, this.settings);
+            let generatedNodeId: string = '';
             await this.app.vault.process(file, (current) => {
                 const canvasData: CanvasData = JSON.parse(current || '{"nodes":[],"edges":[]}');
                 if (!Array.isArray(canvasData.nodes)) canvasData.nodes = [];
 
                 // 生成 16-hex ID
                 const nodeId = this.genHex16();
+                generatedNodeId = nodeId;
 
                 // 放置参数（从设置中读取，如果未设置则使用默认值）
                 const newW = this.settings.cardWidth ?? 260;
@@ -140,10 +143,10 @@ export class CanvasEditor {
                 return JSON.stringify(canvasData);
             });
 
-            return true;
+            return generatedNodeId;
         } catch (error) {
             console.error(`添加词汇到 Canvas 失败: ${error}`);
-            return false;
+            return null;
         }
     }
 
