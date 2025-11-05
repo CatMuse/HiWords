@@ -6,7 +6,7 @@ import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighte
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, WordHighlighter, createWordHighlighterExtension, highlighterManager } from './src/core';
 import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
-import { extractSentenceFromEditor } from './src/utils/sentence-extractor';
+import { extractSentenceFromEditorMultiline } from './src/utils/sentence-extractor';
 import { i18n, t } from './src/i18n';
 
 // 默认设置
@@ -148,8 +148,8 @@ export default class HiWordsPlugin extends Plugin {
             editorCallback: (editor) => {
                 const selection = editor.getSelection();
                 const word = selection ? selection.trim() : '';
-                // 提取句子
-                const sentence = extractSentenceFromEditor(editor);
+                // 提取句子（支持跨行）
+                const sentence = extractSentenceFromEditorMultiline(editor);
                 // 无论是否有选中文本，都打开模态框
                 // 有选中文本时预填充，没有时让用户手动输入
                 this.addOrEditWord(word, sentence);
@@ -265,7 +265,9 @@ export default class HiWordsPlugin extends Plugin {
                         item
                             .setTitle(t(titleKey))
                             .onClick(() => {
-                                this.addOrEditWord(word);
+                                // 提取句子（支持跨行）
+                                const sentence = extractSentenceFromEditorMultiline(editor);
+                                this.addOrEditWord(word, sentence);
                             });
                     });
                 }

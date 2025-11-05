@@ -40,6 +40,15 @@ export class DictionaryService {
     }
 
     /**
+     * 替换 prompt 中的占位符
+     */
+    private replacePlaceholders(word: string, sentence?: string): string {
+        return this.config.prompt
+            .replace(/\{\{word\}\}/g, word)
+            .replace(/\{\{sentence\}\}/g, sentence || '');
+    }
+
+    /**
      * 获取单词释义
      * @param word 要查询的单词
      * @param sentence 单词所在的句子（可选）
@@ -72,10 +81,7 @@ export class DictionaryService {
      * 从 OpenAI 兼容 API 获取释义
      */
     private async fetchFromOpenAI(word: string, sentence?: string): Promise<string> {
-        // 替换 prompt 中的占位符
-        const prompt = this.config.prompt
-            .replace(/\{\{word\}\}/g, word)
-            .replace(/\{\{sentence\}\}/g, sentence || '');
+        const prompt = this.replacePlaceholders(word, sentence);
 
         const requestBody = {
             model: this.config.model,
@@ -125,9 +131,7 @@ export class DictionaryService {
      * 从 Anthropic Claude API 获取释义
      */
     private async fetchFromClaude(word: string, sentence?: string): Promise<string> {
-        const prompt = this.config.prompt
-            .replace(/\{\{word\}\}/g, word)
-            .replace(/\{\{sentence\}\}/g, sentence || '');
+        const prompt = this.replacePlaceholders(word, sentence);
 
         const requestBody = {
             model: this.config.model,
@@ -177,9 +181,7 @@ export class DictionaryService {
      * 从 Google Gemini API 获取释义
      */
     private async fetchFromGemini(word: string, sentence?: string): Promise<string> {
-        const prompt = this.config.prompt
-            .replace(/\{\{word\}\}/g, word)
-            .replace(/\{\{sentence\}\}/g, sentence || '');
+        const prompt = this.replacePlaceholders(word, sentence);
 
         const requestBody = {
             contents: [
