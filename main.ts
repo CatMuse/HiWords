@@ -105,16 +105,16 @@ export default class HiWordsPlugin extends Plugin {
 
     /**
      * 设置编辑器扩展
+     * 注意: 扩展始终注册,但会在 WordHighlighter 内部检查 enableAutoHighlight 设置
      */
     private setupEditorExtensions() {
-        if (this.settings.enableAutoHighlight) {
-            const extension = createWordHighlighterExtension(
-                this.vocabularyManager,
-                (filePath) => this.shouldHighlightFile(filePath)
-            );
-            this.editorExtensions = [extension];
-            this.registerEditorExtension(this.editorExtensions);
-        }
+        // 始终注册扩展,让 WordHighlighter 内部根据设置决定是否高亮
+        const extension = createWordHighlighterExtension(
+            this.vocabularyManager,
+            (filePath) => this.shouldHighlightFile(filePath)
+        );
+        this.editorExtensions = [extension];
+        this.registerEditorExtension(this.editorExtensions);
     }
 
     /**
@@ -327,10 +327,8 @@ export default class HiWordsPlugin extends Plugin {
      * 刷新高亮器
      */
     refreshHighlighter() {
-        if (this.settings.enableAutoHighlight) {
-            // 使用全局高亮器管理器刷新所有高亮器实例
-            highlighterManager.refreshAll();
-        }
+        // 始终刷新高亮器,让 WordHighlighter 内部根据设置决定是否高亮
+        highlighterManager.refreshAll();
         
         // 刷新侧边栏视图（通过 API 获取）
         const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);

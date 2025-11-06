@@ -159,6 +159,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.enableAutoHighlight = value;
                     await this.plugin.saveSettings();
+                    // 刷新高亮器,立即应用设置
                     this.plugin.refreshHighlighter();
                 }));
 

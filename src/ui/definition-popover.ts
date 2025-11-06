@@ -163,6 +163,11 @@ export class DefinitionPopover extends Component {
     }
 
     private handleMouseOver(event: MouseEvent) {
+        // 检查是否启用了悬停预览功能
+        if (!this.plugin.settings.showDefinitionOnHover) {
+            return;
+        }
+        
         const raw = event.target as HTMLElement;
         const target = raw?.closest?.('.hi-words-highlight') as HTMLElement | null;
 

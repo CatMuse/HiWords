@@ -176,6 +176,13 @@ export class WordHighlighter implements PluginValue {
      * 构建装饰器
      */
     private buildDecorations(view: EditorView): DecorationSet {
+        // 检查是否启用了自动高亮功能
+        const settings = this.vocabularyManager.getSettings();
+        if (!settings.enableAutoHighlight) {
+            // 如果禁用了高亮，返回空装饰器
+            return Decoration.none;
+        }
+        
         // 检查当前文件是否应该被高亮
         if (this.shouldHighlightFile) {
             const file = view.state.field(editorViewField);
