@@ -282,7 +282,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         // API URL
         new Setting(containerEl)
             .setName(t('settings.ai_api_url') || 'API URL')
-            .setDesc(t('settings.ai_api_url_desc') || 'API endpoint (auto-detects: OpenAI, Claude, Gemini)')
+            .setDesc(t('settings.ai_api_url_desc') || 'API endpoint (auto-detects: OpenAI, Claude, Gemini). ⚠️ Privacy: Words and sentences will be sent to this external service.')
             .addText(text => text
                 .setPlaceholder('https://api.openai.com/v1/chat/completions')
                 .setValue(this.plugin.settings.aiDictionary?.apiUrl || '')
@@ -291,7 +291,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                         this.plugin.settings.aiDictionary = {
                             apiUrl: '',
                             apiKey: '',
-                            model: 'gpt-4o-mini',
+                            model: '',
                             prompt: ''
                         };
                     }
@@ -312,7 +312,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                             this.plugin.settings.aiDictionary = {
                                 apiUrl: '',
                                 apiKey: '',
-                                model: 'gpt-4o-mini',
+                                model: '',
                                 prompt: ''
                             };
                         }
@@ -333,7 +333,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                         this.plugin.settings.aiDictionary = {
                             apiUrl: '',
                             apiKey: '',
-                            model: 'gpt-4o-mini',
+                            model: '',
                             prompt: ''
                         };
                     }
@@ -360,7 +360,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 this.plugin.settings.aiDictionary = {
                     apiUrl: '',
                     apiKey: '',
-                    model: 'gpt-4o-mini',
+                    model: '',
                     prompt: ''
                 };
             }

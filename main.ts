@@ -2,6 +2,7 @@ import { App, Plugin, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings } from './src/utils';
+import { DEFAULT_SETTINGS } from './src/settings';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
@@ -10,36 +11,6 @@ import { i18n } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
 import { shouldHighlightFile } from './src/utils/highlight-utils';
-
-// 默认设置
-const DEFAULT_SETTINGS: HiWordsSettings = {
-    vocabularyBooks: [],
-    showDefinitionOnHover: true,
-    enableAutoHighlight: true,
-    highlightStyle: 'underline', // 默认使用下划线样式
-    enableMasteredFeature: true, // 默认启用已掌握功能
-    showMasteredInSidebar: true,  // 跟随 enableMasteredFeature 的值
-    blurDefinitions: false, // 默认不启用模糊效果
-    // 发音地址模板（用户可在设置里修改）
-    ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
-    // AI 词典配置
-    aiDictionary: {
-        apiUrl: 'https://api.openai.com/v1/chat/completions',
-        apiKey: '',
-        model: 'gpt-4o-mini',
-        prompt: 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)'
-    },
-    // 自动布局（简化版，使用固定参数）
-    autoLayoutEnabled: true,
-    // 卡片尺寸设置
-    cardWidth: 260,
-    cardHeight: 120,
-    // 高亮范围设置
-    highlightMode: 'all',
-    highlightPaths: '',
-    // 文件节点解析模式
-    fileNodeParseMode: 'filename-with-alias'
-};
 
 export default class HiWordsPlugin extends Plugin {
     settings: HiWordsSettings;
@@ -50,13 +21,13 @@ export default class HiWordsPlugin extends Plugin {
     private isSidebarInitialized = false;
 
     async onload() {
-        // 加载设置
+        // 加载设置（快速完成）
         await this.loadSettings();
         
         // 初始化国际化模块
         i18n.setApp(this.app);
         
-        // 初始化管理器
+        // 初始化管理器（不加载数据）
         this.vocabularyManager = new VocabularyManager(this.app, this.settings);
         
         // 初始化已掌握服务
@@ -67,9 +38,6 @@ export default class HiWordsPlugin extends Plugin {
         this.addChild(this.definitionPopover);
         this.definitionPopover.setVocabularyManager(this.vocabularyManager);
         this.definitionPopover.setMasteredService(this.masteredService);
-        
-        // 加载生词本
-        await this.vocabularyManager.loadAllVocabularyBooks();
         
         // 注册侧边栏视图
         this.registerView(
@@ -98,7 +66,8 @@ export default class HiWordsPlugin extends Plugin {
         // 初始化侧边栏
         this.initializeSidebar();
         
-        // 在布局准备好后自动刷新生词本
+        // 延迟加载生词本（在布局准备好后）
+        // 这样可以加快插件启动速度，避免阻塞 Obsidian 启动
         this.app.workspace.onLayoutReady(async () => {
             await this.vocabularyManager.loadAllVocabularyBooks();
             this.refreshHighlighter();

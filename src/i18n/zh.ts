@@ -42,7 +42,7 @@ export default {
         tts_template_desc: "使用 {{word}} 作为占位符，例如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
         ai_dictionary: "AI 助手",
         ai_api_url: "API 地址",
-        ai_api_url_desc: "API 端点（自动识别：OpenAI、Claude、Gemini）",
+        ai_api_url_desc: "隐私提示：单词和句子将被发送到此外部服务。",
         ai_api_key: "API Key",
         ai_api_key_desc: "你的 AI API 密钥",
         ai_model: "模型",

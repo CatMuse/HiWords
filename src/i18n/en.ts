@@ -42,7 +42,7 @@ export default {
         tts_template_desc: "Use {{word}} as placeholder, e.g. https://dict.youdao.com/dictvoice?audio={{word}}&type=2",
         ai_dictionary: "AI Assistant",
         ai_api_url: "API URL",
-        ai_api_url_desc: "API endpoint (auto-detects: OpenAI, Claude, Gemini)",
+        ai_api_url_desc: "Privacy: Words and sentences will be sent to this external service.",
         ai_api_key: "API Key",
         ai_api_key_desc: "Your AI API key",
         ai_model: "Model",

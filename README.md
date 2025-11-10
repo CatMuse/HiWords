@@ -173,6 +173,12 @@ Access these commands via `Ctrl/Cmd+P`:
 
 ---
 
+## 🔒 Privacy & Security
+
+HiWords is privacy-focused: all vocabulary data is stored locally in your vault, and the plugin works completely offline by default with no telemetry. The optional AI dictionary feature (disabled by default) sends words and sentences directly to your configured AI provider only when you manually use the auto-fill button.
+
+---
+
 ## 🤝 Support
 
 If you find HiWords helpful, please consider supporting its development:
