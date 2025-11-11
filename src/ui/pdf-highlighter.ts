@@ -46,7 +46,7 @@ export function registerPDFHighlighter(plugin: {
       // PDF.js 在文本层中创建 span 元素来显示文本
       const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
       
-      textSpans.forEach((span: HTMLElement) => {
+      textSpans.forEach((span) => {
         // 跳过已经高亮的元素和 tooltip 内容
         if (span.closest('.hi-words-highlight') || span.closest('.hi-words-tooltip')) {
           return;
@@ -139,11 +139,11 @@ export function registerPDFHighlighter(plugin: {
       
       // 查找所有 PDF 文本层
       const textLayers = document.querySelectorAll('.textLayer');
-      textLayers.forEach((textLayer: HTMLElement) => {
+      textLayers.forEach((textLayer) => {
         // 检查是否在 PDF 视图中
         const pdfContainer = textLayer.closest('.pdf-container, .mod-pdf');
         if (pdfContainer) {
-          processPDFTextLayer(textLayer, trie);
+          processPDFTextLayer(textLayer as HTMLElement, trie);
         }
       });
       

@@ -65,10 +65,13 @@ export class VocabularyManager {
             const definitions = await this.canvasParser.parseCanvasFile(file);
             this.definitions.set(book.path, definitions);
             
-            // 使缓存失效
-            this.invalidateCache();
+            // 增量更新缓存而不是重建整个缓存
+            this.updateCacheForBook(book.path, definitions);
         } catch (error) {
             console.error(`Failed to load vocabulary book ${book.name}:`, error);
+            // 解析失败时，确保清理该生词本的数据和缓存
+            this.definitions.delete(book.path);
+            this.updateCacheForBook(book.path, []); // 清空该生词本的缓存
         }
     }
 
@@ -220,13 +223,49 @@ export class VocabularyManager {
      * 更新设置
      */
     updateSettings(settings: HiWordsSettings): void {
+        const oldSettings = this.settings;
         this.settings = settings;
-        // 设置变更可能影响词汇，使缓存失效
-        this.invalidateCache();
+        
+        // 只在影响词汇数据的设置变更时才使缓存失效
+        const shouldInvalidateCache = 
+            oldSettings.masteredDetection !== settings.masteredDetection ||
+            oldSettings.fileNodeParseMode !== settings.fileNodeParseMode ||
+            this.hasVocabularyBooksChanged(oldSettings.vocabularyBooks, settings.vocabularyBooks);
+            
+        if (shouldInvalidateCache) {
+            this.invalidateCache();
+        }
+        
         // 同步给 CanvasEditor
         this.canvasEditor.updateSettings(settings);
         // 同步给 CanvasParser（影响掌握判定等）
         this.canvasParser.updateSettings(settings);
+    }
+    
+    /**
+     * 检查生词本配置是否发生变化
+     * @param oldBooks 旧的生词本配置
+     * @param newBooks 新的生词本配置
+     * @returns 是否发生变化
+     */
+    private hasVocabularyBooksChanged(oldBooks: VocabularyBook[], newBooks: VocabularyBook[]): boolean {
+        if (oldBooks.length !== newBooks.length) {
+            return true;
+        }
+        
+        // 检查每个生词本的关键属性
+        for (let i = 0; i < oldBooks.length; i++) {
+            const oldBook = oldBooks[i];
+            const newBook = newBooks[i];
+            
+            if (oldBook.path !== newBook.path || 
+                oldBook.enabled !== newBook.enabled ||
+                oldBook.name !== newBook.name) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -390,6 +429,57 @@ export class VocabularyManager {
         
         // 标记缓存为有效
         this.cacheValid = true;
+    }
+    
+    /**
+     * 增量更新特定生词本的缓存
+     * @param bookPath 生词本路径
+     * @param definitions 该生词本的词汇定义
+     */
+    private updateCacheForBook(bookPath: string, definitions: WordDefinition[]): void {
+        // 如果缓存无效，直接重建
+        if (!this.cacheValid) {
+            this.rebuildCache();
+            return;
+        }
+        
+        // 清除该生词本的旧缓存
+        const oldBookWords = this.bookWordsCache.get(bookPath) || [];
+        const oldWordsSet = new Set(oldBookWords);
+        
+        // 从 wordDefinitionCache 中删除旧单词
+        oldBookWords.forEach(word => {
+            this.wordDefinitionCache.delete(word);
+        });
+        
+        // 重建 allWordsCache（更高效的方式）
+        this.allWordsCache = this.allWordsCache.filter(word => !oldWordsSet.has(word));
+        
+        // 添加新的缓存（与 rebuildCache 保持一致）
+        const newBookWords = new Set<string>();
+        const newAllWords = new Set(this.allWordsCache); // 保持现有的单词
+        
+        for (const def of definitions) {
+            // 添加主单词到缓存
+            const normalizedWord = def.word.toLowerCase().trim();
+            this.wordDefinitionCache.set(normalizedWord, def);
+            newAllWords.add(normalizedWord);
+            newBookWords.add(normalizedWord);
+            
+            // 添加别名到缓存
+            if (def.aliases && def.aliases.length > 0) {
+                for (const alias of def.aliases) {
+                    const normalizedAlias = alias.toLowerCase().trim();
+                    this.wordDefinitionCache.set(normalizedAlias, def);
+                    newAllWords.add(normalizedAlias);
+                    newBookWords.add(normalizedAlias);
+                }
+            }
+        }
+        
+        // 更新缓存
+        this.allWordsCache = [...newAllWords];
+        this.bookWordsCache.set(bookPath, [...newBookWords]);
     }
     
     /**

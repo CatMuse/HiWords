@@ -27,8 +27,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('exclude', t('settings.mode_exclude'))
                 .addOption('include', t('settings.mode_include'))
                 .setValue(this.plugin.settings.highlightMode || 'all')
-                .onChange(async (value: 'all' | 'exclude' | 'include') => {
-                    this.plugin.settings.highlightMode = value;
+                .onChange(async (value) => {
+                    this.plugin.settings.highlightMode = value as 'all' | 'exclude' | 'include';
                     await this.plugin.saveSettings();
                     this.plugin.refreshHighlighter();
                 }));
@@ -67,8 +67,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('filename', t('settings.mode_filename'))
                 .addOption('content', t('settings.mode_content'))
                 .setValue(this.plugin.settings.fileNodeParseMode || 'filename-with-alias')
-                .onChange(async (value: 'filename' | 'content' | 'filename-with-alias') => {
-                    this.plugin.settings.fileNodeParseMode = value;
+                .onChange(async (value) => {
+                    this.plugin.settings.fileNodeParseMode = value as 'filename' | 'content' | 'filename-with-alias';
                     await this.plugin.saveSettings();
                     // 提示用户重新加载插件以应用新的解析模式
                     new Notice('请重新加载插件以应用新的文件节点解析模式');
@@ -252,7 +252,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 if (this.plugin.vocabularyManager?.updateSettings) {
                     this.plugin.vocabularyManager.updateSettings(this.plugin.settings as any);
                 }
-                // 重新加载以按新模式解析 mastered 状态
+                // updateSettings 已经处理了缓存失效，不需要手动重新加载
+                // 只有当 masteredDetection 变化时才需要重新解析数据
                 await this.plugin.vocabularyManager.loadAllVocabularyBooks();
                 this.plugin.refreshHighlighter();
                 // 通知工作区应用

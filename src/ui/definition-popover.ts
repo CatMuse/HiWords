@@ -10,7 +10,7 @@ export class DefinitionPopover extends Component {
     private activeTooltip: HTMLElement | null = null;
     private vocabularyManager: VocabularyManager | null = null;
     private masteredService: MasteredService | null = null;
-    private eventHandlers: {[key: string]: EventListener} = {};
+    private eventHandlers: {[key: string]: (event: Event) => void} = {};
     private tooltipHideTimeout: number | undefined;
     private currentTargetEl: HTMLElement | null = null; // 当前已显示 tooltip 的高亮元素，避免重复创建
     private hoverIntentTimer: number | null = null; // 悬停意图定时器，避免频繁抖动
@@ -25,8 +25,8 @@ export class DefinitionPopover extends Component {
         this.plugin = plugin;
 
         this.eventHandlers = {
-            mouseover: this.handleMouseOver.bind(this),
-            mouseout: this.handleMouseOut.bind(this),
+            mouseover: (event: Event) => this.handleMouseOver(event as MouseEvent),
+            mouseout: (event: Event) => this.handleMouseOut(event as MouseEvent),
             scroll: (() => this.removeTooltip()).bind(this),
             resize: (() => this.removeTooltip()).bind(this),
         };

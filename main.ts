@@ -13,10 +13,10 @@ import { registerEvents } from './src/events';
 import { shouldHighlightFile } from './src/utils/highlight-utils';
 
 export default class HiWordsPlugin extends Plugin {
-    settings: HiWordsSettings;
-    vocabularyManager: VocabularyManager;
-    definitionPopover: DefinitionPopover;
-    masteredService: MasteredService;
+    settings!: HiWordsSettings;
+    vocabularyManager!: VocabularyManager;
+    definitionPopover!: DefinitionPopover;
+    masteredService!: MasteredService;
     editorExtensions: Extension[] = [];
     private isSidebarInitialized = false;
 
