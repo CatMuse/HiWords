@@ -32,7 +32,19 @@ export class AddWordModal extends Modal {
         this.word = word;
         this.sentence = sentence;
         this.isEditMode = isEditMode;
-        this.dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary!);
+        
+        // 安全地初始化 DictionaryService
+        if (this.plugin.settings.aiDictionary) {
+            this.dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
+        } else {
+            // 使用默认配置创建服务，实际使用时会进行验证
+            this.dictionaryService = new DictionaryService({
+                apiUrl: '',
+                apiKey: '',
+                model: '',
+                prompt: ''
+            });
+        }
         
         // 如果是编辑模式，获取单词的定义
         if (isEditMode) {
@@ -163,18 +175,29 @@ export class AddWordModal extends Modal {
                 return;
             }
             
+            // 检查 AI 配置是否完整
+            if (!this.plugin.settings.aiDictionary?.apiUrl || 
+                !this.plugin.settings.aiDictionary?.apiKey || 
+                !this.plugin.settings.aiDictionary?.model) {
+                new Notice(t('ai_errors.api_key_not_configured'));
+                return;
+            }
+            
             // 显示加载状态
             autoFillBtn.addClass('hiwords-loading');
             iconContainer.empty();
             setIcon(iconContainer, 'loader');
             
             try {
-                const definition = await this.dictionaryService.fetchDefinition(queryWord, this.sentence);
+                // 重新创建服务以确保使用最新配置
+                const dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
+                const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
                 definitionInput.value = definition;
                 new Notice(t('notices.definition_fetched'));
             } catch (error) {
                 console.error('Failed to fetch definition:', error);
-                new Notice(t('notices.definition_fetch_failed'));
+                const errorMessage = error instanceof Error ? error.message : t('notices.definition_fetch_failed');
+                new Notice(errorMessage);
             } finally {
                 // 恢复按钮状态
                 autoFillBtn.removeClass('hiwords-loading');

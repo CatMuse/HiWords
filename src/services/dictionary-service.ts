@@ -36,7 +36,6 @@ export class DictionaryService {
     private cache = new Map<string, CacheEntry>();
     private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24小时
     private readonly MAX_RETRIES = 3;
-    private readonly TIMEOUT = 30000; // 30秒
 
     /**
      * API 适配器配置表
@@ -105,6 +104,41 @@ export class DictionaryService {
     }
 
     /**
+     * 验证 AI 配置是否有效
+     */
+    private validateConfig(): { isValid: boolean; error?: string } {
+        if (!this.config.apiUrl?.trim()) {
+            return { isValid: false, error: t('ai_errors.api_url_required') };
+        }
+        
+        if (!this.config.apiKey?.trim()) {
+            return { isValid: false, error: t('ai_errors.api_key_not_configured') };
+        }
+        
+        if (!this.config.model?.trim()) {
+            return { isValid: false, error: t('ai_errors.model_required') };
+        }
+        
+        if (!this.config.prompt?.trim()) {
+            return { isValid: false, error: t('ai_errors.prompt_required') };
+        }
+        
+        // 验证 URL 格式
+        try {
+            new URL(this.config.apiUrl);
+        } catch {
+            return { isValid: false, error: t('ai_errors.invalid_api_url') };
+        }
+        
+        // 验证 prompt 包含必要的占位符
+        if (!this.config.prompt.includes('{{word}}')) {
+            return { isValid: false, error: t('ai_errors.prompt_missing_word_placeholder') };
+        }
+        
+        return { isValid: true };
+    }
+
+    /**
      * 替换 prompt 中的占位符
      */
     private replacePlaceholders(word: string, sentence?: string): string {
@@ -125,8 +159,10 @@ export class DictionaryService {
             throw new Error(t('ai_errors.word_empty'));
         }
 
-        if (!this.config.apiKey) {
-            throw new Error(t('ai_errors.api_key_not_configured'));
+        // 配置验证
+        const validation = this.validateConfig();
+        if (!validation.isValid) {
+            throw new Error(validation.error!);
         }
 
         const cleanWord = word.trim();

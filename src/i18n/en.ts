@@ -183,6 +183,11 @@ export default {
     ai_errors: {
         word_empty: "Word cannot be empty",
         api_key_not_configured: "API Key is not configured. Please set it in the plugin settings",
+        api_url_required: "API URL is required. Please set it in the plugin settings",
+        model_required: "Model name is required. Please set it in the plugin settings",
+        prompt_required: "Custom prompt is required. Please set it in the plugin settings",
+        invalid_api_url: "Invalid API URL format. Please check the URL in plugin settings",
+        prompt_missing_word_placeholder: "Prompt must contain {{word}} placeholder",
         invalid_response: "API returned an invalid response format",
         api_key_invalid: "❌ API Key is invalid or expired. Please check plugin settings",
         rate_limit: "⏱️ API rate limit exceeded. Please try again later",

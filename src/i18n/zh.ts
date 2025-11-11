@@ -183,6 +183,11 @@ export default {
     ai_errors: {
         word_empty: "单词不能为空",
         api_key_not_configured: "API Key 未配置,请在插件设置中填写",
+        api_url_required: "API 地址不能为空,请在插件设置中填写",
+        model_required: "模型名称不能为空,请在插件设置中填写",
+        prompt_required: "自定义提示词不能为空,请在插件设置中填写",
+        invalid_api_url: "API 地址格式无效,请检查插件设置中的 URL",
+        prompt_missing_word_placeholder: "提示词必须包含 {{word}} 占位符",
         invalid_response: "API 返回了无效的响应格式",
         api_key_invalid: "❌ API Key 无效或已过期,请检查插件设置",
         rate_limit: "⏱️ API 请求频率超限,请稍后再试",

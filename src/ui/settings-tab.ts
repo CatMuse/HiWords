@@ -196,6 +196,20 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
+     * 确保 AI 词典配置已初始化
+     */
+    private ensureAIDictionaryConfig() {
+        if (!this.plugin.settings.aiDictionary) {
+            this.plugin.settings.aiDictionary = {
+                apiUrl: '',
+                apiKey: '',
+                model: '',
+                prompt: ''
+            };
+        }
+    }
+
+    /**
      * 3. 添加学习功能设置
      */
     private addLearningFeaturesSection() {
@@ -287,15 +301,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .setPlaceholder('https://api.openai.com/v1/chat/completions')
                 .setValue(this.plugin.settings.aiDictionary?.apiUrl || '')
                 .onChange(async (val) => {
-                    if (!this.plugin.settings.aiDictionary) {
-                        this.plugin.settings.aiDictionary = {
-                            apiUrl: '',
-                            apiKey: '',
-                            model: '',
-                            prompt: ''
-                        };
-                    }
-                    this.plugin.settings.aiDictionary.apiUrl = val.trim();
+                    this.ensureAIDictionaryConfig();
+                    this.plugin.settings.aiDictionary!.apiUrl = val.trim();
                     await this.plugin.saveSettings();
                 }));
 
@@ -308,15 +315,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 text.setPlaceholder('sk-...')
                     .setValue(this.plugin.settings.aiDictionary?.apiKey || '')
                     .onChange(async (val) => {
-                        if (!this.plugin.settings.aiDictionary) {
-                            this.plugin.settings.aiDictionary = {
-                                apiUrl: '',
-                                apiKey: '',
-                                model: '',
-                                prompt: ''
-                            };
-                        }
-                        this.plugin.settings.aiDictionary.apiKey = val.trim();
+                        this.ensureAIDictionaryConfig();
+                        this.plugin.settings.aiDictionary!.apiKey = val.trim();
                         await this.plugin.saveSettings();
                     });
             });
@@ -329,15 +329,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .setPlaceholder('gpt-4o-mini')
                 .setValue(this.plugin.settings.aiDictionary?.model || '')
                 .onChange(async (val) => {
-                    if (!this.plugin.settings.aiDictionary) {
-                        this.plugin.settings.aiDictionary = {
-                            apiUrl: '',
-                            apiKey: '',
-                            model: '',
-                            prompt: ''
-                        };
-                    }
-                    this.plugin.settings.aiDictionary.model = val.trim();
+                    this.ensureAIDictionaryConfig();
+                    this.plugin.settings.aiDictionary!.model = val.trim();
                     await this.plugin.saveSettings();
                 }));
 
@@ -356,15 +349,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
         
         // 使用 blur 事件，避免频繁保存
         promptTextArea.addEventListener('blur', async () => {
-            if (!this.plugin.settings.aiDictionary) {
-                this.plugin.settings.aiDictionary = {
-                    apiUrl: '',
-                    apiKey: '',
-                    model: '',
-                    prompt: ''
-                };
-            }
-            this.plugin.settings.aiDictionary.prompt = promptTextArea.value;
+            this.ensureAIDictionaryConfig();
+            this.plugin.settings.aiDictionary!.prompt = promptTextArea.value;
             await this.plugin.saveSettings();
         });
 
