@@ -179,4 +179,15 @@ export default {
         mark_mastered: "Mark mastered",
         unmark_mastered: "Unmark mastered",
     },
+    // AI dictionary errors
+    ai_errors: {
+        word_empty: "Word cannot be empty",
+        api_key_not_configured: "API Key is not configured. Please set it in the plugin settings",
+        invalid_response: "API returned an invalid response format",
+        api_key_invalid: "❌ API Key is invalid or expired. Please check plugin settings",
+        rate_limit: "⏱️ API rate limit exceeded. Please try again later",
+        server_error: "🔧 API service is temporarily unavailable. Please try again later",
+        network_error: "🌐 Network connection failed. Please check your network settings",
+        request_failed: "AI dictionary request failed",
+    },
 }

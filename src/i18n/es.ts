@@ -172,4 +172,15 @@ export default {
         mark_mastered: "Marcar como dominado",
         unmark_mastered: "Desmarcar dominado",
     },
+    // Errores del diccionario AI
+    ai_errors: {
+        word_empty: "La palabra no puede estar vacía",
+        api_key_not_configured: "La clave API no está configurada. Por favor, configúrela en los ajustes del plugin",
+        invalid_response: "La API devolvió un formato de respuesta no válido",
+        api_key_invalid: "❌ La clave API no es válida o ha caducado. Por favor, verifique la configuración del plugin",
+        rate_limit: "⏱️ Límite de tasa de API excedido. Por favor, inténtelo de nuevo más tarde",
+        server_error: "🔧 El servicio API no está disponible temporalmente. Por favor, inténtelo de nuevo más tarde",
+        network_error: "🌐 Fallo en la conexión de red. Por favor, verifique su configuración de red",
+        request_failed: "Solicitud al diccionario AI falló",
+    },
 }

@@ -143,6 +143,17 @@ export interface LanguagePack {
         mark_mastered: string; // 已掌握
         unmark_mastered: string; // 忘记了（取消已掌握）
     };
+    // AI dictionary error messages
+    ai_errors?: {
+        word_empty: string;
+        api_key_not_configured: string;
+        invalid_response: string;
+        api_key_invalid: string;
+        rate_limit: string;
+        server_error: string;
+        network_error: string;
+        request_failed: string;
+    };
 }
 
 // 语言包集合

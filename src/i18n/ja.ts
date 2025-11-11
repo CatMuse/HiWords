@@ -170,4 +170,15 @@ export default {
         mark_mastered: "習得済みにする",
         unmark_mastered: "習得済みを解除",
     },
+    // AI辞書エラー
+    ai_errors: {
+        word_empty: "単語を入力してください",
+        api_key_not_configured: "APIキーが設定されていません。プラグイン設定で設定してください",
+        invalid_response: "APIが無効な応答形式を返しました",
+        api_key_invalid: "❌ APIキーが無効または期限切れです。プラグイン設定を確認してください",
+        rate_limit: "⏱️ APIレート制限を超えました。後でもう一度お試しください",
+        server_error: "🔧 APIサービスが一時的に利用できません。後でもう一度お試しください",
+        network_error: "🌐 ネットワーク接続に失敗しました。ネットワーク設定を確認してください",
+        request_failed: "AI辞書リクエストが失敗しました",
+    },
 }

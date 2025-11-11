@@ -1,4 +1,5 @@
-import { Notice } from 'obsidian';
+import { requestUrl } from 'obsidian';
+import { t } from '../i18n';
 
 interface AIConfig {
     apiUrl: string;
@@ -10,10 +11,76 @@ interface AIConfig {
 type APIType = 'openai' | 'claude' | 'gemini';
 
 /**
+ * API 配置接口
+ */
+interface APIAdapter {
+    buildRequest: (model: string, prompt: string) => any;
+    buildHeaders: (apiKey: string) => Record<string, string>;
+    extractResponse: (data: any) => string | undefined;
+    buildUrl?: (baseUrl: string, model: string, apiKey: string) => string;
+}
+
+/**
+ * 缓存条目
+ */
+interface CacheEntry {
+    content: string;
+    timestamp: number;
+}
+
+/**
  * 词典服务 - 使用 AI API（支持多种格式）
  */
 export class DictionaryService {
     private config: AIConfig;
+    private cache = new Map<string, CacheEntry>();
+    private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24小时
+    private readonly MAX_RETRIES = 3;
+    private readonly TIMEOUT = 30000; // 30秒
+
+    /**
+     * API 适配器配置表
+     */
+    private readonly API_ADAPTERS: Record<APIType, APIAdapter> = {
+        openai: {
+            buildRequest: (model: string, prompt: string) => ({
+                model,
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.3,
+                max_tokens: 500
+            }),
+            buildHeaders: (apiKey: string) => ({
+                'Authorization': `Bearer ${apiKey}`
+            }),
+            extractResponse: (data: any) => data?.choices?.[0]?.message?.content
+        },
+        claude: {
+            buildRequest: (model: string, prompt: string) => ({
+                model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 1024
+            }),
+            buildHeaders: (apiKey: string) => ({
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            }),
+            extractResponse: (data: any) => data?.content?.[0]?.text
+        },
+        gemini: {
+            buildRequest: (model: string, prompt: string) => ({
+                contents: [{ parts: [{ text: prompt }] }]
+            }),
+            buildHeaders: () => ({}),
+            extractResponse: (data: any) => data?.candidates?.[0]?.content?.parts?.[0]?.text,
+            buildUrl: (baseUrl: string, model: string, apiKey: string) => {
+                let url = baseUrl;
+                if (!url.includes(':generateContent')) {
+                    url = `${url.replace(/\/$/, '')}/models/${model}:generateContent`;
+                }
+                return `${url}?key=${apiKey}`;
+            }
+        }
+    };
 
     constructor(config: AIConfig) {
         this.config = config;
@@ -25,12 +92,10 @@ export class DictionaryService {
     private detectAPIType(): APIType {
         const url = this.config.apiUrl.toLowerCase();
         
-        // Claude API
         if (url.includes('anthropic')) {
             return 'claude';
         }
         
-        // Google Gemini API
         if (url.includes('googleapis') || url.includes('generativelanguage')) {
             return 'gemini';
         }
@@ -55,187 +120,161 @@ export class DictionaryService {
      * @returns 释义文本
      */
     async fetchDefinition(word: string, sentence?: string): Promise<string> {
-        if (!word || !word.trim()) {
-            throw new Error('Word cannot be empty');
+        // 参数验证
+        if (!word?.trim()) {
+            throw new Error(t('ai_errors.word_empty'));
         }
 
         if (!this.config.apiKey) {
-            throw new Error('API Key is not configured. Please set it in the plugin settings.');
+            throw new Error(t('ai_errors.api_key_not_configured'));
         }
 
         const cleanWord = word.trim();
-        const apiType = this.detectAPIType();
+        const cacheKey = `${cleanWord}:${sentence || ''}`;
+
+        // 检查缓存
+        const cached = this.cache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.content;
+        }
+
+        try {
+            // 检测 API 类型并获取适配器
+            const apiType = this.detectAPIType();
+            const adapter = this.API_ADAPTERS[apiType];
+            const prompt = this.replacePlaceholders(cleanWord, sentence);
+
+            // 构建请求参数
+            const url = adapter.buildUrl 
+                ? adapter.buildUrl(this.config.apiUrl, this.config.model, this.config.apiKey)
+                : this.config.apiUrl;
+            const headers = adapter.buildHeaders(this.config.apiKey);
+            const body = adapter.buildRequest(this.config.model, prompt);
+
+            // 发送请求(带重试)
+            const data = await this.makeRequestWithRetry(url, headers, body);
+            
+            // 提取响应内容
+            const content = adapter.extractResponse(data);
+            if (!content) {
+                throw new Error(t('ai_errors.invalid_response'));
+            }
+
+            const result = content.trim();
+            
+            // 存入缓存
+            this.cache.set(cacheKey, { content: result, timestamp: Date.now() });
+            
+            return result;
+        } catch (error) {
+            throw this.handleError(error);
+        }
+    }
+
+    /**
+     * 发送 HTTP 请求(带重试)
+     */
+    private async makeRequestWithRetry(
+        url: string,
+        headers: Record<string, string>,
+        body: any
+    ): Promise<any> {
+        let lastError: any;
+
+        for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
+            try {
+                const response = await requestUrl({
+                    url,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...headers
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (response.status >= 400) {
+                    throw new Error(`HTTP ${response.status}: ${response.text}`);
+                }
+
+                return response.json;
+            } catch (error) {
+                lastError = error;
+                
+                // 如果是客户端错误(4xx),不重试
+                const errorMsg = String(error);
+                if (errorMsg.includes('400') || errorMsg.includes('401') || 
+                    errorMsg.includes('403') || errorMsg.includes('404')) {
+                    break;
+                }
+
+                // 最后一次尝试,不等待
+                if (attempt < this.MAX_RETRIES - 1) {
+                    // 指数退避: 1s, 2s, 4s
+                    const delay = 1000 * Math.pow(2, attempt);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        throw lastError;
+    }
+
+    /**
+     * 错误处理 - 转换为用户友好的错误信息
+     */
+    private handleError(error: any): Error {
+        const message = error?.message || String(error);
         
-        // 根据 API 类型调用对应的方法
-        switch (apiType) {
-            case 'claude':
-                return await this.fetchFromClaude(cleanWord, sentence);
-            case 'gemini':
-                return await this.fetchFromGemini(cleanWord, sentence);
-            default:
-                return await this.fetchFromOpenAI(cleanWord, sentence);
+        // API Key 相关错误
+        if (message.includes('401') || message.includes('403')) {
+            return new Error(t('ai_errors.api_key_invalid'));
         }
+        
+        // 速率限制
+        if (message.includes('429')) {
+            return new Error(t('ai_errors.rate_limit'));
+        }
+        
+        // 服务器错误
+        if (message.includes('500') || message.includes('502') || 
+            message.includes('503') || message.includes('504')) {
+            return new Error(t('ai_errors.server_error'));
+        }
+        
+        // 网络错误
+        if (message.includes('network') || message.includes('timeout')) {
+            return new Error(t('ai_errors.network_error'));
+        }
+        
+        // 其他错误
+        console.error('AI Dictionary Error:', error);
+        return new Error(`${t('ai_errors.request_failed')}: ${message}`);
     }
 
     /**
-     * 从 OpenAI 兼容 API 获取释义
+     * 清除缓存
      */
-    private async fetchFromOpenAI(word: string, sentence?: string): Promise<string> {
-        const prompt = this.replacePlaceholders(word, sentence);
-
-        const requestBody = {
-            model: this.config.model,
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            temperature: 0.3,
-            max_tokens: 500
-        };
-
-        try {
-            const response = await fetch(this.config.apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.config.apiKey}`
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`AI API request failed (${response.status}): ${errorText}`);
-            }
-
-            const data = await response.json();
-            
-            // 提取 AI 的回复
-            if (data.choices && data.choices.length > 0) {
-                const content = data.choices[0].message?.content;
-                if (content) {
-                    return content.trim();
-                }
-            }
-
-            throw new Error('Invalid response from OpenAI API');
-        } catch (error) {
-            console.error('Failed to fetch definition from OpenAI:', error);
-            throw error;
-        }
+    clearCache(): void {
+        this.cache.clear();
     }
 
     /**
-     * 从 Anthropic Claude API 获取释义
+     * 获取缓存统计
      */
-    private async fetchFromClaude(word: string, sentence?: string): Promise<string> {
-        const prompt = this.replacePlaceholders(word, sentence);
-
-        const requestBody = {
-            model: this.config.model,
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            max_tokens: 1024
-        };
-
-        try {
-            const response = await fetch(this.config.apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': this.config.apiKey,
-                    'anthropic-version': '2023-06-01'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Claude API request failed (${response.status}): ${errorText}`);
+    getCacheStats(): { size: number; oldestEntry: number | null } {
+        let oldestTimestamp: number | null = null;
+        
+        for (const entry of this.cache.values()) {
+            if (oldestTimestamp === null || entry.timestamp < oldestTimestamp) {
+                oldestTimestamp = entry.timestamp;
             }
-
-            const data = await response.json();
-            
-            // Claude 的响应格式
-            if (data.content && data.content.length > 0) {
-                const content = data.content[0].text;
-                if (content) {
-                    return content.trim();
-                }
-            }
-
-            throw new Error('Invalid response from Claude API');
-        } catch (error) {
-            console.error('Failed to fetch definition from Claude:', error);
-            throw error;
         }
-    }
 
-    /**
-     * 从 Google Gemini API 获取释义
-     */
-    private async fetchFromGemini(word: string, sentence?: string): Promise<string> {
-        const prompt = this.replacePlaceholders(word, sentence);
-
-        const requestBody = {
-            contents: [
-                {
-                    parts: [
-                        {
-                            text: prompt
-                        }
-                    ]
-                }
-            ]
+        return {
+            size: this.cache.size,
+            oldestEntry: oldestTimestamp
         };
-
-        try {
-            // Gemini API URL 格式：.../models/{model}:generateContent
-            let apiUrl = this.config.apiUrl;
-            if (!apiUrl.includes(':generateContent')) {
-                apiUrl = `${apiUrl.replace(/\/$/, '')}/models/${this.config.model}:generateContent`;
-            }
-            
-            // API Key 通过 URL 参数传递
-            const urlWithKey = `${apiUrl}?key=${this.config.apiKey}`;
-
-            const response = await fetch(urlWithKey, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Gemini API request failed (${response.status}): ${errorText}`);
-            }
-
-            const data = await response.json();
-            
-            // Gemini 的响应格式
-            if (data.candidates && data.candidates.length > 0) {
-                const candidate = data.candidates[0];
-                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                    const text = candidate.content.parts[0].text;
-                    if (text) {
-                        return text.trim();
-                    }
-                }
-            }
-
-            throw new Error('Invalid response from Gemini API');
-        } catch (error) {
-            console.error('Failed to fetch definition from Gemini:', error);
-            throw error;
-        }
     }
 
 }

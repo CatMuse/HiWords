@@ -172,4 +172,15 @@ export default {
         mark_mastered: "Marquer comme maîtrisé",
         unmark_mastered: "Retirer le statut maîtrisé",
     },
+    // Erreurs du dictionnaire IA
+    ai_errors: {
+        word_empty: "Le mot ne peut pas être vide",
+        api_key_not_configured: "La clé API n'est pas configurée. Veuillez la définir dans les paramètres du plugin",
+        invalid_response: "L'API a renvoyé un format de réponse invalide",
+        api_key_invalid: "❌ La clé API est invalide ou expirée. Veuillez vérifier les paramètres du plugin",
+        rate_limit: "⏱️ Limite de débit de l'API dépassée. Veuillez réessayer plus tard",
+        server_error: "🔧 Le service API est temporairement indisponible. Veuillez réessayer plus tard",
+        network_error: "🌐 Échec de la connexion réseau. Veuillez vérifier vos paramètres réseau",
+        request_failed: "La requête au dictionnaire IA a échoué",
+    },
 }

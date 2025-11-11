@@ -170,4 +170,15 @@ export default {
         mark_mastered: "Als beherrscht markieren",
         unmark_mastered: "Beherrschung aufheben",
     },
+    // KI-Wörterbuch-Fehler
+    ai_errors: {
+        word_empty: "Das Wort darf nicht leer sein",
+        api_key_not_configured: "API-Schlüssel ist nicht konfiguriert. Bitte in den Plugin-Einstellungen festlegen",
+        invalid_response: "Die API hat ein ungültiges Antwortformat zurückgegeben",
+        api_key_invalid: "❌ API-Schlüssel ist ungültig oder abgelaufen. Bitte überprüfen Sie die Plugin-Einstellungen",
+        rate_limit: "⏱️ API-Ratenlimit überschritten. Bitte versuchen Sie es später erneut",
+        server_error: "🔧 API-Dienst ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut",
+        network_error: "🌐 Netzwerkverbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Netzwerkeinstellungen",
+        request_failed: "KI-Wörterbuch-Anfrage fehlgeschlagen",
+    },
 }

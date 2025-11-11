@@ -179,4 +179,15 @@ export default {
         mark_mastered: "已掌握",
         unmark_mastered: "忘记了",
     },
+    // AI 词典错误提示
+    ai_errors: {
+        word_empty: "单词不能为空",
+        api_key_not_configured: "API Key 未配置,请在插件设置中填写",
+        invalid_response: "API 返回了无效的响应格式",
+        api_key_invalid: "❌ API Key 无效或已过期,请检查插件设置",
+        rate_limit: "⏱️ API 请求频率超限,请稍后再试",
+        server_error: "🔧 API 服务暂时不可用,请稍后再试",
+        network_error: "🌐 网络连接失败,请检查网络设置",
+        request_failed: "AI 词典请求失败",
+    },
 }
