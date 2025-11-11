@@ -1,6 +1,7 @@
 import type { HiWordsSettings } from '../utils';
 import { Trie, mapCanvasColorToCSSVar } from '../utils';
 import type { VocabularyManager } from '../core';
+import { isElementVisible, buildTrieFromVocabulary, clearHighlights, isInMainEditor } from '../utils/highlight-utils';
 
 /**
  * 在阅读模式注册 Markdown 后处理器，高亮匹配的词汇。
@@ -14,15 +15,8 @@ export function registerReadingModeHighlighter(plugin: {
     processor: (el: HTMLElement, ctx: unknown) => void
   ) => void;
 }): void {
-  const buildTrie = () => {
-    const trie = new Trie();
-    const words = plugin.vocabularyManager.getAllWordsForHighlight();
-    for (const w of words) {
-      const def = plugin.vocabularyManager.getDefinition(w);
-      if (def) trie.addWord(w, def);
-    }
-    return trie;
-  };
+  // 存储处理函数的引用，供外部调用
+  let processorFn: ((el: HTMLElement, trie: Trie) => void) | null = null;
 
   const EXCLUDE_SELECTOR = [
     'pre',
@@ -123,27 +117,60 @@ export function registerReadingModeHighlighter(plugin: {
         return;
       }
       
-      // 检查是否在主编辑器的阅读模式中
-      // 排除侧边栏、悬停预览等其他容器
-      const isInMainEditor = !el.closest('.workspace-leaf-content[data-type="hover-editor"]') && // 排除悬停预览
-                            !el.closest('.workspace-leaf-content[data-type="file-explorer"]') && // 排除文件浏览器
-                            !el.closest('.workspace-leaf-content[data-type="outline"]') && // 排除大纲
-                            !el.closest('.workspace-leaf-content[data-type="backlink"]') && // 排除反向链接
-                            !el.closest('.workspace-leaf-content[data-type="tag"]') && // 排除标签面板
-                            !el.closest('.workspace-leaf-content[data-type="search"]') && // 排除搜索结果
-                            !el.closest('.hover-popover') && // 排除悬停弹出框
-                            !el.closest('.popover') && // 排除其他弹出框
-                            !el.closest('.suggestion-container') && // 排除建议容器
-                            !el.closest('.modal') && // 排除模态框
-                            !el.closest('.workspace-split.mod-right-split') && // 排除右侧边栏
-                            !el.closest('.workspace-split.mod-left-split'); // 排除左侧边栏
+      // 检查是否在主编辑器的阅读模式中（排除侧边栏、悬停预览等其他容器）
+      if (!isInMainEditor(el)) return;
       
-      if (!isInMainEditor) return;
-      
-      const trie = buildTrie();
+      const trie = buildTrieFromVocabulary(plugin.vocabularyManager);
+      // 保存处理函数引用
+      processorFn = processElement;
       processElement(el, trie);
     } catch (e) {
       console.error('阅读模式高亮处理失败:', e);
     }
   });
+
+  // 导出刷新函数到插件实例
+  (plugin as any)._refreshReadingModeHighlighter = () => {
+    refreshVisibleReadingMode(plugin, processorFn);
+  };
+}
+
+/**
+ * 刷新可见区域的阅读模式高亮
+ */
+function refreshVisibleReadingMode(
+  plugin: {
+    settings: HiWordsSettings;
+    vocabularyManager: VocabularyManager;
+    shouldHighlightFile: (filePath: string) => boolean;
+  },
+  processElement: ((el: HTMLElement, trie: Trie) => void) | null
+): void {
+  if (!plugin.settings.enableAutoHighlight || !processElement) return;
+  
+  try {
+    // 重新构建 Trie
+    const trie = buildTrieFromVocabulary(plugin.vocabularyManager);
+    
+    // 查找所有阅读模式的容器
+    const readingContainers = document.querySelectorAll('.markdown-preview-view .markdown-preview-sizer');
+    
+    readingContainers.forEach(container => {
+      const htmlContainer = container as HTMLElement;
+      
+      // 检查容器是否在主编辑器中（排除侧边栏等）
+      if (!isInMainEditor(htmlContainer)) return;
+      
+      // 只处理可见的容器
+      if (!isElementVisible(htmlContainer)) return;
+      
+      // 清除现有高亮
+      clearHighlights(htmlContainer);
+      
+      // 重新高亮
+      processElement(htmlContainer, trie);
+    });
+  } catch (error) {
+    console.error('刷新阅读模式高亮失败:', error);
+  }
 }

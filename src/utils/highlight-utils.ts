@@ -1,4 +1,8 @@
 import type { HiWordsSettings } from './index';
+import { Trie } from './trie';
+import type { VocabularyManager } from '../core';
+
+// ==================== 文件高亮判断 ====================
 
 /**
  * 检查文件是否应该被高亮
@@ -48,4 +52,71 @@ export function shouldHighlightFile(filePath: string, settings: HiWordsSettings)
     }
     
     return true;
+}
+
+// ==================== DOM 操作和视口检测 ====================
+
+/**
+ * 检查元素是否在视口中可见
+ */
+export function isElementVisible(element: HTMLElement): boolean {
+    const rect = element.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+    
+    // 元素至少有一部分在视口内
+    return (
+        rect.bottom > 0 &&
+        rect.right > 0 &&
+        rect.top < windowHeight &&
+        rect.left < windowWidth
+    );
+}
+
+/**
+ * 检查容器是否在主编辑器中（排除侧边栏、弹出框等）
+ */
+export function isInMainEditor(element: HTMLElement): boolean {
+    return !element.closest('.workspace-leaf-content[data-type="hover-editor"]') &&
+           !element.closest('.workspace-leaf-content[data-type="file-explorer"]') &&
+           !element.closest('.workspace-leaf-content[data-type="outline"]') &&
+           !element.closest('.workspace-leaf-content[data-type="backlink"]') &&
+           !element.closest('.workspace-leaf-content[data-type="tag"]') &&
+           !element.closest('.workspace-leaf-content[data-type="search"]') &&
+           !element.closest('.hover-popover') &&
+           !element.closest('.popover') &&
+           !element.closest('.suggestion-container') &&
+           !element.closest('.modal') &&
+           !element.closest('.workspace-split.mod-right-split') &&
+           !element.closest('.workspace-split.mod-left-split');
+}
+
+/**
+ * 清除元素中的所有高亮标记
+ */
+export function clearHighlights(element: HTMLElement): void {
+    const highlights = element.querySelectorAll('.hi-words-highlight');
+    highlights.forEach(highlight => {
+        // 将高亮元素替换为纯文本
+        const textNode = document.createTextNode(highlight.textContent || '');
+        highlight.parentNode?.replaceChild(textNode, highlight);
+    });
+    
+    // 合并相邻的文本节点
+    element.normalize();
+}
+
+// ==================== Trie 构建 ====================
+
+/**
+ * 构建包含所有单词的 Trie 树
+ */
+export function buildTrieFromVocabulary(vocabularyManager: VocabularyManager): Trie {
+    const trie = new Trie();
+    const words = vocabularyManager.getAllWordsForHighlight();
+    for (const w of words) {
+        const def = vocabularyManager.getDefinition(w);
+        if (def) trie.addWord(w, def);
+    }
+    return trie;
 }

@@ -116,6 +116,16 @@ export default class HiWordsPlugin extends Plugin {
         // 始终刷新高亮器,让 WordHighlighter 内部根据设置决定是否高亮
         highlighterManager.refreshAll();
         
+        // 刷新阅读模式（只更新可见区域）
+        if ((this as any)._refreshReadingModeHighlighter) {
+            (this as any)._refreshReadingModeHighlighter();
+        }
+        
+        // 刷新 PDF 模式（只更新可见区域）
+        if ((this as any)._refreshPDFHighlighter) {
+            (this as any)._refreshPDFHighlighter();
+        }
+        
         // 刷新侧边栏视图（通过 API 获取）
         const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);
         leaves.forEach(leaf => {
