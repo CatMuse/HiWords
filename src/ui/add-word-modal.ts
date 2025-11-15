@@ -3,6 +3,7 @@ import type { VocabularyBook, WordDefinition } from '../utils';
 import HiWordsPlugin from '../../main';
 import { t } from '../i18n';
 import { DictionaryService } from '../services/dictionary-service';
+import { resolveApiKey } from '../utils/api-key-resolver';
 
 /**
  * 添加或编辑词汇的模态框
@@ -35,7 +36,17 @@ export class AddWordModal extends Modal {
         
         // 安全地初始化 DictionaryService
         if (this.plugin.settings.aiDictionary) {
-            this.dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
+            // 解析 API Key（优先从系统环境变量读取）
+            const resolvedApiKey = resolveApiKey(
+                this.plugin.settings.aiDictionary.apiKey,
+                this.plugin.settings.aiDictionary.apiKeyEnvVar
+            );
+            // 创建配置对象，使用解析后的 API Key
+            const config = {
+                ...this.plugin.settings.aiDictionary,
+                apiKey: resolvedApiKey
+            };
+            this.dictionaryService = new DictionaryService(config);
         } else {
             // 使用默认配置创建服务，实际使用时会进行验证
             this.dictionaryService = new DictionaryService({
@@ -176,9 +187,18 @@ export class AddWordModal extends Modal {
             }
             
             // 检查 AI 配置是否完整
-            if (!this.plugin.settings.aiDictionary?.apiUrl || 
-                !this.plugin.settings.aiDictionary?.apiKey || 
-                !this.plugin.settings.aiDictionary?.model) {
+            const aiConfig = this.plugin.settings.aiDictionary;
+            if (!aiConfig?.apiUrl || !aiConfig?.model) {
+                new Notice(t('ai_errors.api_key_not_configured'));
+                return;
+            }
+            
+            // 检查 API Key：必须设置了系统环境变量名或直接输入了 API Key
+            const resolvedApiKey = resolveApiKey(
+                aiConfig.apiKey || '',
+                aiConfig.apiKeyEnvVar
+            );
+            if (!resolvedApiKey) {
                 new Notice(t('ai_errors.api_key_not_configured'));
                 return;
             }
@@ -189,8 +209,12 @@ export class AddWordModal extends Modal {
             setIcon(iconContainer, 'loader');
             
             try {
-                // 重新创建服务以确保使用最新配置
-                const dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
+                // 重新创建服务以确保使用最新配置，使用解析后的 API Key
+                const config = {
+                    ...aiConfig,
+                    apiKey: resolvedApiKey
+                };
+                const dictionaryService = new DictionaryService(config);
                 const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
                 definitionInput.value = definition;
                 new Notice(t('notices.definition_fetched'));

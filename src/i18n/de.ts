@@ -37,8 +37,10 @@ export default {
         ai_dictionary: "KI-Assistent",
         ai_api_url: "API-URL",
         ai_api_url_desc: "API-Endpunkt (erkennt automatisch: OpenAI, Claude, Gemini)",
+        ai_api_key_env_var: "API-Schlüssel System-Umgebungsvariable",
+        ai_api_key_env_var_desc: "API-Schlüssel zuerst aus der System-Umgebungsvariable lesen. Wenn leer, wird der unten direkt eingegebene API-Schlüssel verwendet",
         ai_api_key: "API-Schlüssel",
-        ai_api_key_desc: "Ihr KI-API-Schlüssel",
+        ai_api_key_desc: "Direkt eingegebener API-Schlüssel (wird verwendet, wenn oben kein System-Umgebungsvariablenname gesetzt ist)",
         ai_model: "Modell",
         ai_model_desc: "KI-Modellname (z.B. gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Benutzerdefinierter Prompt",
@@ -88,6 +90,7 @@ export default {
         mastered: "Gemeistert",
         no_learning_words: "Keine zu lernenden Wörter",
         no_mastered_words: "Keine gemeisterten Wörter",
+        current_document: "Aktuelles Dokument",
     },
 
     // Commands

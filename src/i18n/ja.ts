@@ -37,8 +37,10 @@ export default {
         ai_dictionary: "AIアシスタント",
         ai_api_url: "API URL",
         ai_api_url_desc: "APIエンドポイント（自動検出：OpenAI、Claude、Gemini）",
+        ai_api_key_env_var: "APIキー システム環境変数名",
+        ai_api_key_env_var_desc: "システム環境変数からAPIキーを優先的に読み取ります。空の場合は、下に入力されたAPIキーを使用します",
         ai_api_key: "APIキー",
-        ai_api_key_desc: "あなたのAI APIキー",
+        ai_api_key_desc: "直接入力されたAPIキー（上でシステム環境変数名が設定されていない場合に使用されます）",
         ai_model: "モデル",
         ai_model_desc: "AIモデル名（例：gpt-4o-mini、deepseek-chat）",
         ai_prompt: "カスタムプロンプト",
@@ -88,6 +90,7 @@ export default {
         mastered: "習得済み",
         no_learning_words: "学習する単語はありません",
         no_mastered_words: "習得済みの単語はありません",
+        current_document: "現在のドキュメント",
     },
 
     // Commands

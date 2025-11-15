@@ -39,8 +39,10 @@ export default {
         ai_dictionary: "Asistente AI",
         ai_api_url: "URL de API",
         ai_api_url_desc: "Punto final de API (detecta automáticamente: OpenAI, Claude, Gemini)",
+        ai_api_key_env_var: "Variable de entorno del sistema de clave API",
+        ai_api_key_env_var_desc: "Leer la clave API primero desde la variable de entorno del sistema. Si está vacía, usar la clave API ingresada directamente abajo",
         ai_api_key: "Clave API",
-        ai_api_key_desc: "Tu clave de API de AI",
+        ai_api_key_desc: "Clave API ingresada directamente (se usa si no se establece el nombre de la variable de entorno del sistema arriba)",
         ai_model: "Modelo",
         ai_model_desc: "Nombre del modelo de AI (ej., gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Prompt personalizado",
@@ -90,6 +92,7 @@ export default {
         mastered: "Dominadas",
         no_learning_words: "No hay palabras para aprender",
         no_mastered_words: "No hay palabras dominadas",
+        current_document: "Documento Actual",
     },
 
     // Commands

@@ -42,7 +42,8 @@ export interface HiWordsSettings {
     // AI 词典配置
     aiDictionary?: {
         apiUrl: string;      // AI API 地址
-        apiKey: string;      // API Key
+        apiKey: string;      // API Key（直接输入的值）
+        apiKeyEnvVar?: string; // API Key 系统环境变量名（优先使用）
         model: string;       // 模型名称
         prompt: string;      // 自定义 prompt 模板
     };

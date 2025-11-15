@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     aiDictionary: {
         apiUrl: '',
         apiKey: '',
+        apiKeyEnvVar: '', // 系统环境变量名（优先使用）
         model: '',
         prompt: 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)'
     },

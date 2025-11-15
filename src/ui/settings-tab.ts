@@ -203,6 +203,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
             this.plugin.settings.aiDictionary = {
                 apiUrl: '',
                 apiKey: '',
+                apiKeyEnvVar: '',
                 model: '',
                 prompt: ''
             };
@@ -307,10 +308,24 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // API Key
+        // API Key 系统环境变量名（优先使用）
+        new Setting(containerEl)
+            .setName(t('settings.ai_api_key_env_var') || 'API Key 系统环境变量名')
+            .setDesc(t('settings.ai_api_key_env_var_desc') || '优先从系统环境变量读取 API Key，留空则使用下方直接输入的 API Key')
+            .addText(text => {
+                text.setPlaceholder('HIWORDS_API_KEY')
+                    .setValue(this.plugin.settings.aiDictionary?.apiKeyEnvVar || '')
+                    .onChange(async (val) => {
+                        this.ensureAIDictionaryConfig();
+                        this.plugin.settings.aiDictionary!.apiKeyEnvVar = val.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        // API Key（直接输入，作为备选）
         new Setting(containerEl)
             .setName(t('settings.ai_api_key') || 'API Key')
-            .setDesc(t('settings.ai_api_key_desc') || 'Your AI API key')
+            .setDesc(t('settings.ai_api_key_desc') || '直接输入的 API Key（如果上方未设置系统环境变量名，则使用此值）')
             .addText(text => {
                 text.inputEl.type = 'password';
                 text.setPlaceholder('sk-...')
