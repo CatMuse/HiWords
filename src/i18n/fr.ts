@@ -90,6 +90,7 @@ export default {
         mastered: "Maîtrisés",
         no_learning_words: "Aucun mot à apprendre",
         no_mastered_words: "Aucun mot maîtrisé",
+        current_document: "Document Actuel",
     },
 
     // Commands

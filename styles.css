@@ -439,6 +439,44 @@
     box-sizing: border-box;
 }
 
+/* 视图模式选择器（下拉框）样式 */
+.hi-words-view-mode-selector {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.hi-words-view-mode-select {
+    padding: 6px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    min-width: 150px;
+}
+
+.hi-words-view-mode-select:hover {
+    border-color: var(--background-modifier-border-hover);
+    background: var(--background-modifier-hover);
+}
+
+.hi-words-view-mode-select:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+/* 内容容器 */
+.hi-words-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 /* Tab 导航样式 - 现代化设计 */
 .hi-words-tab-nav {
     display: flex;

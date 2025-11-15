@@ -95,6 +95,7 @@ export default {
         mastered: "Mastered",
         no_learning_words: "No words to learn",
         no_mastered_words: "No mastered words",
+        current_document: "Current Document",
     },
     
     // Commands

@@ -88,6 +88,7 @@ export default {
         mastered: "習得済み",
         no_learning_words: "学習する単語はありません",
         no_mastered_words: "習得済みの単語はありません",
+        current_document: "現在のドキュメント",
     },
 
     // Commands

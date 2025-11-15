@@ -16,6 +16,7 @@ export class HiWordsSidebarView extends ItemView {
     private measureScheduled = false; // 是否已安排 RAF 测量
     private delegatedBound = false; // 是否已绑定根级事件委托
     private lastInteractionTime = 0; // 最后一次交互的时间戳
+    private viewMode: 'current-document' | string = 'current-document'; // 视图模式：'current-document' 或生词本路径
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -80,21 +81,30 @@ export class HiWordsSidebarView extends ItemView {
         container.addClass('hi-words-sidebar');
         this.bindDelegatedHandlers(container as HTMLElement);
         
+        // 创建下拉框容器（在右上角）
+        this.createViewModeSelector(container as HTMLElement);
+        
         // 初始化显示
         this.scheduleUpdate(0);
 
         // 监听文件打开事件（使用 file-open 代替 active-leaf-change，避免侧边栏激活触发更新）
+        // 仅在"当前文档"模式下监听
         this.registerEvent(
             this.app.workspace.on('file-open', (file: TFile | null) => {
-                this.scheduleUpdate(120);
+                if (this.viewMode === 'current-document') {
+                    this.scheduleUpdate(120);
+                }
             })
         );
 
         // 监听文件内容变化
         this.registerEvent(
             this.app.workspace.on('editor-change', () => {
-                // 延迟更新，避免频繁刷新
-                this.scheduleUpdate(500);
+                // 仅在"当前文档"模式下监听
+                if (this.viewMode === 'current-document') {
+                    // 延迟更新，避免频繁刷新
+                    this.scheduleUpdate(500);
+                }
             })
         );
         
@@ -103,7 +113,10 @@ export class HiWordsSidebarView extends ItemView {
             this.app.vault.on('modify', (file) => {
                 // 如果修改的是 Canvas 文件，则刷新侧边栏
                 if (file instanceof TFile && file.extension === 'canvas') {
-                    this.scheduleUpdate(250);
+                    // 如果当前选择的是该生词本，或者当前是"当前文档"模式，则刷新
+                    if (this.viewMode === file.path || this.viewMode === 'current-document') {
+                        this.scheduleUpdate(250);
+                    }
                 }
             })
         );
@@ -115,9 +128,14 @@ export class HiWordsSidebarView extends ItemView {
             })
         );
         
-        // 监听设置变化（如模糊效果开关）
+        // 监听设置变化（如模糊效果开关、生词本列表变化）
         this.registerEvent(
             this.app.workspace.on('hi-words:settings-changed' as any, () => {
+                // 更新下拉框选项
+                const container = this.containerEl.querySelector('.hi-words-sidebar') as HTMLElement;
+                if (container) {
+                    this.createViewModeSelector(container);
+                }
                 this.scheduleUpdate(100);
             })
         );
@@ -131,25 +149,37 @@ export class HiWordsSidebarView extends ItemView {
      * 更新侧边栏视图
      */
     private async updateView() {
-        const activeFile = this.app.workspace.getActiveFile();
+        // 根据视图模式决定如何更新
+        if (this.viewMode === 'current-document') {
+            const activeFile = this.app.workspace.getActiveFile();
+            
+            if (!activeFile || (activeFile.extension !== 'md' && activeFile.extension !== 'pdf')) {
+                const container = this.containerEl.querySelector('.hi-words-sidebar') as HTMLElement;
+                if (container) {
+                    const contentContainer = (container.querySelector('.hi-words-content') as HTMLElement) || container.createEl('div', { cls: 'hi-words-content' });
+                    contentContainer.empty();
+                    this.showEmptyState('请打开一个 Markdown 文档或 PDF 文件', contentContainer);
+                }
+                return;
+            }
+
+            if (activeFile === this.currentFile && this.currentWords.length > 0) {
+                // 文件未变化且已有数据，不需要重新扫描
+                return;
+            }
+
+            // 记录是否为切换到新文件
+            const isFileChanged = activeFile !== this.currentFile;
+            this.currentFile = activeFile;
+            if (isFileChanged) {
+                this.firstLoadForFile = true;
+            }
+            await this.scanCurrentDocument();
+        } else {
+            // 显示指定生词本的所有单词
+            await this.loadVocabularyBookWords(this.viewMode);
+        }
         
-        if (!activeFile || (activeFile.extension !== 'md' && activeFile.extension !== 'pdf')) {
-            this.showEmptyState('请打开一个 Markdown 文档或 PDF 文件');
-            return;
-        }
-
-        if (activeFile === this.currentFile && this.currentWords.length > 0) {
-            // 文件未变化且已有数据，不需要重新扫描
-            return;
-        }
-
-        // 记录是否为切换到新文件
-        const isFileChanged = activeFile !== this.currentFile;
-        this.currentFile = activeFile;
-        if (isFileChanged) {
-            this.firstLoadForFile = true;
-        }
-        await this.scanCurrentDocument();
         this.renderWordList();
     }
 
@@ -171,6 +201,19 @@ export class HiWordsSidebarView extends ItemView {
             this.updateTimer = null;
             void this.updateView();
         }, Math.max(0, delay));
+    }
+
+    /**
+     * 加载指定生词本的所有单词
+     */
+    private async loadVocabularyBookWords(bookPath: string) {
+        try {
+            const wordDefinitions = await this.plugin.vocabularyManager.getWordDefinitionsByBook(bookPath);
+            this.currentWords = wordDefinitions;
+        } catch (error) {
+            console.error('Failed to load vocabulary book words:', error);
+            this.currentWords = [];
+        }
     }
 
     /**
@@ -237,18 +280,66 @@ export class HiWordsSidebarView extends ItemView {
     }
 
     /**
+     * 创建视图模式选择器（下拉框）
+     */
+    private createViewModeSelector(container: HTMLElement) {
+        // 如果已存在选择器，先移除
+        const existingSelector = container.querySelector('.hi-words-view-mode-selector');
+        if (existingSelector) {
+            existingSelector.remove();
+        }
+        
+        const selectorContainer = container.createEl('div', { cls: 'hi-words-view-mode-selector' });
+        const select = selectorContainer.createEl('select', { cls: 'hi-words-view-mode-select' });
+        
+        // 添加"当前文档"选项
+        select.createEl('option', { 
+            text: t('sidebar.current_document'),
+            attr: { value: 'current-document' }
+        });
+        
+        // 添加所有启用的生词本选项
+        const enabledBooks = this.plugin.settings.vocabularyBooks.filter(book => book.enabled);
+        for (const book of enabledBooks) {
+            const option = select.createEl('option', {
+                text: book.name,
+                attr: { value: book.path }
+            });
+        }
+        
+        // 设置当前选中值（如果当前选中的生词本已被禁用，则切换回"当前文档"）
+        const currentBookExists = enabledBooks.some(book => book.path === this.viewMode);
+        if (this.viewMode !== 'current-document' && !currentBookExists) {
+            this.viewMode = 'current-document';
+        }
+        select.value = this.viewMode;
+        
+        // 监听变化
+        select.addEventListener('change', (e) => {
+            const target = e.target as HTMLSelectElement;
+            this.viewMode = target.value;
+            this.currentFile = null; // 重置当前文件，强制重新加载
+            this.currentWords = []; // 清空当前单词列表
+            this.scheduleUpdate(0);
+        });
+    }
+
+    /**
      * 渲染生词列表
      */
     private async renderWordList() {
         const container = this.containerEl.querySelector('.hi-words-sidebar');
         if (!container) return;
 
-        container.empty();
+        // 保留下拉框，只清空内容区域
+        const contentContainer = (container.querySelector('.hi-words-content') as HTMLElement) || container.createEl('div', { cls: 'hi-words-content' });
+        contentContainer.empty();
+        
         // 确保事件委托已绑定（容器清空后仍然存在于同一根上）
         this.bindDelegatedHandlers(container as HTMLElement);
 
         if (this.currentWords.length === 0) {
-            this.showEmptyState(t('sidebar.empty_state'));
+            this.showEmptyState(t('sidebar.empty_state'), contentContainer as HTMLElement);
             return;
         }
 
@@ -265,10 +356,10 @@ export class HiWordsSidebarView extends ItemView {
         this.firstLoadForFile = false;
         
         // 创建 Tab 导航
-        this.createTabNavigation(container as HTMLElement, unmasteredWords.length, masteredWords.length);
+        this.createTabNavigation(contentContainer as HTMLElement, unmasteredWords.length, masteredWords.length);
         
         // 创建 Tab 内容
-        await this.createTabContent(container as HTMLElement, unmasteredWords, masteredWords);
+        await this.createTabContent(contentContainer as HTMLElement, unmasteredWords, masteredWords);
     }
 
     /**
@@ -447,12 +538,19 @@ export class HiWordsSidebarView extends ItemView {
     /**
      * 显示空状态（用于全局空状态，会清空整个容器）
      */
-    private showEmptyState(message: string) {
-        const container = this.containerEl.querySelector('.hi-words-sidebar');
+    private showEmptyState(message: string, targetContainer?: HTMLElement) {
+        const container = targetContainer || this.containerEl.querySelector('.hi-words-sidebar');
         if (!container) return;
 
-        container.empty();
-        const emptyState = container.createEl('div', { cls: 'hi-words-empty-state' });
+        if (!targetContainer) {
+            container.empty();
+            // 重新创建下拉框
+            this.createViewModeSelector(container as HTMLElement);
+        }
+        
+        const contentContainer = (container.querySelector('.hi-words-content') as HTMLElement) || container.createEl('div', { cls: 'hi-words-content' });
+        contentContainer.empty();
+        const emptyState = contentContainer.createEl('div', { cls: 'hi-words-empty-state' });
         emptyState.createEl('div', { text: message, cls: 'hi-words-empty-text' });
     }
 

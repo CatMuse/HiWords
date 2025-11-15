@@ -95,6 +95,7 @@ export default {
         mastered: "已掌握",
         no_learning_words: "没有待学习的单词",
         no_mastered_words: "没有已掌握的单词",
+        current_document: "当前文档",
     },
     
     // 命令

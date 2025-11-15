@@ -90,6 +90,7 @@ export default {
         mastered: "Dominadas",
         no_learning_words: "No hay palabras para aprender",
         no_mastered_words: "No hay palabras dominadas",
+        current_document: "Documento Actual",
     },
 
     // Commands

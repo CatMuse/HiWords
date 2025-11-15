@@ -88,6 +88,7 @@ export default {
         mastered: "Gemeistert",
         no_learning_words: "Keine zu lernenden Wörter",
         no_mastered_words: "Keine gemeisterten Wörter",
+        current_document: "Aktuelles Dokument",
     },
 
     // Commands
