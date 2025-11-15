@@ -51,6 +51,8 @@ export interface LanguagePack {
         ai_dictionary?: string;
         ai_api_url?: string;
         ai_api_url_desc?: string;
+        ai_api_key_env_var?: string;
+        ai_api_key_env_var_desc?: string;
         ai_api_key?: string;
         ai_api_key_desc?: string;
         ai_model?: string;
