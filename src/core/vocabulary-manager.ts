@@ -220,6 +220,15 @@ export class VocabularyManager {
     }
 
     /**
+     * 删除指定生词本的数据
+     * @param bookPath 生词本路径
+     */
+    removeBookData(bookPath: string): void {
+        this.definitions.delete(bookPath);
+        this.invalidateCache();
+    }
+
+    /**
      * 更新设置
      */
     updateSettings(settings: HiWordsSettings): void {

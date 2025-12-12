@@ -86,7 +86,10 @@ export function registerEvents(plugin: HiWordsPlugin) {
                     plugin.settings.vocabularyBooks[bookIndex].name = file.basename;
                     await plugin.saveSettings();
                     
-                    // 重新加载该单词本
+                    // 删除旧路径的数据，避免重复计数
+                    plugin.vocabularyManager.removeBookData(oldPath);
+                    
+                    // 重新加载该单词本（使用新路径）
                     await plugin.vocabularyManager.reloadVocabularyBook(file.path);
                     plugin.refreshHighlighter();
                     
