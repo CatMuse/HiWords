@@ -93,6 +93,7 @@ export class WordHighlighter implements PluginValue {
     private vocabularyManager: VocabularyManager;
     private editorView: EditorView;
     private wordTrie: Trie;
+    private patternDefinitions: WordDefinition[] = []; // 缓存模式短语列表
     private debounceTimer: number | null = null;
     private lastRanges: {from: number, to: number}[] = [];
     private cachedMatches: Map<string, WordMatch[]> = new Map();
@@ -111,21 +112,27 @@ export class WordHighlighter implements PluginValue {
     }
 
     /**
-     * 构建单词前缀树
-     * 只添加普通单词，模式短语需要单独处理
+     * 构建单词前缀树，同时缓存模式短语列表
+     * 只添加普通单词到 Trie，模式短语缓存到 patternDefinitions
      */
     private buildWordTrie() {
         this.wordTrie.clear();
+        this.patternDefinitions = []; // 清空模式短语缓存
         
         // 获取未掌握的单词（已掌握的单词不会被高亮）
         const words = this.vocabularyManager.getAllWordsForHighlight();
         
-        // 将单词添加到前缀树（排除模式短语）
+        // 将单词添加到前缀树，同时缓存模式短语
         for (const word of words) {
             const definition = this.vocabularyManager.getDefinition(word);
-            if (definition && !definition.isPattern) {
-                // 只添加普通单词到 Trie
-                this.wordTrie.addWord(word, definition);
+            if (definition) {
+                if (definition.isPattern) {
+                    // 缓存模式短语到列表，避免重复查找
+                    this.patternDefinitions.push(definition);
+                } else {
+                    // 只添加普通单词到 Trie
+                    this.wordTrie.addWord(word, definition);
+                }
             }
         }
     }
@@ -305,6 +312,7 @@ export class WordHighlighter implements PluginValue {
     /**
      * 在文本中查找词汇匹配
      * 使用前缀树进行高效匹配（普通单词）和模式匹配（模式短语）
+     * 优化：使用缓存的模式短语列表，避免重复查找
      */
     private findWordMatches(text: string, offset: number): WordMatch[] {
         const matches: WordMatch[] = [];
@@ -327,11 +335,9 @@ export class WordHighlighter implements PluginValue {
                 }
             }
             
-            // 查找模式短语匹配
-            const allWords = this.vocabularyManager.getAllWordsForHighlight();
-            for (const word of allWords) {
-                const definition = this.vocabularyManager.getDefinition(word);
-                if (definition && definition.isPattern && definition.patternParts && definition.patternParts.length > 0) {
+            // 查找模式短语匹配（优化：使用缓存的列表）
+            for (const definition of this.patternDefinitions) {
+                if (definition.patternParts && definition.patternParts.length > 0) {
                     const patternMatches = findPatternMatches(text, definition.patternParts, offset);
                     for (const patternMatch of patternMatches) {
                         matches.push({

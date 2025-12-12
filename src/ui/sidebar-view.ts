@@ -17,6 +17,8 @@ export class HiWordsSidebarView extends ItemView {
     private measureScheduled = false; // 是否已安排 RAF 测量
     private delegatedBound = false; // 是否已绑定根级事件委托
     private lastInteractionTime = 0; // 最后一次交互的时间戳
+    private patternDefinitionsCache: WordDefinition[] = []; // 缓存模式短语列表
+    private normalDefinitionsCache: WordDefinition[] = []; // 缓存普通单词列表
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -176,6 +178,7 @@ export class HiWordsSidebarView extends ItemView {
 
     /**
      * 扫描当前文档中的生词
+     * 优化：使用缓存的单词列表，避免重复分类
      */
     private async scanCurrentDocument() {
         if (!this.currentFile) return;
@@ -191,39 +194,29 @@ export class HiWordsSidebarView extends ItemView {
                 content = await this.app.vault.cachedRead(this.currentFile);
             }
 
-            const allWordDefinitions = await this.plugin.vocabularyManager.getAllWordDefinitions();
+            // 优化：获取并缓存分类后的单词列表
+            await this.updateDefinitionsCache();
 
             // 创建一个数组来存储找到的单词及其位置
             const foundWordsWithPosition: { wordDef: WordDefinition, position: number }[] = [];
             
-            // 扫描文档内容，查找生词并记录位置
-            for (const wordDef of allWordDefinitions) {
-                let position = -1;
+            // 扫描普通单词
+            for (const wordDef of this.normalDefinitionsCache) {
+                // 普通单词匹配
+                // 使用 Unicode 感知的匹配：
+                // 英文等拉丁词使用 \b 边界；含日语/CJK/韩语的词不使用 \b，以便能在无空格文本中命中
+                let regex = this.buildSearchRegex(wordDef.word);
+                let match = regex.exec(content);
+                let position = match ? match.index : -1;
                 
-                // 检查是否为模式短语
-                if (wordDef.isPattern && wordDef.patternParts && wordDef.patternParts.length > 0) {
-                    // 使用模式匹配
-                    const matches = findPatternMatches(content, wordDef.patternParts, 0);
-                    if (matches.length > 0) {
-                        position = matches[0].from;
-                    }
-                } else {
-                    // 普通单词匹配
-                    // 使用 Unicode 感知的匹配：
-                    // 英文等拉丁词使用 \b 边界；含日语/CJK/韩语的词不使用 \b，以便能在无空格文本中命中
-                    let regex = this.buildSearchRegex(wordDef.word);
-                    let match = regex.exec(content);
-                    position = match ? match.index : -1;
-                    
-                    // 检查别名
-                    if (position === -1 && wordDef.aliases) {
-                        for (const alias of wordDef.aliases) {
-                            regex = this.buildSearchRegex(alias);
-                            match = regex.exec(content);
-                            if (match) {
-                                position = match.index;
-                                break;
-                            }
+                // 检查别名
+                if (position === -1 && wordDef.aliases) {
+                    for (const alias of wordDef.aliases) {
+                        regex = this.buildSearchRegex(alias);
+                        match = regex.exec(content);
+                        if (match) {
+                            position = match.index;
+                            break;
                         }
                     }
                 }
@@ -238,6 +231,24 @@ export class HiWordsSidebarView extends ItemView {
                     }
                 }
             }
+            
+            // 扫描模式短语
+            for (const wordDef of this.patternDefinitionsCache) {
+                if (wordDef.patternParts && wordDef.patternParts.length > 0) {
+                    // 使用模式匹配
+                    const matches = findPatternMatches(content, wordDef.patternParts, 0);
+                    if (matches.length > 0) {
+                        const position = matches[0].from;
+                        // 避免重复添加
+                        if (!foundWordsWithPosition.some(w => w.wordDef.nodeId === wordDef.nodeId)) {
+                            foundWordsWithPosition.push({
+                                wordDef: wordDef,
+                                position: position
+                            });
+                        }
+                    }
+                }
+            }
 
             // 按照单词在文档中首次出现的位置排序
             foundWordsWithPosition.sort((a, b) => a.position - b.position);
@@ -245,6 +256,25 @@ export class HiWordsSidebarView extends ItemView {
         } catch (error) {
             console.error('Failed to scan document:', error);
             this.currentWords = [];
+        }
+    }
+    
+    /**
+     * 更新单词定义缓存
+     * 将单词分类为普通单词和模式短语，避免重复判断
+     */
+    private async updateDefinitionsCache(): Promise<void> {
+        const allWordDefinitions = await this.plugin.vocabularyManager.getAllWordDefinitions();
+        
+        this.normalDefinitionsCache = [];
+        this.patternDefinitionsCache = [];
+        
+        for (const wordDef of allWordDefinitions) {
+            if (wordDef.isPattern && wordDef.patternParts && wordDef.patternParts.length > 0) {
+                this.patternDefinitionsCache.push(wordDef);
+            } else {
+                this.normalDefinitionsCache.push(wordDef);
+            }
         }
     }
 
