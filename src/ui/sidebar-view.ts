@@ -614,14 +614,14 @@ export class HiWordsSidebarView extends ItemView {
     /**
      * 构建用于扫描文档的正则。
      * - 对仅包含拉丁字符的词：使用 \b 边界避免误匹配，如 "art" 不匹配 "start"。
-     * - 对包含日语/CJK 的词：不使用 \b（因为 CJK 文本常无空格），并使用 Unicode 标志。
+     * - 对包含日语/CJK/韩语的词：不使用 \b（因为这些文本常无空格），并使用 Unicode 标志。
      */
     private buildSearchRegex(term: string): RegExp {
         const escaped = this.escapeRegExp(term);
-        // 检测是否包含 CJK 或日语脚本
-        const hasCJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(term);
-        const pattern = hasCJK ? `${escaped}` : `\\b${escaped}\\b`;
-        const flags = hasCJK ? 'giu' : 'gi';
+        // 检测是否包含 CJK、日语或韩语脚本
+        const hasAsianScript = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(term);
+        const pattern = hasAsianScript ? `${escaped}` : `\\b${escaped}\\b`;
+        const flags = hasAsianScript ? 'giu' : 'gi';
         return new RegExp(pattern, flags);
     }
 

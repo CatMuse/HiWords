@@ -107,7 +107,8 @@ export interface TrieMatch {
 
 /**
  * 检查字符是否为字母或数字
+ * 支持英文、中文、日语、韩语等字符
  */
 function isAlphaNumeric(char: string): boolean {
-    return /[a-z0-9]/i.test(char);
+    return /[a-z0-9\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/iu.test(char);
 }
