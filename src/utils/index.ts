@@ -7,3 +7,4 @@ export type { TrieMatch } from './trie';
 export * from './color-utils';
 export * from './types';
 export * from './tts';
+export * from './pattern-matcher';

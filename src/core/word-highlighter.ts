@@ -17,6 +17,7 @@ import {
 import { editorViewField } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
 import { WordMatch, WordDefinition, mapCanvasColorToCSSVar, Trie, TrieMatch } from '../utils';
+import { findPatternMatches } from '../utils/pattern-matcher';
 
 // 防抖延迟时间（毫秒）
 const DEBOUNCE_DELAY = 300;
@@ -111,6 +112,7 @@ export class WordHighlighter implements PluginValue {
 
     /**
      * 构建单词前缀树
+     * 只添加普通单词，模式短语需要单独处理
      */
     private buildWordTrie() {
         this.wordTrie.clear();
@@ -118,10 +120,11 @@ export class WordHighlighter implements PluginValue {
         // 获取未掌握的单词（已掌握的单词不会被高亮）
         const words = this.vocabularyManager.getAllWordsForHighlight();
         
-        // 将单词添加到前缀树
+        // 将单词添加到前缀树（排除模式短语）
         for (const word of words) {
             const definition = this.vocabularyManager.getDefinition(word);
-            if (definition) {
+            if (definition && !definition.isPattern) {
+                // 只添加普通单词到 Trie
                 this.wordTrie.addWord(word, definition);
             }
         }
@@ -233,6 +236,7 @@ export class WordHighlighter implements PluginValue {
     
     /**
      * 应用装饰到构建器
+     * 支持模式短语的分段高亮
      */
     private applyDecorations(builder: RangeSetBuilder<Decoration>, matches: WordMatch[]) {
         // 获取当前高亮样式设置
@@ -242,20 +246,41 @@ export class WordHighlighter implements PluginValue {
             // 使用与侧边栏视图一致的默认灰色
             const highlightColor = mapCanvasColorToCSSVar(match.definition.color, 'var(--color-base-60)');
             
-            builder.add(
-                match.from, 
-                match.to, 
-                Decoration.mark({
-                    class: `hi-words-highlight`,
-                    attributes: {
-                        'data-word': match.word,
-                        'data-definition': match.definition.definition,
-                        'data-color': highlightColor,
-                        'data-style': highlightStyle,
-                        'style': `--word-highlight-color: ${highlightColor};`
-                    }
-                })
-            );
+            // 如果是模式短语且有分段信息，则分段高亮
+            if (match.segments && match.segments.length > 0) {
+                match.segments.forEach(segment => {
+                    builder.add(
+                        segment.from, 
+                        segment.to, 
+                        Decoration.mark({
+                            class: `hi-words-highlight`,
+                            attributes: {
+                                'data-word': match.word,
+                                'data-definition': match.definition.definition,
+                                'data-color': highlightColor,
+                                'data-style': highlightStyle,
+                                'style': `--word-highlight-color: ${highlightColor};`
+                            }
+                        })
+                    );
+                });
+            } else {
+                // 普通单词，整体高亮
+                builder.add(
+                    match.from, 
+                    match.to, 
+                    Decoration.mark({
+                        class: `hi-words-highlight`,
+                        attributes: {
+                            'data-word': match.word,
+                            'data-definition': match.definition.definition,
+                            'data-color': highlightColor,
+                            'data-style': highlightStyle,
+                            'style': `--word-highlight-color: ${highlightColor};`
+                        }
+                    })
+                );
+            }
         });
     }
     
@@ -279,13 +304,13 @@ export class WordHighlighter implements PluginValue {
 
     /**
      * 在文本中查找词汇匹配
-     * 使用前缀树进行高效匹配
+     * 使用前缀树进行高效匹配（普通单词）和模式匹配（模式短语）
      */
     private findWordMatches(text: string, offset: number): WordMatch[] {
         const matches: WordMatch[] = [];
         
         try {
-            // 使用前缀树查找所有匹配
+            // 使用前缀树查找所有普通单词匹配
             const trieMatches = this.wordTrie.findAllMatches(text);
             
             // 转换为 WordMatch 对象
@@ -299,6 +324,26 @@ export class WordHighlighter implements PluginValue {
                         to: offset + match.to,
                         color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)')
                     });
+                }
+            }
+            
+            // 查找模式短语匹配
+            const allWords = this.vocabularyManager.getAllWordsForHighlight();
+            for (const word of allWords) {
+                const definition = this.vocabularyManager.getDefinition(word);
+                if (definition && definition.isPattern && definition.patternParts && definition.patternParts.length > 0) {
+                    const patternMatches = findPatternMatches(text, definition.patternParts, offset);
+                    for (const patternMatch of patternMatches) {
+                        matches.push({
+                            word: definition.word,
+                            definition,
+                            from: patternMatch.from,
+                            to: patternMatch.to,
+                            color: mapCanvasColorToCSSVar(definition.color, 'var(--color-accent)'),
+                            matchedText: patternMatch.matchedText,
+                            segments: patternMatch.segments
+                        });
+                    }
                 }
             }
         } catch (e) {

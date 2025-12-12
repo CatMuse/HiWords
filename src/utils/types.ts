@@ -14,6 +14,8 @@ export interface WordDefinition {
     nodeId: string; // Canvas 节点 ID
     color?: string;
     mastered?: boolean; // 是否已掌握
+    isPattern?: boolean; // 是否为模式短语（包含 ... 占位符）
+    patternParts?: string[]; // 模式短语的各个部分（不包含 ...）
 }
 
 // 生词本配置
@@ -65,4 +67,6 @@ export interface WordMatch {
     from: number;
     to: number;
     color: string;
+    matchedText?: string; // 实际匹配到的文本（用于模式短语）
+    segments?: Array<{from: number, to: number}>; // 分段高亮的位置（用于模式短语）
 }

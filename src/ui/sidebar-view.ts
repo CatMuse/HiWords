@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon
 import HiWordsPlugin from '../../main';
 import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
+import { findPatternMatches } from '../utils/pattern-matcher';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -197,21 +198,32 @@ export class HiWordsSidebarView extends ItemView {
             
             // 扫描文档内容，查找生词并记录位置
             for (const wordDef of allWordDefinitions) {
-                // 检查主单词
-                // 使用 Unicode 感知的匹配：
-                // 英文等拉丁词使用 \b 边界；含日语/CJK 的词不使用 \b，以便能在无空格文本中命中
-                let regex = this.buildSearchRegex(wordDef.word);
-                let match = regex.exec(content);
-                let position = match ? match.index : -1;
+                let position = -1;
                 
-                // 检查别名
-                if (position === -1 && wordDef.aliases) {
-                    for (const alias of wordDef.aliases) {
-                        regex = this.buildSearchRegex(alias);
-                        match = regex.exec(content);
-                        if (match) {
-                            position = match.index;
-                            break;
+                // 检查是否为模式短语
+                if (wordDef.isPattern && wordDef.patternParts && wordDef.patternParts.length > 0) {
+                    // 使用模式匹配
+                    const matches = findPatternMatches(content, wordDef.patternParts, 0);
+                    if (matches.length > 0) {
+                        position = matches[0].from;
+                    }
+                } else {
+                    // 普通单词匹配
+                    // 使用 Unicode 感知的匹配：
+                    // 英文等拉丁词使用 \b 边界；含日语/CJK/韩语的词不使用 \b，以便能在无空格文本中命中
+                    let regex = this.buildSearchRegex(wordDef.word);
+                    let match = regex.exec(content);
+                    position = match ? match.index : -1;
+                    
+                    // 检查别名
+                    if (position === -1 && wordDef.aliases) {
+                        for (const alias of wordDef.aliases) {
+                            regex = this.buildSearchRegex(alias);
+                            match = regex.exec(content);
+                            if (match) {
+                                position = match.index;
+                                break;
+                            }
                         }
                     }
                 }

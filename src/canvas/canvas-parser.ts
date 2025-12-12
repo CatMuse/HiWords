@@ -1,5 +1,6 @@
 import { App, TFile } from 'obsidian';
 import { CanvasData, CanvasNode, WordDefinition, HiWordsSettings } from '../utils';
+import { parsePhrase } from '../utils/pattern-matcher';
 
 export class CanvasParser {
     private app: App;
@@ -192,13 +193,18 @@ export class CanvasParser {
 
             if (!word) return null;
 
-            const result = {
-                word: word.toLowerCase(), // 统一转为小写进行匹配
+            // 解析短语，检测是否为模式短语
+            const phraseInfo = parsePhrase(word);
+            
+            const result: WordDefinition = {
+                word: phraseInfo.isPattern ? phraseInfo.original : word.toLowerCase(), // 模式短语保持原样，普通单词转小写
                 aliases: aliases.length > 0 ? aliases : undefined,
                 definition,
                 source: sourcePath,
                 nodeId: node.id,
-                color: node.color
+                color: node.color,
+                isPattern: phraseInfo.isPattern,
+                patternParts: phraseInfo.isPattern ? phraseInfo.parts : undefined
             };
             
 
