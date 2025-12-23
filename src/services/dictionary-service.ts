@@ -6,6 +6,7 @@ interface AIConfig {
     apiKey: string;
     model: string;
     prompt: string;
+    extraParams?: string; // 额外请求参数（JSON 字符串格式）
 }
 
 type APIType = 'openai' | 'claude' | 'gemini';
@@ -148,6 +149,57 @@ export class DictionaryService {
     }
 
     /**
+     * 检查值是否为对象（非数组、非 null）
+     */
+    private isObject(item: any): boolean {
+        return item && typeof item === 'object' && !Array.isArray(item);
+    }
+
+    /**
+     * 深度合并两个对象
+     * @param target 目标对象
+     * @param source 源对象
+     */
+    private deepMerge(target: any, source: any): any {
+        const output = { ...target };
+
+        if (this.isObject(target) && this.isObject(source)) {
+            Object.keys(source).forEach(key => {
+                if (this.isObject(source[key])) {
+                    if (!(key in target)) {
+                        Object.assign(output, { [key]: source[key] });
+                    } else {
+                        output[key] = this.deepMerge(target[key], source[key]);
+                    }
+                } else {
+                    Object.assign(output, { [key]: source[key] });
+                }
+            });
+        }
+
+        return output;
+    }
+
+    /**
+     * 合并用户自定义的额外参数到请求体
+     */
+    private mergeExtraParams(baseBody: any): any {
+        const extraParamsJson = this.config.extraParams?.trim();
+
+        if (!extraParamsJson || extraParamsJson === '{}' || extraParamsJson === '') {
+            return baseBody;
+        }
+
+        try {
+            const extraParams = JSON.parse(extraParamsJson);
+            return this.deepMerge(baseBody, extraParams);
+        } catch (error) {
+            console.warn('Invalid JSON in extraParams, ignoring:', error);
+            return baseBody;
+        }
+    }
+
+    /**
      * 获取单词释义
      * @param word 要查询的单词
      * @param sentence 单词所在的句子（可选）
@@ -181,11 +233,14 @@ export class DictionaryService {
             const prompt = this.replacePlaceholders(cleanWord, sentence);
 
             // 构建请求参数
-            const url = adapter.buildUrl 
+            const url = adapter.buildUrl
                 ? adapter.buildUrl(this.config.apiUrl, this.config.model, this.config.apiKey)
                 : this.config.apiUrl;
             const headers = adapter.buildHeaders(this.config.apiKey);
-            const body = adapter.buildRequest(this.config.model, prompt);
+            let body = adapter.buildRequest(this.config.model, prompt);
+
+            // 合并额外参数
+            body = this.mergeExtraParams(body);
 
             // 发送请求(带重试)
             const data = await this.makeRequestWithRetry(url, headers, body);

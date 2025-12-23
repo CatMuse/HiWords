@@ -18,7 +18,8 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
         apiUrl: '',
         apiKey: '',
         model: '',
-        prompt: 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)'
+        prompt: 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)',
+        extraParams: '{}' // 默认空 JSON 对象
     },
     // 自动布局（简化版，使用固定参数）
     autoLayoutEnabled: true,

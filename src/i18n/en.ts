@@ -3,7 +3,7 @@
 export default {
     // General
     plugin_name: "HiWords",
-    
+
     // Settings
     settings: {
         vocabulary_books: "Word books",
@@ -49,6 +49,9 @@ export default {
         ai_model_desc: "AI model identifier (e.g., gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Custom Prompt",
         ai_prompt_desc: "Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions",
+        ai_extra_params: "Extra Request Parameters",
+        ai_extra_params_desc: "Add custom JSON parameters to AI request body (Advanced)",
+        ai_extra_params_placeholder: '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}',
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
@@ -82,7 +85,7 @@ export default {
         mode_content: "File content only",
         mode_filename_with_alias: "Filename as word, content as alias",
     },
-    
+
     // Sidebar
     sidebar: {
         title: "HiWords",
@@ -96,7 +99,7 @@ export default {
         no_learning_words: "No words to learn",
         no_mastered_words: "No mastered words",
     },
-    
+
     // Commands
     commands: {
         refresh_vocabulary: "Refresh vocabulary",
@@ -105,7 +108,7 @@ export default {
         show_sidebar: "Show HiWords sidebar",
         add_selected_word: "Add word",
     },
-    
+
     // Notices
     notices: {
         enter_word_first: "Please enter a word first",
@@ -146,7 +149,7 @@ export default {
         batch_marked_success: "Successfully marked {0} words as mastered",
         book_path_updated: "Vocabulary book path updated: {0}",
     },
-    
+
     // Modals
     modals: {
         auto_fill_definition: "AI Define",
@@ -194,5 +197,6 @@ export default {
         server_error: "🔧 API service is temporarily unavailable. Please try again later",
         network_error: "🌐 Network connection failed. Please check your network settings",
         request_failed: "AI dictionary request failed",
+        invalid_json_format: "Invalid JSON format, please check syntax",
     },
 }
