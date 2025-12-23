@@ -37,14 +37,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t('settings.highlight_paths'))
             .setDesc(t('settings.highlight_paths_desc'));
-        
+
         // 创建全宽文本域
         const textAreaContainer = containerEl.createDiv({ cls: 'hi-words-textarea-container' });
         const textArea = textAreaContainer.createEl('textarea');
         textArea.placeholder = t('settings.highlight_paths_placeholder') || 'e.g.: Archive, Templates, Private/Diary';
         textArea.value = this.plugin.settings.highlightPaths || '';
         textArea.rows = 3;
-        
+
         // 使用 change 事件而不是 input 事件，避免频繁保存
         textArea.addEventListener('blur', async () => {
             this.plugin.settings.highlightPaths = textArea.value;
@@ -339,7 +339,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t('settings.ai_prompt') || 'Custom Prompt')
             .setDesc(t('settings.ai_prompt_desc') || 'Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions.');
-        
+
         // 创建全宽文本域
         const promptContainer = containerEl.createDiv({ cls: 'hi-words-textarea-container' });
         const promptTextArea = promptContainer.createEl('textarea');
@@ -347,12 +347,42 @@ export class HiWordsSettingTab extends PluginSettingTab {
         promptTextArea.placeholder = defaultPrompt;
         promptTextArea.value = this.plugin.settings.aiDictionary?.prompt || defaultPrompt;
         promptTextArea.rows = 6;
-        
+
         // 使用 blur 事件，避免频繁保存
         promptTextArea.addEventListener('blur', async () => {
             this.ensureAIDictionaryConfig();
             this.plugin.settings.aiDictionary!.prompt = promptTextArea.value;
             await this.plugin.saveSettings();
+        });
+
+        // 额外请求参数设置
+        new Setting(containerEl)
+            .setName(t('settings.ai_extra_params') || 'Extra Request Parameters')
+            .setDesc(t('settings.ai_extra_params_desc') || 'Add custom JSON parameters to AI request body (Advanced)');
+
+        const jsonContainer = containerEl.createDiv({ cls: 'hi-words-json-editor-container' });
+        const jsonTextArea = jsonContainer.createEl('textarea', { cls: 'hi-words-json-editor' });
+
+        jsonTextArea.placeholder = t('settings.ai_extra_params_placeholder') || '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}';
+        jsonTextArea.value = this.plugin.settings.aiDictionary?.extraParams || '{}';
+        jsonTextArea.rows = 6;
+
+        jsonTextArea.addEventListener('blur', async () => {
+            const jsonValue = jsonTextArea.value.trim();
+            try {
+                // 验证 JSON 格式（空字符串也视为有效）
+                if (jsonValue && jsonValue !== '{}') {
+                    JSON.parse(jsonValue);
+                }
+                // 保存
+                this.ensureAIDictionaryConfig();
+                this.plugin.settings.aiDictionary!.extraParams = jsonValue || '{}';
+                await this.plugin.saveSettings();
+                jsonTextArea.removeClass('hi-words-json-error');
+            } catch (error) {
+                jsonTextArea.addClass('hi-words-json-error');
+                new Notice(t('ai_errors.invalid_json_format') || 'Invalid JSON format, please check syntax');
+            }
         });
 
     }
@@ -362,16 +392,16 @@ export class HiWordsSettingTab extends PluginSettingTab {
      */
     private addVocabularyBooksSection() {
         const { containerEl } = this;
-            
+
         // 添加生词本图标按钮
         const addBookContainer = containerEl.createDiv({ cls: 'hi-words-add-book-container' });
         addBookContainer.addEventListener('click', () => this.showCanvasFilePicker());
-        
-        const addBookLabel = addBookContainer.createSpan({ 
+
+        const addBookLabel = addBookContainer.createSpan({
             text: t('settings.add_vocabulary_book'),
             cls: 'hi-words-add-book-label'
         });
-        
+
         const addBookIcon = addBookContainer.createDiv({ cls: 'clickable-icon hi-words-add-book-icon' });
         setIcon(addBookIcon, 'plus-circle');
         addBookIcon.setAttribute('aria-label', t('settings.add_vocabulary_book'));
@@ -444,7 +474,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const { containerEl } = this;
 
         if (this.plugin.settings.vocabularyBooks.length === 0) {
-            containerEl.createEl('p', { 
+            containerEl.createEl('p', {
                 text: t('settings.no_vocabulary_books'),
                 cls: 'setting-item-description'
             });
@@ -458,7 +488,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
             // 创建图标容器
             const iconsContainer = setting.controlEl.createDiv({ cls: 'hi-words-book-icons' });
-            
+
             // 重新加载图标
             const reloadIcon = iconsContainer.createDiv({ cls: 'clickable-icon' });
             setIcon(reloadIcon, 'refresh-cw');
@@ -481,7 +511,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 new Notice(t('notices.book_removed').replace('{0}', book.name));
                 this.display(); // 刷新设置页面
             });
-                
+
             // 启用/禁用开关
             setting.addToggle(toggle => toggle
                 .setValue(book.enabled)
@@ -504,7 +534,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     private displayStats() {
         const { containerEl } = this;
         const stats = this.plugin.vocabularyManager.getStats();
-        
+
         const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
 
         // 总单词本数量

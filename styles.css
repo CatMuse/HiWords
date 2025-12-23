@@ -74,8 +74,15 @@
 }
 
 @keyframes hi-words-tooltip-fade-in {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .hi-words-tooltip-title {
@@ -162,14 +169,20 @@
 .hi-words-tooltip-content h4,
 .hi-words-tooltip-content h5,
 .hi-words-tooltip-content h6 {
-    margin: 6px 0 4px 0; /* 减小上下间距 */
-    line-height: 1.25;   /* 更紧凑的行高 */
+    margin: 6px 0 4px 0;
+    /* 减小上下间距 */
+    line-height: 1.25;
+    /* 更紧凑的行高 */
 }
-.hi-words-tooltip-content > :first-child {
-    margin-top: 0 !important; /* 首元素无多余顶距 */
+
+.hi-words-tooltip-content> :first-child {
+    margin-top: 0 !important;
+    /* 首元素无多余顶距 */
 }
-.hi-words-tooltip-content > :last-child {
-    margin-bottom: 0 !important; /* 尾元素无多余底距 */
+
+.hi-words-tooltip-content> :last-child {
+    margin-bottom: 0 !important;
+    /* 尾元素无多余底距 */
 }
 
 /* Markdown 内容样式 - 侧边栏单词卡片 */
@@ -218,10 +231,12 @@
     margin: 6px 0 4px 0;
     line-height: 1.25;
 }
-.hi-words-definition > :first-child {
+
+.hi-words-definition> :first-child {
     margin-top: 0 !important;
 }
-.hi-words-definition > :last-child {
+
+.hi-words-definition> :last-child {
     margin-bottom: 0 !important;
 }
 
@@ -296,7 +311,8 @@
     padding: 2px 8px;
     opacity: 0;
     transition: opacity 0.15s ease;
-    pointer-events: auto; /* 始终可点击，避免首次点击丢失 */
+    pointer-events: auto;
+    /* 始终可点击，避免首次点击丢失 */
     user-select: none;
 }
 
@@ -382,7 +398,7 @@
     width: 100%;
     min-height: 100px;
     margin: 8px 0;
-    
+
 }
 
 .hiwords-modal-button-container {
@@ -405,7 +421,8 @@
 .hiwords-modal-button-container .hiwords-button-group-right {
     display: flex;
     gap: 8px;
-    margin-left: auto; /* 确保右侧按钮组始终在右侧 */
+    margin-left: auto;
+    /* 确保右侧按钮组始终在右侧 */
 }
 
 /* 表单元素样式 */
@@ -533,13 +550,13 @@
         padding: 8px 12px;
         font-size: 12px;
     }
-    
+
     .hi-words-tab-nav {
         margin-bottom: 16px;
         border-radius: 8px;
         padding: 3px;
     }
-    
+
     /* 小屏幕下强制单栏布局 */
     .hi-words-word-list {
         column-count: 1;
@@ -677,7 +694,8 @@
     position: relative;
     z-index: 1;
     flex: 1;
-    min-width: 0; /* 允许文本截断 */
+    min-width: 0;
+    /* 允许文本截断 */
     border-radius: 4px;
     padding: 2px 4px;
     transition: background-color 0.2s ease;
@@ -724,22 +742,23 @@
     .hi-words-sidebar {
         padding: 12px;
     }
-    
+
     .hi-words-word-card {
         padding: 12px;
         border-radius: 10px;
     }
-    
+
     .hi-words-word-text {
         font-size: 16px;
     }
-    
+
     .hi-words-word-list {
         gap: 12px;
     }
-    
+
     .hi-words-word-card:hover {
-        transform: none; /* 移动设备上禁用变形效果 */
+        transform: none;
+        /* 移动设备上禁用变形效果 */
     }
 }
 
@@ -861,7 +880,8 @@
 /* PDF 中的下划线样式 - 更明显的视觉效果 */
 .hi-words-pdf-highlight[data-style="underline"] {
     border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
-    text-decoration: none; /* 避免与 PDF.js 的样式冲突 */
+    text-decoration: none;
+    /* 避免与 PDF.js 的样式冲突 */
 }
 
 .hi-words-pdf-highlight[data-style="underline"]:hover {
@@ -943,12 +963,13 @@
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+
     /* PDF 高亮在移动设备上的优化 */
     .hi-words-pdf-highlight {
         /* 在小屏幕上稍微增加点击区域 */
         padding: 1px 1px;
     }
-    
+
     .hi-words-pdf-highlight[data-style="background"] {
         padding: 2px 3px;
     }
@@ -957,6 +978,7 @@
 /* 高亮范围设置文本域样式 */
 .hi-words-textarea-container {
     margin-top: 8px;
+    margin-bottom: 8px;
 }
 
 .hi-words-textarea-container textarea {
@@ -974,6 +996,44 @@
 .hi-words-textarea-container textarea:focus {
     outline: none;
     border-color: var(--interactive-accent);
+}
+
+/* JSON 编辑器容器 */
+.hi-words-json-editor-container {
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+/* JSON 编辑器文本域 */
+.hi-words-json-editor {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-small);
+    padding: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+    line-height: 1.5;
+}
+
+.hi-words-json-editor:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+}
+
+/* JSON 错误状态 */
+.hi-words-json-editor.hi-words-json-error {
+    border-color: var(--text-error);
+    background-color: color-mix(in srgb, var(--text-error) 10%, transparent);
+}
+
+.hi-words-json-editor.hi-words-json-error:focus {
+    border-color: var(--text-error);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-error) 20%, transparent);
 }
 
 /* 添加生词本按钮样式 */
