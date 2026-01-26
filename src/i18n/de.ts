@@ -181,4 +181,20 @@ export default {
         network_error: "🌐 Netzwerkverbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Netzwerkeinstellungen",
         request_failed: "KI-Wörterbuch-Anfrage fehlgeschlagen",
     },
+    
+    selection_bubble: {
+        lookup: "Nachschlagen",
+        translate: "Übersetzen",
+        grammar: "Grammatik",
+        add_to_vocab: "Zum Vokabular hinzufügen",
+        dictionary_not_configured: "Wörterbuchdienst nicht konfiguriert",
+        translation_not_configured: "Übersetzungsdienst nicht konfiguriert",
+        grammar_not_configured: "Grammatikanalyse nicht konfiguriert",
+        lookup_failed: "Wörterbuchsuche fehlgeschlagen",
+        translation_failed: "Übersetzung fehlgeschlagen",
+        grammar_failed: "Grammatikanalyse fehlgeschlagen",
+        looking_up: "Suche läuft...",
+        translating: "Übersetzung läuft...",
+        analyzing: "Grammatikanalyse läuft...",
+    },
 }

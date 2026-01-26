@@ -29,5 +29,8 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     highlightMode: 'all',
     highlightPaths: '',
     // 文件节点解析模式
-    fileNodeParseMode: 'filename-with-alias'
+    fileNodeParseMode: 'filename-with-alias',
+    // 文本选择气泡菜单配置
+    selectionBubble: true,
+    aiOutputLanguage: 'Chinese (Simplified)'
 };

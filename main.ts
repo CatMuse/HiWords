@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS } from './src/settings';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
-import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
+import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionBubbleMenu } from './src/ui';
 import { i18n } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
@@ -17,6 +17,7 @@ export default class HiWordsPlugin extends Plugin {
     vocabularyManager!: VocabularyManager;
     definitionPopover!: DefinitionPopover;
     masteredService!: MasteredService;
+    selectionBubbleMenu!: SelectionBubbleMenu;
     editorExtensions: Extension[] = [];
     private isSidebarInitialized = false;
 
@@ -38,6 +39,9 @@ export default class HiWordsPlugin extends Plugin {
         this.addChild(this.definitionPopover);
         this.definitionPopover.setVocabularyManager(this.vocabularyManager);
         this.definitionPopover.setMasteredService(this.masteredService);
+        
+        this.selectionBubbleMenu = new SelectionBubbleMenu(this);
+        this.addChild(this.selectionBubbleMenu);
         
         // 注册侧边栏视图
         this.registerView(
@@ -186,6 +190,9 @@ export default class HiWordsPlugin extends Plugin {
         await this.saveData(this.settings);
         this.vocabularyManager.updateSettings(this.settings);
         this.masteredService.updateSettings();
+        if (this.selectionBubbleMenu) {
+            this.selectionBubbleMenu.updateSettings();
+        }
     }
 
     /**
@@ -211,15 +218,11 @@ export default class HiWordsPlugin extends Plugin {
      * 卸载插件
      */
     onunload() {
-        // definitionPopover 作为子组件会自动卸载
         this.vocabularyManager.clear();
-        // 清理增量更新相关资源
         if (this.vocabularyManager.destroy) {
             this.vocabularyManager.destroy();
         }
-        // 清理全局高亮器管理器
         highlighterManager.clear();
-        // 清理 PDF 高亮器资源
         cleanupPDFHighlighter(this);
     }
 }
