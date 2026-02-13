@@ -74,6 +74,27 @@ export default {
         mode_filename: "Nur Dateiname",
         mode_content: "Nur Dateiinhalt",
         mode_filename_with_alias: "Dateiname als Wort, Inhalt als Alias",
+        // Selection translate settings
+        selection_translate: "Auswahlübersetzung",
+        enable_selection_translate: "Auswahlübersetzung aktivieren",
+        enable_selection_translate_desc: "Übersetzungs-Popup anzeigen, wenn Text ausgewählt wird",
+        translate_provider: "Übersetzungsmotor",
+        translate_provider_desc: "Übersetzungsdienstanbieter auswählen",
+        translate_provider_ai: "KI-Übersetzung (KI-Assistent-Konfiguration wiederverwenden)",
+        translate_provider_custom: "Benutzerdefinierte API",
+        translate_target_lang: "Zielsprache",
+        translate_target_lang_desc: "Zielsprachcode (z.B. zh-CN, en, ja)",
+        translate_prompt: "Übersetzungs-Prompt",
+        translate_prompt_desc: "KI-Übersetzungs-Prompt-Vorlage. Verwenden Sie {{text}} und {{to}} als Platzhalter",
+        custom_api_url: "API-URL",
+        custom_api_url_desc: "Vollständige URL der benutzerdefinierten Übersetzungs-API. Unterstützt {{text}}, {{from}}, {{to}}",
+        custom_api_method: "Anfragemethode",
+        custom_api_headers: "Anfrageheader",
+        custom_api_headers_desc: "Benutzerdefinierte Anfrageheader im JSON-Format",
+        custom_api_body: "Anfragekörper",
+        custom_api_body_desc: "Anfragekörper-Vorlage im JSON-Format. Unterstützt {{text}}, {{from}}, {{to}}",
+        custom_api_response_path: "Antwortpfad",
+        custom_api_response_path_desc: "JSON-Pfad zum Übersetzungsergebnis in der Antwort (z.B. data.translation)",
     },
 
     // Sidebar
@@ -169,6 +190,15 @@ export default {
         collapse: "Einklappen",
         mark_mastered: "Als beherrscht markieren",
         unmark_mastered: "Beherrschung aufheben",
+    },
+    // Auswahlübersetzung
+    translate: {
+        text_empty: "Der Übersetzungstext darf nicht leer sein",
+        translating: "Übersetzen...",
+        failed: "Übersetzung fehlgeschlagen, bitte erneut versuchen",
+        ai_not_configured: "KI-Übersetzung nicht konfiguriert. Bitte API in den Einstellungen einrichten",
+        custom_api_not_configured: "Benutzerdefinierte Übersetzungs-API nicht konfiguriert. Bitte URL in den Einstellungen einrichten",
+        invalid_response: "Der Übersetzungsdienst hat eine ungültige Antwort zurückgegeben",
     },
     // KI-Wörterbuch-Fehler
     ai_errors: {

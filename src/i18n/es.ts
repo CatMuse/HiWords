@@ -76,6 +76,27 @@ export default {
         mode_filename: "Solo nombre de archivo",
         mode_content: "Solo contenido de archivo",
         mode_filename_with_alias: "Nombre de archivo como palabra, contenido como alias",
+        // Selection translate settings
+        selection_translate: "Traducción por selección",
+        enable_selection_translate: "Activar traducción por selección",
+        enable_selection_translate_desc: "Mostrar ventana emergente de traducción al seleccionar texto",
+        translate_provider: "Motor de traducción",
+        translate_provider_desc: "Elegir el proveedor de servicio de traducción",
+        translate_provider_ai: "Traducción IA (reutilizar config. del Asistente IA)",
+        translate_provider_custom: "API personalizada",
+        translate_target_lang: "Idioma de destino",
+        translate_target_lang_desc: "Código del idioma de destino (ej. zh-CN, en, ja)",
+        translate_prompt: "Prompt de traducción",
+        translate_prompt_desc: "Plantilla de prompt para traducción IA. Use {{text}} y {{to}} como marcadores",
+        custom_api_url: "URL de API",
+        custom_api_url_desc: "URL completa de la API de traducción personalizada. Soporta {{text}}, {{from}}, {{to}}",
+        custom_api_method: "Método de solicitud",
+        custom_api_headers: "Encabezados de solicitud",
+        custom_api_headers_desc: "Encabezados personalizados en formato JSON",
+        custom_api_body: "Cuerpo de solicitud",
+        custom_api_body_desc: "Plantilla del cuerpo en formato JSON. Soporta {{text}}, {{from}}, {{to}}",
+        custom_api_response_path: "Ruta de respuesta",
+        custom_api_response_path_desc: "Ruta JSON al resultado de traducción en la respuesta (ej. data.translation)",
     },
 
     // Sidebar
@@ -171,6 +192,15 @@ export default {
         collapse: "Contraer",
         mark_mastered: "Marcar como dominado",
         unmark_mastered: "Desmarcar dominado",
+    },
+    // Traducción por selección
+    translate: {
+        text_empty: "El texto de traducción no puede estar vacío",
+        translating: "Traduciendo...",
+        failed: "La traducción falló, inténtelo de nuevo",
+        ai_not_configured: "Traducción IA no configurada. Configure la API en los ajustes",
+        custom_api_not_configured: "API de traducción personalizada no configurada. Configure la URL en los ajustes",
+        invalid_response: "El servicio de traducción devolvió una respuesta no válida",
     },
     // Errores del diccionario AI
     ai_errors: {

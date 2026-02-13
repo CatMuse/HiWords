@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
-import { VocabularyBook, HighlightStyle } from '../utils';
+import { VocabularyBook, HighlightStyle, TranslateProvider } from '../utils';
 import { CanvasParser } from '../canvas';
 import { t } from '../i18n';
 
@@ -76,6 +76,193 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
+     * 4. 添加划词翻译设置
+     */
+    private addSelectionTranslateSection() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.selection_translate'))
+            .setHeading();
+
+        // 启用划词翻译
+        new Setting(containerEl)
+            .setName(t('settings.enable_selection_translate'))
+            .setDesc(t('settings.enable_selection_translate_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableSelectionTranslate ?? false)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableSelectionTranslate = value;
+                    await this.plugin.saveSettings();
+                    // 重新渲染设置页面以显示/隐藏子选项
+                    this.display();
+                }));
+
+        // 仅在启用划词翻译时显示以下设置
+        if (!this.plugin.settings.enableSelectionTranslate) return;
+
+        // 翻译引擎选择
+        new Setting(containerEl)
+            .setName(t('settings.translate_provider'))
+            .setDesc(t('settings.translate_provider_desc'))
+            .addDropdown(dropdown => dropdown
+                .addOption('ai', t('settings.translate_provider_ai'))
+                .addOption('custom-api', t('settings.translate_provider_custom'))
+                .setValue(this.plugin.settings.translateProvider || 'ai')
+                .onChange(async (value) => {
+                    this.plugin.settings.translateProvider = value as TranslateProvider;
+                    await this.plugin.saveSettings();
+                    // 重新渲染以显示对应引擎的配置项
+                    this.display();
+                }));
+
+        // 目标语言
+        new Setting(containerEl)
+            .setName(t('settings.translate_target_lang'))
+            .setDesc(t('settings.translate_target_lang_desc'))
+            .addText(text => text
+                .setPlaceholder('zh-CN')
+                .setValue(this.plugin.settings.translateTargetLang || 'zh-CN')
+                .onChange(async (value) => {
+                    this.plugin.settings.translateTargetLang = value.trim();
+                    await this.plugin.saveSettings();
+                }));
+
+        // 根据翻译引擎显示不同的配置项
+        if (this.plugin.settings.translateProvider === 'custom-api') {
+            this.addCustomAPISettings();
+        } else {
+            this.addAITranslateSettings();
+        }
+    }
+
+    /**
+     * 添加 AI 翻译设置（翻译提示词）
+     */
+    private addAITranslateSettings() {
+        const { containerEl } = this;
+
+        // 翻译提示词
+        const promptContainer = containerEl.createDiv({ cls: 'hiwords-form-item' });
+        new Setting(promptContainer)
+            .setName(t('settings.translate_prompt'))
+            .setDesc(t('settings.translate_prompt_desc'));
+
+        const textArea = promptContainer.createEl('textarea', { cls: 'hi-words-textarea-container' });
+        textArea.style.width = '100%';
+        textArea.style.fontFamily = 'var(--font-monospace)';
+        textArea.style.fontSize = 'var(--font-ui-small)';
+        textArea.style.padding = '8px';
+        textArea.style.border = '1px solid var(--background-modifier-border)';
+        textArea.style.borderRadius = '4px';
+        textArea.style.backgroundColor = 'var(--background-primary)';
+        textArea.style.color = 'var(--text-normal)';
+        textArea.style.resize = 'vertical';
+        textArea.rows = 3;
+        textArea.value = this.plugin.settings.translatePrompt || '';
+        textArea.placeholder = 'Translate the following text to {{to}}. Only return the translation.\n\nText: {{text}}';
+
+        textArea.addEventListener('blur', async () => {
+            this.plugin.settings.translatePrompt = textArea.value;
+            await this.plugin.saveSettings();
+        });
+    }
+
+    /**
+     * 添加自定义 API 翻译设置
+     */
+    private addCustomAPISettings() {
+        const { containerEl } = this;
+
+        // 确保 customTranslateAPI 配置已初始化
+        if (!this.plugin.settings.customTranslateAPI) {
+            this.plugin.settings.customTranslateAPI = {
+                url: '',
+                method: 'POST',
+                headers: '{"Content-Type": "application/json"}',
+                body: '{"text": "{{text}}", "target": "{{to}}"}',
+                responsePath: 'data.translation',
+            };
+        }
+        const apiConfig = this.plugin.settings.customTranslateAPI;
+
+        // API 地址
+        new Setting(containerEl)
+            .setName(t('settings.custom_api_url'))
+            .setDesc(t('settings.custom_api_url_desc'))
+            .addText(text => text
+                .setPlaceholder('https://api.example.com/translate')
+                .setValue(apiConfig.url || '')
+                .onChange(async (value) => {
+                    apiConfig.url = value.trim();
+                    await this.plugin.saveSettings();
+                }));
+
+        // 请求方法
+        new Setting(containerEl)
+            .setName(t('settings.custom_api_method'))
+            .addDropdown(dropdown => dropdown
+                .addOption('GET', 'GET')
+                .addOption('POST', 'POST')
+                .setValue(apiConfig.method || 'POST')
+                .onChange(async (value) => {
+                    apiConfig.method = value as 'GET' | 'POST';
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        // 请求头
+        new Setting(containerEl)
+            .setName(t('settings.custom_api_headers'))
+            .setDesc(t('settings.custom_api_headers_desc'))
+            .addTextArea(textArea => {
+                textArea
+                    .setPlaceholder('{"Content-Type": "application/json"}')
+                    .setValue(apiConfig.headers || '')
+                    .onChange(async (value) => {
+                        apiConfig.headers = value;
+                        await this.plugin.saveSettings();
+                    });
+                textArea.inputEl.rows = 2;
+                textArea.inputEl.style.width = '100%';
+                textArea.inputEl.style.fontFamily = 'var(--font-monospace)';
+                textArea.inputEl.style.fontSize = 'var(--font-ui-small)';
+            });
+
+        // 请求体（仅 POST 方法）
+        if (apiConfig.method === 'POST') {
+            new Setting(containerEl)
+                .setName(t('settings.custom_api_body'))
+                .setDesc(t('settings.custom_api_body_desc'))
+                .addTextArea(textArea => {
+                    textArea
+                        .setPlaceholder('{"text": "{{text}}", "target": "{{to}}"}')
+                        .setValue(apiConfig.body || '')
+                        .onChange(async (value) => {
+                            apiConfig.body = value;
+                            await this.plugin.saveSettings();
+                        });
+                    textArea.inputEl.rows = 3;
+                    textArea.inputEl.style.width = '100%';
+                    textArea.inputEl.style.fontFamily = 'var(--font-monospace)';
+                    textArea.inputEl.style.fontSize = 'var(--font-ui-small)';
+                });
+        }
+
+        // 响应路径
+        new Setting(containerEl)
+            .setName(t('settings.custom_api_response_path'))
+            .setDesc(t('settings.custom_api_response_path_desc'))
+            .addText(text => text
+                .setPlaceholder('data.translation')
+                .setValue(apiConfig.responsePath || '')
+                .onChange(async (value) => {
+                    apiConfig.responsePath = value.trim();
+                    await this.plugin.saveSettings();
+                }));
+    }
+
+    /**
      * 添加自动布局设置
      */
     private addAutoLayoutSettings() {
@@ -136,7 +323,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         // 3. 学习功能
         this.addLearningFeaturesSection();
 
-        // 4. Canvas 设置
+        // 4. 划词翻译设置
+        this.addSelectionTranslateSection();
+
+        // 5. Canvas 设置
         this.addAutoLayoutSettings();
     }
 

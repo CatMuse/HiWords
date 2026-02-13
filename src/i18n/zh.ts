@@ -81,6 +81,27 @@ export default {
         mode_filename: "仅文件名",
         mode_content: "仅文件内容",
         mode_filename_with_alias: "文件名作为主词，内容作为别名",
+        // 划词翻译设置
+        selection_translate: "划词翻译",
+        enable_selection_translate: "启用划词翻译",
+        enable_selection_translate_desc: "选中文本后自动弹出翻译浮窗",
+        translate_provider: "翻译引擎",
+        translate_provider_desc: "选择翻译服务提供者",
+        translate_provider_ai: "AI 翻译（复用 AI 助手配置）",
+        translate_provider_custom: "自定义 API",
+        translate_target_lang: "目标语言",
+        translate_target_lang_desc: "翻译的目标语言代码（如 zh-CN、en、ja）",
+        translate_prompt: "翻译提示词",
+        translate_prompt_desc: "AI 翻译的提示词模板，使用 {{text}} 和 {{to}} 作为占位符",
+        custom_api_url: "API 地址",
+        custom_api_url_desc: "自定义翻译 API 的完整地址，支持 {{text}}、{{from}}、{{to}} 占位符",
+        custom_api_method: "请求方法",
+        custom_api_headers: "请求头",
+        custom_api_headers_desc: "JSON 格式的自定义请求头",
+        custom_api_body: "请求体",
+        custom_api_body_desc: "JSON 格式的请求体模板，支持 {{text}}、{{from}}、{{to}} 占位符",
+        custom_api_response_path: "响应路径",
+        custom_api_response_path_desc: "翻译结果在响应 JSON 中的路径（如 data.translation）",
     },
     
     // 侧边栏
@@ -178,6 +199,15 @@ export default {
         collapse: "收起",
         mark_mastered: "已掌握",
         unmark_mastered: "忘记了",
+    },
+    // 划词翻译
+    translate: {
+        text_empty: "翻译文本不能为空",
+        translating: "翻译中...",
+        failed: "翻译失败，请重试",
+        ai_not_configured: "AI 翻译未配置，请在设置中填写 API 信息",
+        custom_api_not_configured: "自定义翻译 API 未配置，请在设置中填写 API 地址",
+        invalid_response: "翻译服务返回了无效的响应",
     },
     // AI 词典错误提示
     ai_errors: {

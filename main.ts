@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS } from './src/settings';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
-import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal } from './src/ui';
+import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionTranslatePopover } from './src/ui';
 import { i18n } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
@@ -17,6 +17,7 @@ export default class HiWordsPlugin extends Plugin {
     vocabularyManager!: VocabularyManager;
     definitionPopover!: DefinitionPopover;
     masteredService!: MasteredService;
+    selectionTranslatePopover!: SelectionTranslatePopover;
     editorExtensions: Extension[] = [];
     private isSidebarInitialized = false;
 
@@ -38,6 +39,10 @@ export default class HiWordsPlugin extends Plugin {
         this.addChild(this.definitionPopover);
         this.definitionPopover.setVocabularyManager(this.vocabularyManager);
         this.definitionPopover.setMasteredService(this.masteredService);
+        
+        // 初始化划词翻译浮窗
+        this.selectionTranslatePopover = new SelectionTranslatePopover(this);
+        this.addChild(this.selectionTranslatePopover);
         
         // 注册侧边栏视图
         this.registerView(
@@ -186,6 +191,7 @@ export default class HiWordsPlugin extends Plugin {
         await this.saveData(this.settings);
         this.vocabularyManager.updateSettings(this.settings);
         this.masteredService.updateSettings();
+        this.selectionTranslatePopover.updateSettings();
     }
 
     /**
@@ -193,8 +199,9 @@ export default class HiWordsPlugin extends Plugin {
      * 检查单词是否已存在，如果存在则打开编辑模式，否则打开添加模式
      * @param word 要添加或编辑的单词
      * @param sentence 单词所在的句子（可选）
+     * @param prefilledDefinition 预填充的释义（可选，来自划词翻译）
      */
-    addOrEditWord(word: string, sentence: string = '') {
+    addOrEditWord(word: string, sentence: string = '', prefilledDefinition: string = '') {
         // 检查单词是否已存在
         const exists = this.vocabularyManager.hasWord(word);
         
@@ -202,8 +209,8 @@ export default class HiWordsPlugin extends Plugin {
             // 如果单词已存在，打开编辑模式
             new AddWordModal(this.app, this, word, sentence, true).open();
         } else {
-            // 如果单词不存在，打开添加模式
-            new AddWordModal(this.app, this, word, sentence).open();
+            // 如果单词不存在，打开添加模式（传入预填充释义）
+            new AddWordModal(this.app, this, word, sentence, false, prefilledDefinition).open();
         }
     }
 

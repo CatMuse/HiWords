@@ -74,6 +74,27 @@ export default {
         mode_filename: "ファイル名のみ",
         mode_content: "ファイル内容のみ",
         mode_filename_with_alias: "ファイル名を単語、内容をエイリアスとして",
+        // Selection translate settings
+        selection_translate: "選択翻訳",
+        enable_selection_translate: "選択翻訳を有効にする",
+        enable_selection_translate_desc: "テキストを選択すると翻訳ポップアップを表示",
+        translate_provider: "翻訳エンジン",
+        translate_provider_desc: "翻訳サービスプロバイダーを選択",
+        translate_provider_ai: "AI翻訳（AIアシスタント設定を再利用）",
+        translate_provider_custom: "カスタムAPI",
+        translate_target_lang: "ターゲット言語",
+        translate_target_lang_desc: "ターゲット言語コード（例：zh-CN、en、ja）",
+        translate_prompt: "翻訳プロンプト",
+        translate_prompt_desc: "AI翻訳のプロンプトテンプレート。{{text}}と{{to}}をプレースホルダーとして使用",
+        custom_api_url: "API URL",
+        custom_api_url_desc: "カスタム翻訳APIの完全なURL。{{text}}、{{from}}、{{to}}をサポート",
+        custom_api_method: "リクエストメソッド",
+        custom_api_headers: "リクエストヘッダー",
+        custom_api_headers_desc: "JSON形式のカスタムリクエストヘッダー",
+        custom_api_body: "リクエストボディ",
+        custom_api_body_desc: "JSON形式のリクエストボディテンプレート。{{text}}、{{from}}、{{to}}をサポート",
+        custom_api_response_path: "レスポンスパス",
+        custom_api_response_path_desc: "レスポンスJSON内の翻訳結果へのパス（例：data.translation）",
     },
 
     // Sidebar
@@ -169,6 +190,15 @@ export default {
         collapse: "折りたたむ",
         mark_mastered: "習得済みにする",
         unmark_mastered: "習得済みを解除",
+    },
+    // 選択翻訳
+    translate: {
+        text_empty: "翻訳テキストは空にできません",
+        translating: "翻訳中...",
+        failed: "翻訳に失敗しました。もう一度お試しください",
+        ai_not_configured: "AI翻訳が設定されていません。設定でAPIを構成してください",
+        custom_api_not_configured: "カスタム翻訳APIが設定されていません。設定でURLを構成してください",
+        invalid_response: "翻訳サービスが無効なレスポンスを返しました",
     },
     // AI辞書エラー
     ai_errors: {

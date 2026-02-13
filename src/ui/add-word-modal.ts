@@ -14,6 +14,7 @@ export class AddWordModal extends Modal {
     private isEditMode: boolean;
     private definition: WordDefinition | null;
     private dictionaryService: DictionaryService;
+    private prefilledDefinition: string;
     
     // 静态变量，记住用户上次选择的生词本（重启后丢失）
     private static lastSelectedBookPath: string | null = null;
@@ -26,7 +27,7 @@ export class AddWordModal extends Modal {
      * @param sentence 单词所在的句子（可选）
      * @param isEditMode 是否为编辑模式
      */
-    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence: string = '', isEditMode: boolean = false) {
+    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence: string = '', isEditMode: boolean = false, prefilledDefinition: string = '') {
         super(app);
         this.plugin = plugin;
         this.word = word;
@@ -45,6 +46,8 @@ export class AddWordModal extends Modal {
                 prompt: ''
             });
         }
+        
+        this.prefilledDefinition = prefilledDefinition;
         
         // 如果是编辑模式，获取单词的定义
         if (isEditMode) {
@@ -215,6 +218,10 @@ export class AddWordModal extends Modal {
         // 如果是编辑模式且当前词汇有定义，则预填充定义
         if (this.isEditMode && this.definition && this.definition.definition) {
             definitionInput.value = this.definition.definition;
+        }
+        // 如果有预填充释义（来自划词翻译），则填入
+        else if (this.prefilledDefinition) {
+            definitionInput.value = this.prefilledDefinition;
         }
         
         // 智能聚焦逻辑

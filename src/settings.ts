@@ -29,5 +29,17 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     highlightMode: 'all',
     highlightPaths: '',
     // 文件节点解析模式
-    fileNodeParseMode: 'filename-with-alias'
+    fileNodeParseMode: 'filename-with-alias',
+    // 划词翻译配置
+    enableSelectionTranslate: false,
+    translateProvider: 'ai',
+    translateTargetLang: 'zh-CN',
+    translatePrompt: 'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}',
+    customTranslateAPI: {
+        url: '',
+        method: 'POST',
+        headers: '{"Content-Type": "application/json"}',
+        body: '{"text": "{{text}}", "target": "{{to}}"}',
+        responsePath: 'data.translation',
+    },
 };

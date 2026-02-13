@@ -81,6 +81,27 @@ export default {
         mode_filename: "Filename only",
         mode_content: "File content only",
         mode_filename_with_alias: "Filename as word, content as alias",
+        // Selection translate settings
+        selection_translate: "Selection Translate",
+        enable_selection_translate: "Enable selection translate",
+        enable_selection_translate_desc: "Show translation popup when text is selected",
+        translate_provider: "Translation engine",
+        translate_provider_desc: "Choose the translation service provider",
+        translate_provider_ai: "AI Translate (reuse AI Assistant config)",
+        translate_provider_custom: "Custom API",
+        translate_target_lang: "Target language",
+        translate_target_lang_desc: "Target language code (e.g. zh-CN, en, ja)",
+        translate_prompt: "Translation prompt",
+        translate_prompt_desc: "AI translation prompt template. Use {{text}} and {{to}} as placeholders",
+        custom_api_url: "API URL",
+        custom_api_url_desc: "Full URL for custom translation API. Supports {{text}}, {{from}}, {{to}} placeholders",
+        custom_api_method: "Request method",
+        custom_api_headers: "Request headers",
+        custom_api_headers_desc: "Custom request headers in JSON format",
+        custom_api_body: "Request body",
+        custom_api_body_desc: "Request body template in JSON format. Supports {{text}}, {{from}}, {{to}} placeholders",
+        custom_api_response_path: "Response path",
+        custom_api_response_path_desc: "JSON path to the translation result in the response (e.g. data.translation)",
     },
     
     // Sidebar
@@ -178,6 +199,15 @@ export default {
         collapse: "Collapse",
         mark_mastered: "Mark mastered",
         unmark_mastered: "Unmark mastered",
+    },
+    // Selection translate
+    translate: {
+        text_empty: "Translation text cannot be empty",
+        translating: "Translating...",
+        failed: "Translation failed, please try again",
+        ai_not_configured: "AI translation not configured. Please set up API in settings",
+        custom_api_not_configured: "Custom translation API not configured. Please set API URL in settings",
+        invalid_response: "Translation service returned an invalid response",
     },
     // AI dictionary errors
     ai_errors: {

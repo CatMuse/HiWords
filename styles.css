@@ -1106,3 +1106,136 @@
         transform: rotate(360deg);
     }
 }
+
+/* ========== 划词翻译浮窗样式 ========== */
+.hi-words-translate-popover {
+    position: absolute;
+    z-index: 1000;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    padding: 0;
+    max-width: 420px;
+    min-width: 240px;
+    font-size: 14px;
+    animation: hi-words-translate-fade-in 0.15s ease;
+    overflow: hidden;
+}
+
+@keyframes hi-words-translate-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hi-words-translate-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 8px 14px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-translate-title {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-normal);
+    line-height: 1.4;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hi-words-translate-content {
+    padding: 20px 16px;
+    min-height: 32px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.hi-words-translate-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.hi-words-translate-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: hiwords-spin 1s linear infinite;
+}
+
+.hi-words-translate-spinner svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+
+.hi-words-translate-result {
+    color: var(--text-normal);
+    line-height: 1.6;
+    font-size: 14px;
+    font-weight: 500;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.hi-words-translate-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-error);
+    font-size: 13px;
+}
+
+.hi-words-translate-error-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.hi-words-translate-error-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hi-words-translate-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.hi-words-translate-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.hi-words-translate-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hi-words-translate-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-translate-btn-add:hover {
+    background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+    color: var(--interactive-accent);
+}
