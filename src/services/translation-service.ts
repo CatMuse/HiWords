@@ -1,6 +1,6 @@
 import { requestUrl } from 'obsidian';
 import { t } from '../i18n';
-import type { HiWordsSettings, CustomTranslateAPI } from '../utils';
+import type { HiWordsSettings } from '../utils';
 
 /**
  * 缓存条目
@@ -11,7 +11,7 @@ interface CacheEntry {
 }
 
 /**
- * 翻译服务 - 支持 AI 翻译和自定义 API 两种引擎
+ * 翻译服务 - 使用 AI 引擎翻译
  */
 export class TranslationService {
     private settings: HiWordsSettings;
@@ -41,7 +41,7 @@ export class TranslationService {
         }
 
         const cleanText = text.trim();
-        const cacheKey = `${this.settings.translateProvider}:${cleanText}`;
+        const cacheKey = `ai:${cleanText}`;
 
         // 检查缓存
         const cached = this.cache.get(cacheKey);
@@ -51,15 +51,7 @@ export class TranslationService {
 
         let result: string;
 
-        try {
-            if (this.settings.translateProvider === 'custom-api') {
-                result = await this.translateWithCustomAPI(cleanText);
-            } else {
-                result = await this.translateWithAI(cleanText);
-            }
-        } catch (err) {
-            throw err;
-        }
+        result = await this.translateWithAI(cleanText);
 
         // 存入缓存
         this.cache.set(cacheKey, { content: result, timestamp: Date.now() });
@@ -170,84 +162,6 @@ export class TranslationService {
         }
 
         return cleaned;
-    }
-
-    /**
-     * 使用自定义 API 翻译
-     */
-    private async translateWithCustomAPI(text: string): Promise<string> {
-        const apiConfig = this.settings.customTranslateAPI;
-        if (!apiConfig?.url) {
-            throw new Error(t('translate.custom_api_not_configured'));
-        }
-
-        const targetLang = this.settings.translateTargetLang || 'zh-CN';
-
-        // 替换 URL 中的占位符
-        const url = apiConfig.url
-            .replace(/\{\{text\}\}/g, encodeURIComponent(text))
-            .replace(/\{\{to\}\}/g, encodeURIComponent(targetLang))
-            .replace(/\{\{from\}\}/g, 'auto');
-
-        // 解析请求头
-        let headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (apiConfig.headers) {
-            try {
-                const customHeaders = JSON.parse(apiConfig.headers);
-                headers = { ...headers, ...customHeaders };
-            } catch {
-                // 忽略无效的 headers JSON
-            }
-        }
-
-        let requestOptions: any = {
-            url,
-            method: apiConfig.method || 'POST',
-            headers,
-        };
-
-        // 构建请求体（仅 POST 方法）
-        if (apiConfig.method === 'POST' && apiConfig.body) {
-            const body = apiConfig.body
-                .replace(/\{\{text\}\}/g, text.replace(/"/g, '\\"'))
-                .replace(/\{\{to\}\}/g, targetLang)
-                .replace(/\{\{from\}\}/g, 'auto');
-            requestOptions.body = body;
-        }
-
-        const response = await requestUrl(requestOptions);
-
-        if (response.status >= 400) {
-            throw new Error(`HTTP ${response.status}: ${response.text}`);
-        }
-
-        // 从响应中提取翻译结果
-        const data = response.json;
-        const result = this.extractByPath(data, apiConfig.responsePath);
-
-        if (!result) {
-            throw new Error(t('translate.invalid_response'));
-        }
-
-        return String(result).trim();
-    }
-
-    /**
-     * 根据 JSON 路径提取值
-     * 支持 "data.translation"、"result[0].text" 等格式
-     */
-    private extractByPath(obj: any, path: string): any {
-        if (!path || !obj) return undefined;
-
-        const parts = path.split(/\.|\[(\d+)\]/).filter(Boolean);
-        let current = obj;
-
-        for (const part of parts) {
-            if (current === undefined || current === null) return undefined;
-            current = current[part];
-        }
-
-        return current;
     }
 
     /**

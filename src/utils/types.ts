@@ -28,18 +28,6 @@ export interface VocabularyBook {
 // 高亮样式类型
 export type HighlightStyle = 'underline' | 'background' | 'bold' | 'dotted' | 'wavy';
 
-// 翻译引擎类型
-export type TranslateProvider = 'ai' | 'custom-api';
-
-// 自定义翻译 API 配置
-export interface CustomTranslateAPI {
-    url: string;           // API 地址（支持 {{text}}、{{from}}、{{to}} 占位符）
-    method: 'GET' | 'POST'; // 请求方法
-    headers?: string;      // 自定义请求头（JSON 字符串）
-    body?: string;         // 请求体模板（JSON 字符串，支持占位符）
-    responsePath: string;  // 响应中翻译结果的 JSON 路径（如 "data.translation" 或 "result[0].text"）
-}
-
 // 插件设置
 export interface HiWordsSettings {
     vocabularyBooks: VocabularyBook[];
@@ -72,10 +60,8 @@ export interface HiWordsSettings {
     fileNodeParseMode?: 'filename' | 'content' | 'filename-with-alias'; // 文件节点解析模式
     // 划词翻译配置
     enableSelectionTranslate?: boolean;       // 是否启用划词翻译
-    translateProvider?: TranslateProvider;     // 翻译引擎：'ai' | 'custom-api'
     translateTargetLang?: string;              // 目标语言（默认 'zh-CN'）
     translatePrompt?: string;                  // AI 翻译的 prompt 模板
-    customTranslateAPI?: CustomTranslateAPI;   // 自定义翻译 API 配置
 }
 
 // 词汇匹配信息
