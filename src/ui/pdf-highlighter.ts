@@ -256,7 +256,7 @@ function highlightPDFTextSpans(textLayer: HTMLElement, trie: Trie, highlightStyl
         frag.appendChild(document.createTextNode(text.slice(last, match.from)));
       }
 
-      // 创建高亮元素
+      // 创建高亮元素（确保不影响文本流布局）
       const def = match.payload;
       const color = mapCanvasColorToCSSVar(def?.color, 'var(--color-base-60)');
       const highlightSpan = document.createElement('span');
@@ -266,7 +266,9 @@ function highlightPDFTextSpans(textLayer: HTMLElement, trie: Trie, highlightStyl
       if (def?.definition) highlightSpan.setAttribute('data-definition', def.definition);
       if (color) highlightSpan.setAttribute('data-color', color);
       highlightSpan.setAttribute('data-style', highlightStyle);
-      if (color) highlightSpan.setAttribute('style', `--word-highlight-color: ${color}`);
+      // 内联样式：设置颜色变量 + 强制零布局影响
+      const inlineStyle = `${color ? `--word-highlight-color: ${color};` : ''} padding:0; margin:0; border:none;`;
+      highlightSpan.setAttribute('style', inlineStyle);
       highlightSpan.textContent = text.slice(match.from, match.to);
       
       frag.appendChild(highlightSpan);
