@@ -52,8 +52,11 @@ export class Trie {
                 // 如果到达单词结尾，添加匹配
                 if (node.isEndOfWord) {
                     // 检查单词边界
-                    const isWordBoundaryStart = i === 0 || !isAlphaNumeric(lowerText[i - 1]);
-                    const isWordBoundaryEnd = j === lowerText.length || !isAlphaNumeric(lowerText[j]);
+                    // CJK 字符不需要边界检查（中文、日语、韩语没有空格分词）
+                    const matchedStart = lowerText[i];
+                    const matchedEnd = lowerText[j - 1];
+                    const isWordBoundaryStart = isCJKChar(matchedStart) || i === 0 || !isAlphaNumeric(lowerText[i - 1]);
+                    const isWordBoundaryEnd = isCJKChar(matchedEnd) || j === lowerText.length || !isAlphaNumeric(lowerText[j]);
                     
                     if (isWordBoundaryStart && isWordBoundaryEnd) {
                         matches.push({
@@ -111,4 +114,12 @@ export interface TrieMatch {
  */
 function isAlphaNumeric(char: string): boolean {
     return /[a-z0-9\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/iu.test(char);
+}
+
+/**
+ * 检查字符是否为 CJK 字符（中文、日语、韩语）
+ * CJK 文本没有空格分词，不需要单词边界检查
+ */
+function isCJKChar(char: string): boolean {
+    return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(char);
 }

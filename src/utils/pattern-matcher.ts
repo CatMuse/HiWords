@@ -206,5 +206,15 @@ function isWordBoundary(text: string, start: number, end: number): boolean {
         return /[a-z0-9\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/iu.test(char);
     };
     
-    return !isWordChar(before) && !isWordChar(after);
+    // CJK 字符不需要边界检查（中文、日语、韩语没有空格分词）
+    const isCJK = (char: string) => {
+        return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(char);
+    };
+    
+    const startChar = text[start];
+    const endChar = text[end - 1];
+    const boundaryStart = isCJK(startChar) || !isWordChar(before);
+    const boundaryEnd = isCJK(endChar) || !isWordChar(after);
+    
+    return boundaryStart && boundaryEnd;
 }
