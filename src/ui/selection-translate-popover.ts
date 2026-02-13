@@ -168,7 +168,7 @@ export class SelectionTranslatePopover extends Component {
         const actionsEl = header.createDiv({ cls: 'hi-words-translate-actions' });
 
         // 添加到生词本按钮
-        const addBtn = actionsEl.createEl('button', { cls: 'hi-words-translate-btn hi-words-translate-btn-add' });
+        const addBtn = actionsEl.createDiv({ cls: 'hi-words-translate-btn hi-words-translate-btn-add' });
         setIcon(addBtn, 'book-plus');
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -179,7 +179,7 @@ export class SelectionTranslatePopover extends Component {
         });
 
         // 复制翻译结果按钮
-        const copyBtn = actionsEl.createEl('button', { cls: 'hi-words-translate-btn hi-words-translate-btn-copy' });
+        const copyBtn = actionsEl.createDiv({ cls: 'hi-words-translate-btn hi-words-translate-btn-copy' });
         setIcon(copyBtn, 'copy');
         copyBtn.addEventListener('click', (e) => {
             e.stopPropagation();

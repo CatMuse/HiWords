@@ -1132,7 +1132,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 10px 8px 14px;
+    padding: 10px 10px 8px 16px;
     border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1206,7 +1206,7 @@
 .hi-words-translate-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
@@ -1214,15 +1214,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-muted);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    color: var(--text-faint);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: color 0.15s ease, background 0.15s ease;
 }
 
 .hi-words-translate-btn svg {
@@ -1231,11 +1228,10 @@
 }
 
 .hi-words-translate-btn:hover {
-    background: var(--background-modifier-hover);
     color: var(--text-normal);
+    background: var(--background-modifier-hover);
 }
 
 .hi-words-translate-btn-add:hover {
-    background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
     color: var(--interactive-accent);
 }
