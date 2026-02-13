@@ -81,6 +81,13 @@ export default {
         mode_filename: "Filename only",
         mode_content: "File content only",
         mode_filename_with_alias: "Filename as word, content as alias",
+        // Selection bubble menu settings
+        selection_bubble_menu: "AI Selection Bubble Menu",
+        enable_selection_bubble: "Enable AI selection Menu",
+        enable_selection_bubble_desc: "Show a AI selection when you select text, with dictionary lookup, translation, and grammar analysis tools",
+        
+        ai_output_language: "AI Assistant Output Language",
+        ai_output_language_desc: "Display language for AI dictionary and grammar analysis results",
     },
     
     // Sidebar
@@ -155,6 +162,7 @@ export default {
         definition_label: "Definition",
         book_label: "Vocabulary book",
         select_book: "Select a vocabulary book",
+        please_select_book: "Please select a vocabulary book",
         color_label: "Card color",
         color_gray: "Gray",
         color_red: "Red",
@@ -195,4 +203,69 @@ export default {
         network_error: "🌐 Network connection failed. Please check your network settings",
         request_failed: "AI dictionary request failed",
     },
+    
+    selection_bubble: {
+        lookup: "Look up",
+        translate: "Translate",
+        grammar: "Grammar",
+        add_to_vocab: "Add to vocabulary",
+        dictionary_not_configured: "Dictionary service not configured",
+        translation_not_configured: "Translation service not configured",
+        grammar_not_configured: "Grammar analysis not configured",
+        lookup_failed: "Dictionary lookup failed",
+        translation_failed: "Translation failed",
+        grammar_failed: "Grammar analysis failed",
+        looking_up: "Looking up...",
+        translating: "Translating...",
+        analyzing: "Analyzing grammar...",
+    },
+    
+    dictionary: {
+        word_empty: "Word cannot be empty",
+        word_not_found: "Word not found",
+        api_error: "API request failed",
+        invalid_response: "Invalid response data",
+        network_error: "Network error",
+        provider_not_configured: "Dictionary provider not configured",
+        custom_url_required: "Custom API URL is required",
+        play_pronunciation: "Play pronunciation",
+        synonyms: "Synonyms",
+        antonyms: "Antonyms",
+        no_definition_found: "No definition found",
+        view_source: "View source",
+        add_to_vocabulary: "Add to vocabulary",
+        loading: "Loading...",
+        lookup_failed: "Dictionary lookup failed",
+    },
+    
+    translation: {
+        title: "Translation",
+        text_empty: "Text cannot be empty",
+        text_too_long: "Text too long (max 5000 characters)",
+        provider_not_supported: "Translation provider not supported",
+        api_error: "Translation API failed",
+        network_error: "Network error",
+        invalid_response: "Invalid response data",
+        api_key_required: "API Key is required",
+        original_text: "Original",
+        translated_text: "Translation",
+        translating: "Translating...",
+    },
+    
+    grammar: {
+        title: "Grammar Analysis",
+        text_empty: "Text cannot be empty",
+        text_too_long: "Text too long (max 2000 characters)",
+        analysis_failed: "Grammar analysis failed",
+        original_text: "Original Text",
+        analysis_result: "Analysis Result",
+    },
+    
+    common: {
+        close: "Close",
+        copy: "Copy",
+        copied: "Copied",
+    },
 }
+    
+    // Selection bubble menu

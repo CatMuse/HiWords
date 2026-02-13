@@ -181,4 +181,20 @@ export default {
         network_error: "🌐 ネットワーク接続に失敗しました。ネットワーク設定を確認してください",
         request_failed: "AI辞書リクエストが失敗しました",
     },
+    
+    selection_bubble: {
+        lookup: "辞書検索",
+        translate: "翻訳",
+        grammar: "文法",
+        add_to_vocab: "単語帳に追加",
+        dictionary_not_configured: "辞書サービスが設定されていません",
+        translation_not_configured: "翻訳サービスが設定されていません",
+        grammar_not_configured: "文法分析が設定されていません",
+        lookup_failed: "辞書検索に失敗しました",
+        translation_failed: "翻訳に失敗しました",
+        grammar_failed: "文法分析に失敗しました",
+        looking_up: "検索中...",
+        translating: "翻訳中...",
+        analyzing: "文法分析中...",
+    },
 }

@@ -355,6 +355,42 @@ export class HiWordsSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
         });
 
+        // 文本选择气泡菜单配置
+        new Setting(containerEl)
+            .setName(t('settings.selection_bubble_menu'))
+            .setHeading();
+
+        // 启用AI取词
+        new Setting(containerEl)
+            .setName(t('settings.enable_selection_bubble'))
+            .setDesc(t('settings.enable_selection_bubble_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.selectionBubble ?? true)
+                .onChange(async (value) => {
+                    this.plugin.settings.selectionBubble = value;
+                    await this.plugin.saveSettings();
+                }));
+        // AI 助手输出语言
+        new Setting(containerEl)
+            .setName(t('settings.ai_output_language'))
+            .setDesc(t('settings.ai_output_language_desc'))
+            .addDropdown(dropdown => dropdown
+                .addOption('Chinese (Simplified)', 'Chinese (Simplified)')
+                .addOption('English', 'English')
+                .addOption('Japanese', 'Japanese')
+                .addOption('Korean', 'Korean')
+                .addOption('French', 'French')
+                .addOption('German', 'German')
+                .addOption('Spanish', 'Spanish')
+                .addOption('Russian', 'Russian')
+                .addOption('Portuguese', 'Portuguese')
+                .addOption('Italian', 'Italian')
+                .setValue(this.plugin.settings.aiOutputLanguage || 'Chinese (Simplified)')
+                .onChange(async (value) => {
+                    this.plugin.settings.aiOutputLanguage = value;
+                    await this.plugin.saveSettings();
+                }));
+
     }
 
     /**

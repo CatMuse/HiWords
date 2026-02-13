@@ -183,4 +183,20 @@ export default {
         network_error: "🌐 Échec de la connexion réseau. Veuillez vérifier vos paramètres réseau",
         request_failed: "La requête au dictionnaire IA a échoué",
     },
+    
+    selection_bubble: {
+        lookup: "Rechercher",
+        translate: "Traduire",
+        grammar: "Grammaire",
+        add_to_vocab: "Ajouter au vocabulaire",
+        dictionary_not_configured: "Service de dictionnaire non configuré",
+        translation_not_configured: "Service de traduction non configuré",
+        grammar_not_configured: "Analyse grammaticale non configurée",
+        lookup_failed: "Recherche dans le dictionnaire échouée",
+        translation_failed: "Traduction échouée",
+        grammar_failed: "Analyse grammaticale échouée",
+        looking_up: "Recherche en cours...",
+        translating: "Traduction en cours...",
+        analyzing: "Analyse grammaticale en cours...",
+    },
 }

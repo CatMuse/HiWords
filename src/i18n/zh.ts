@@ -81,6 +81,13 @@ export default {
         mode_filename: "仅文件名",
         mode_content: "仅文件内容",
         mode_filename_with_alias: "文件名作为主词，内容作为别名",
+        // I取词菜单设置
+        selection_bubble_menu: "AI取词",
+        enable_selection_bubble: "启用AI取词",
+        enable_selection_bubble_desc: "选中文本后显示取词菜单，提供查词、翻译和语法分析工具（需要先配置大模型API）",
+   
+        ai_output_language: "AI 助手输出语言",
+        ai_output_language_desc: "AI 查词和语法分析结果的显示语言",
     },
     
     // 侧边栏
@@ -155,6 +162,7 @@ export default {
         definition_label: "释义",
         book_label: "单词本",
         select_book: "选择单词本",
+        please_select_book: "请选择单词本",
         color_label: "卡片颜色",
         color_gray: "灰色",
         color_red: "红色",
@@ -195,4 +203,67 @@ export default {
         network_error: "🌐 网络连接失败,请检查网络设置",
         request_failed: "AI 词典请求失败",
     },
-}
+    
+    selection_bubble: {
+        lookup: "查词",
+        translate: "翻译",
+        grammar: "语法分析",
+        add_to_vocab: "添加到单词本",
+        dictionary_not_configured: "词典功能未配置",
+        translation_not_configured: "翻译功能未配置",
+        grammar_not_configured: "语法分析功能未配置",
+        lookup_failed: "查词失败",
+        translation_failed: "翻译失败",
+        grammar_failed: "语法分析失败",
+        looking_up: "查询中...",
+        translating: "翻译中...",
+        analyzing: "语法分析中...",
+    },
+    
+    dictionary: {
+        word_empty: "单词不能为空",
+        word_not_found: "未找到该单词",
+        api_error: "API 请求失败",
+        invalid_response: "无效的响应数据",
+        network_error: "网络错误",
+        provider_not_configured: "词典服务未配置",
+        custom_url_required: "自定义 API 地址必填",
+        play_pronunciation: "播放发音",
+        synonyms: "同义词",
+        antonyms: "反义词",
+        no_definition_found: "未找到释义",
+        view_source: "查看来源",
+        add_to_vocabulary: "添加到单词本",
+        loading: "加载中...",
+        lookup_failed: "查词失败",
+    },
+    
+    translation: {
+        title: "翻译结果",
+        text_empty: "翻译文本不能为空",
+        text_too_long: "翻译文本过长（最多 5000 字符）",
+        provider_not_supported: "不支持的翻译服务",
+        api_error: "翻译 API 请求失败",
+        network_error: "网络错误",
+        invalid_response: "无效的响应数据",
+        api_key_required: "API Key 是必需的",
+        original_text: "原文",
+        translated_text: "译文",
+        translating: "翻译中...",
+    },
+    
+    grammar: {
+        title: "语法分析",
+        text_empty: "分析文本不能为空",
+        text_too_long: "分析文本过长（最多 2000 字符）",
+        analysis_failed: "语法分析失败",
+        original_text: "原文",
+        analysis_result: "分析结果",
+    },
+    
+    common: {
+        close: "关闭",
+        copy: "复制",
+        copied: "已复制",
+    },
+};

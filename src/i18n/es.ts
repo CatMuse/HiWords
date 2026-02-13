@@ -183,4 +183,20 @@ export default {
         network_error: "🌐 Fallo en la conexión de red. Por favor, verifique su configuración de red",
         request_failed: "Solicitud al diccionario AI falló",
     },
+    
+    selection_bubble: {
+        lookup: "Buscar",
+        translate: "Traducir",
+        grammar: "Gramática",
+        add_to_vocab: "Agregar al vocabulario",
+        dictionary_not_configured: "Servicio de diccionario no configurado",
+        translation_not_configured: "Servicio de traducción no configurado",
+        grammar_not_configured: "Análisis gramatical no configurado",
+        lookup_failed: "Búsqueda en diccionario falló",
+        translation_failed: "Traducción falló",
+        grammar_failed: "Análisis gramatical falló",
+        looking_up: "Buscando...",
+        translating: "Traduciendo...",
+        analyzing: "Analizando gramática...",
+    },
 }

@@ -58,6 +58,10 @@ export interface HiWordsSettings {
     highlightPaths?: string; // 文件路径列表（逗号分隔）
     // 文件节点解析模式
     fileNodeParseMode?: 'filename' | 'content' | 'filename-with-alias'; // 文件节点解析模式
+    // 文本选择气泡菜单配置
+    selectionBubble?: boolean;
+    // AI 助手输出语言（查词和语法分析共用）
+    aiOutputLanguage?: string;
 }
 
 // 词汇匹配信息
