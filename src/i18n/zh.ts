@@ -49,6 +49,8 @@ export default {
         ai_model_desc: "AI 模型标识符 (例如: gpt-4o-mini, deepseek-chat)",
         ai_prompt: "自定义提示词",
         ai_prompt_desc: "使用 {{word}} 和 {{sentence}} 作为占位符。AI 将使用此提示词生成释义",
+        ai_test_connection: "测试 AI 连接",
+        ai_test_connection_desc: "发送一个轻量测试请求，验证 API 地址、Key 和模型是否可用",
         // 自动布局
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
@@ -137,6 +139,9 @@ export default {
         book_added: "已添加生词本: {0}",
         book_reloaded: "已重新加载: {0}",
         book_removed: "已删除生词本: {0}",
+        testing_ai_connection: "正在测试 AI 连接...",
+        ai_connection_success: "AI 连接成功",
+        ai_connection_failed: "AI 连接测试失败",
         deleting_word: "正在删除词汇...",
         word_deleted: "词汇已删除",
         delete_word_failed: "删除词汇失败，请检查生词本文件",

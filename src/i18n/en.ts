@@ -49,6 +49,8 @@ export default {
         ai_model_desc: "AI model identifier (e.g., gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Custom Prompt",
         ai_prompt_desc: "Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions",
+        ai_test_connection: "Test AI connection",
+        ai_test_connection_desc: "Send a small test request to verify your API URL, key, and model",
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
@@ -137,6 +139,9 @@ export default {
         book_added: "Added vocabulary book: {0}",
         book_reloaded: "Reloaded vocabulary book: {0}",
         book_removed: "Removed vocabulary book: {0}",
+        testing_ai_connection: "Testing AI connection...",
+        ai_connection_success: "AI connection successful",
+        ai_connection_failed: "AI connection test failed",
         deleting_word: "Deleting word...",
         word_deleted: "Word deleted",
         delete_word_failed: "Failed to delete word, please check the vocabulary book file",

@@ -3,9 +3,11 @@ import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle } from '../utils';
 import { CanvasParser } from '../canvas';
 import { t } from '../i18n';
+import { DictionaryService } from '../services/dictionary-service';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
+    private isTestingAIConnection = false;
 
     constructor(app: App, plugin: HiWordsPlugin) {
         super(app, plugin);
@@ -34,12 +36,15 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 }));
 
         // 文件路径输入框（上下结构）
-        new Setting(containerEl)
+        const pathsSetting = new Setting(containerEl)
             .setName(t('settings.highlight_paths'))
             .setDesc(t('settings.highlight_paths_desc'));
-        
-        // 创建全宽文本域
-        const textAreaContainer = containerEl.createDiv({ cls: 'hi-words-textarea-container' });
+
+        pathsSetting.settingEl.addClass('hi-words-setting-textarea');
+        pathsSetting.controlEl.empty();
+
+        // 在当前设置项内创建全宽文本域
+        const textAreaContainer = pathsSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
         const textArea = textAreaContainer.createEl('textarea');
         textArea.placeholder = t('settings.highlight_paths_placeholder') || 'e.g.: Archive, Templates, Private/Diary';
         textArea.value = this.plugin.settings.highlightPaths || '';
@@ -124,21 +129,15 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const { containerEl } = this;
 
         // 翻译提示词
-        const promptContainer = containerEl.createDiv({ cls: 'hiwords-form-item' });
-        new Setting(promptContainer)
+        const promptSetting = new Setting(containerEl)
             .setName(t('settings.translate_prompt'))
             .setDesc(t('settings.translate_prompt_desc'));
 
-        const textArea = promptContainer.createEl('textarea', { cls: 'hi-words-textarea-container' });
-        textArea.style.width = '100%';
-        textArea.style.fontFamily = 'var(--font-monospace)';
-        textArea.style.fontSize = 'var(--font-ui-small)';
-        textArea.style.padding = '8px';
-        textArea.style.border = '1px solid var(--background-modifier-border)';
-        textArea.style.borderRadius = '4px';
-        textArea.style.backgroundColor = 'var(--background-primary)';
-        textArea.style.color = 'var(--text-normal)';
-        textArea.style.resize = 'vertical';
+        promptSetting.settingEl.addClass('hi-words-setting-textarea');
+        promptSetting.controlEl.empty();
+
+        const textAreaContainer = promptSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
+        const textArea = textAreaContainer.createEl('textarea');
         textArea.rows = 3;
         textArea.value = this.plugin.settings.translatePrompt || '';
         textArea.placeholder = 'Translate the following text to {{to}}. Only return the translation.\n\nText: {{text}}';
@@ -287,6 +286,49 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
+     * 测试 AI 服务连接
+     */
+    private async testAIConnection() {
+        if (this.isTestingAIConnection) return;
+
+        this.ensureAIDictionaryConfig();
+        this.isTestingAIConnection = true;
+
+        const loadingNotice = new Notice(
+            t('notices.testing_ai_connection') || 'Testing AI connection...',
+            0
+        );
+
+        try {
+            const service = new DictionaryService(this.plugin.settings.aiDictionary!);
+            const result = await service.fetchDefinition(
+                'test',
+                'This is a test sentence for checking the AI connection.'
+            );
+
+            loadingNotice.hide();
+
+            if (!result.trim()) {
+                throw new Error(t('ai_errors.invalid_response'));
+            }
+
+            new Notice(
+                t('notices.ai_connection_success') || 'AI connection successful',
+                5000
+            );
+        } catch (error) {
+            loadingNotice.hide();
+            console.error('AI connection test failed:', error);
+            const errorMessage = error instanceof Error
+                ? error.message
+                : (t('notices.ai_connection_failed') || 'AI connection test failed');
+            new Notice(errorMessage, 6000);
+        } finally {
+            this.isTestingAIConnection = false;
+        }
+    }
+
+    /**
      * 3. 添加学习功能设置
      */
     private addLearningFeaturesSection() {
@@ -412,13 +454,16 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // Custom Prompt（上下结构）
-        new Setting(containerEl)
+        // Custom Prompt（将文本域放入同一个设置块内）
+        const promptSetting = new Setting(containerEl)
             .setName(t('settings.ai_prompt') || 'Custom Prompt')
             .setDesc(t('settings.ai_prompt_desc') || 'Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions.');
-        
-        // 创建全宽文本域
-        const promptContainer = containerEl.createDiv({ cls: 'hi-words-textarea-container' });
+
+        promptSetting.settingEl.addClass('hi-words-setting-textarea');
+        promptSetting.controlEl.empty();
+
+        // 在当前设置项内创建全宽文本域
+        const promptContainer = promptSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
         const promptTextArea = promptContainer.createEl('textarea');
         const defaultPrompt = 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)';
         promptTextArea.placeholder = defaultPrompt;
@@ -431,6 +476,16 @@ export class HiWordsSettingTab extends PluginSettingTab {
             this.plugin.settings.aiDictionary!.prompt = promptTextArea.value;
             await this.plugin.saveSettings();
         });
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_test_connection') || 'Test AI connection')
+            .setDesc(t('settings.ai_test_connection_desc') || 'Send a small test request to verify your API URL, key, and model')
+            .addButton(button => button
+                .setButtonText(t('settings.ai_test_connection') || 'Test AI connection')
+                .setCta()
+                .onClick(async () => {
+                    await this.testAIConnection();
+                }));
 
     }
 
@@ -628,4 +683,3 @@ class CanvasPickerModal extends FuzzySuggestModal<TFile> {
         this.onSelect(file);
     }
 }
-

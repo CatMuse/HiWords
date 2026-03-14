@@ -57,6 +57,8 @@ export interface LanguagePack {
         ai_model_desc?: string;
         ai_prompt?: string;
         ai_prompt_desc?: string;
+        ai_test_connection?: string;
+        ai_test_connection_desc?: string;
         // Auto layout section
         auto_layout: string;
         enable_auto_layout: string;
@@ -117,6 +119,9 @@ export interface LanguagePack {
         book_added: string;
         book_reloaded: string;
         book_removed: string;
+        testing_ai_connection?: string;
+        ai_connection_success?: string;
+        ai_connection_failed?: string;
     };
     modals: {
         auto_fill_definition?: string;
