@@ -18,6 +18,8 @@ export class AddWordModal extends Modal {
     
     // 静态变量，记住用户上次选择的生词本（重启后丢失）
     private static lastSelectedBookPath: string | null = null;
+    // 静态变量，记住用户上次选择的颜色（重启后丢失）
+    private static lastSelectedColorValue: string | null = null;
 
     /**
      * 构造函数
@@ -122,7 +124,10 @@ export class AddWordModal extends Modal {
         colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'hiwords-form-item-label' });
         
         const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown setting-item-select' });
-        colorSelect.createEl('option', { text: t('modals.color_gray'), value: '' });
+        const grayOption = colorSelect.createEl('option', { text: t('modals.color_gray'), value: '' });
+        if (!this.isEditMode && AddWordModal.lastSelectedColorValue === '') {
+            grayOption.selected = true;
+        }
         
         // Canvas 支持的颜色
         const colors = [
@@ -139,6 +144,10 @@ export class AddWordModal extends Modal {
             
             // 如果是编辑模式且当前词汇使用此颜色，则选中该选项
             if (this.isEditMode && this.definition && this.definition.color === color.value) {
+                option.selected = true;
+            }
+            // 如果是添加模式，优先选择上次使用的颜色
+            else if (!this.isEditMode && AddWordModal.lastSelectedColorValue === color.value) {
                 option.selected = true;
             }
         });
@@ -372,6 +381,8 @@ export class AddWordModal extends Modal {
                     if (success) {
                         // 保存用户选择的生词本到缓存
                         AddWordModal.lastSelectedBookPath = selectedBook;
+                        // 保存用户选择的颜色到缓存（空值表示默认灰色）
+                        AddWordModal.lastSelectedColorValue = colorSelect.value || '';
                         // 使用格式化字符串替换
                         const successMessage = t('notices.word_added_success').replace('{0}', finalWord);
                         new Notice(successMessage);
