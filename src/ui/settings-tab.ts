@@ -478,11 +478,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
         });
 
         // 额外请求参数设置
-        new Setting(containerEl)
+        const extraParamsSetting = new Setting(containerEl)
             .setName(t('settings.ai_extra_params') || 'Extra Request Parameters')
             .setDesc(t('settings.ai_extra_params_desc') || 'Add custom JSON parameters to AI request body (Advanced)');
 
-        const jsonContainer = containerEl.createDiv({ cls: 'hi-words-json-editor-container' });
+        extraParamsSetting.settingEl.addClass('hi-words-setting-textarea');
+        extraParamsSetting.controlEl.empty();
+
+        const jsonContainer = extraParamsSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
         const jsonTextArea = jsonContainer.createEl('textarea', { cls: 'hi-words-json-editor' });
 
         jsonTextArea.placeholder = t('settings.ai_extra_params_placeholder') || '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}';

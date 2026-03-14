@@ -1022,11 +1022,6 @@
     flex: 0 0 auto;
     width: 100%;
     max-width: 100%;
-
-/* JSON 编辑器容器 */
-.hi-words-json-editor-container {
-    margin-top: 8px;
-    margin-bottom: 16px;
 }
 
 /* JSON 编辑器文本域 */
@@ -1036,29 +1031,21 @@
     resize: vertical;
     font-family: var(--font-monospace);
     font-size: var(--font-ui-small);
-    padding: 12px;
+    padding: 8px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 4px;
     background-color: var(--background-primary);
     color: var(--text-normal);
-    line-height: 1.5;
 }
 
 .hi-words-json-editor:focus {
     outline: none;
     border-color: var(--interactive-accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
 }
 
 /* JSON 错误状态 */
 .hi-words-json-editor.hi-words-json-error {
     border-color: var(--text-error);
-    background-color: color-mix(in srgb, var(--text-error) 10%, transparent);
-}
-
-.hi-words-json-editor.hi-words-json-error:focus {
-    border-color: var(--text-error);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-error) 20%, transparent);
 }
 
 /* 添加生词本按钮样式 */

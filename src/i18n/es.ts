@@ -45,6 +45,9 @@ export default {
         ai_model_desc: "Nombre del modelo de AI (ej., gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Prompt personalizado",
         ai_prompt_desc: "Usar {{word}} y {{sentence}} como marcadores de posición. La AI usará este prompt para generar definiciones",
+        ai_extra_params: "Parámetros extra de la solicitud",
+        ai_extra_params_desc: "Añade parámetros JSON personalizados al cuerpo de la solicitud de IA (avanzado)",
+        ai_extra_params_placeholder: '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}',
         // Auto layout
         auto_layout: "Diseño automático del lienzo",
         enable_auto_layout: "Habilitar diseño automático",
@@ -198,5 +201,6 @@ export default {
         server_error: "🔧 El servicio API no está disponible temporalmente. Por favor, inténtelo de nuevo más tarde",
         network_error: "🌐 Fallo en la conexión de red. Por favor, verifique su configuración de red",
         request_failed: "Solicitud al diccionario AI falló",
+        invalid_json_format: "Formato JSON no válido, por favor revise la sintaxis",
     },
 }

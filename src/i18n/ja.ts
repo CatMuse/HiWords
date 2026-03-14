@@ -43,6 +43,9 @@ export default {
         ai_model_desc: "AIモデル名（例：gpt-4o-mini、deepseek-chat）",
         ai_prompt: "カスタムプロンプト",
         ai_prompt_desc: "{{word}}と{{sentence}}をプレースホルダーとして使用。AIはこのプロンプトを使用して定義を生成します",
+        ai_extra_params: "追加リクエストパラメータ",
+        ai_extra_params_desc: "AIリクエスト本文にカスタム JSON パラメータを追加します（上級者向け）",
+        ai_extra_params_placeholder: '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}',
         // Auto layout
         auto_layout: "キャンバス自動レイアウト",
         enable_auto_layout: "自動レイアウトを有効化",
@@ -196,5 +199,6 @@ export default {
         server_error: "🔧 APIサービスが一時的に利用できません。後でもう一度お試しください",
         network_error: "🌐 ネットワーク接続に失敗しました。ネットワーク設定を確認してください",
         request_failed: "AI辞書リクエストが失敗しました",
+        invalid_json_format: "JSON 形式が無効です。構文を確認してください",
     },
 }

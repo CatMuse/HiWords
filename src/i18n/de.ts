@@ -43,6 +43,9 @@ export default {
         ai_model_desc: "KI-Modellname (z.B. gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Benutzerdefinierter Prompt",
         ai_prompt_desc: "{{word}} und {{sentence}} als Platzhalter verwenden. Die KI wird diesen Prompt verwenden, um Definitionen zu generieren",
+        ai_extra_params: "Zusätzliche Anfrageparameter",
+        ai_extra_params_desc: "Benutzerdefinierte JSON-Parameter zum Anfrage-Body der KI hinzufügen (fortgeschritten)",
+        ai_extra_params_placeholder: '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}',
         // Auto layout
         auto_layout: "Automatisches Canvas-Layout",
         enable_auto_layout: "Automatisches Layout aktivieren",
@@ -196,5 +199,6 @@ export default {
         server_error: "🔧 API-Dienst ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut",
         network_error: "🌐 Netzwerkverbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Netzwerkeinstellungen",
         request_failed: "KI-Wörterbuch-Anfrage fehlgeschlagen",
+        invalid_json_format: "Ungültiges JSON-Format, bitte prüfen Sie die Syntax",
     },
 }
