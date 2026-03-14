@@ -3,7 +3,7 @@
 export default {
     // 通用
     plugin_name: "HiWords",
-    
+
     // 设置
     settings: {
         vocabulary_books: "单词本",
@@ -51,6 +51,9 @@ export default {
         ai_prompt_desc: "使用 {{word}} 和 {{sentence}} 作为占位符。AI 将使用此提示词生成释义",
         ai_test_connection: "测试 AI 连接",
         ai_test_connection_desc: "发送一个轻量测试请求，验证 API 地址、Key 和模型是否可用",
+        ai_extra_params: "额外请求参数",
+        ai_extra_params_desc: "添加自定义 JSON 参数到 AI 请求体中（高级用户）",
+        ai_extra_params_placeholder: '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}',
         // 自动布局
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
@@ -92,7 +95,7 @@ export default {
         translate_prompt: "翻译提示词",
         translate_prompt_desc: "AI 翻译的提示词模板，使用 {{text}} 和 {{to}} 作为占位符",
     },
-    
+
     // 侧边栏
     sidebar: {
         title: "HiWords",
@@ -106,7 +109,7 @@ export default {
         no_learning_words: "没有待学习的单词",
         no_mastered_words: "没有已掌握的单词",
     },
-    
+
     // 命令
     commands: {
         refresh_vocabulary: "刷新生词本",
@@ -115,7 +118,7 @@ export default {
         show_sidebar: "显示 HiWords 侧边栏",
         add_selected_word: "添加单词",
     },
-    
+
     // 通知消息
     notices: {
         enter_word_first: "请先输入单词",
@@ -159,7 +162,7 @@ export default {
         batch_marked_success: "成功标记 {0} 个单词为已掌握",
         book_path_updated: "单词本路径已更新: {0}",
     },
-    
+
     // 模态框
     modals: {
         auto_fill_definition: "AI 释义",
@@ -215,5 +218,6 @@ export default {
         server_error: "🔧 API 服务暂时不可用,请稍后再试",
         network_error: "🌐 网络连接失败,请检查网络设置",
         request_failed: "AI 词典请求失败",
+        invalid_json_format: "JSON 格式无效，请检查语法",
     },
 }

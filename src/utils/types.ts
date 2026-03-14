@@ -47,6 +47,7 @@ export interface HiWordsSettings {
         apiKey: string;      // API Key
         model: string;       // 模型名称
         prompt: string;      // 自定义 prompt 模板
+        extraParams?: string; // 额外请求参数（JSON 字符串格式）
     };
     // 自动布局设置（简化版）
     autoLayoutEnabled?: boolean; // 是否启用自动布局（使用固定参数的简单网格）

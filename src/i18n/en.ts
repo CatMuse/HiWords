@@ -3,7 +3,7 @@
 export default {
     // General
     plugin_name: "HiWords",
-    
+
     // Settings
     settings: {
         vocabulary_books: "Word books",
@@ -51,6 +51,9 @@ export default {
         ai_prompt_desc: "Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions",
         ai_test_connection: "Test AI connection",
         ai_test_connection_desc: "Send a small test request to verify your API URL, key, and model",
+        ai_extra_params: "Extra Request Parameters",
+        ai_extra_params_desc: "Add custom JSON parameters to AI request body (Advanced)",
+        ai_extra_params_placeholder: '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}',
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
@@ -92,7 +95,7 @@ export default {
         translate_prompt: "Translation prompt",
         translate_prompt_desc: "AI translation prompt template. Use {{text}} and {{to}} as placeholders",
     },
-    
+
     // Sidebar
     sidebar: {
         title: "HiWords",
@@ -106,7 +109,7 @@ export default {
         no_learning_words: "No words to learn",
         no_mastered_words: "No mastered words",
     },
-    
+
     // Commands
     commands: {
         refresh_vocabulary: "Refresh vocabulary",
@@ -115,7 +118,7 @@ export default {
         show_sidebar: "Show HiWords sidebar",
         add_selected_word: "Add word",
     },
-    
+
     // Notices
     notices: {
         enter_word_first: "Please enter a word first",
@@ -159,7 +162,7 @@ export default {
         batch_marked_success: "Successfully marked {0} words as mastered",
         book_path_updated: "Vocabulary book path updated: {0}",
     },
-    
+
     // Modals
     modals: {
         auto_fill_definition: "AI Define",
@@ -215,5 +218,6 @@ export default {
         server_error: "🔧 API service is temporarily unavailable. Please try again later",
         network_error: "🌐 Network connection failed. Please check your network settings",
         request_failed: "AI dictionary request failed",
+        invalid_json_format: "Invalid JSON format, please check syntax",
     },
 }
