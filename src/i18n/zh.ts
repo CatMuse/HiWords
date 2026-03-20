@@ -15,6 +15,8 @@ export default {
         enable_auto_highlight_desc: "在阅读时自动高亮生词本中的词汇",
         highlight_style: "高亮样式",
         highlight_style_desc: "选择单词在文本中的高亮显示方式",
+        enable_section_tabs: "启用分区 Tab 显示",
+        enable_section_tabs_desc: "将使用 --- 分隔、**标题** 标记的多段释义渲染为侧边栏和悬停弹窗中的标签页",
         style_underline: "下划线",
         style_background: "背景高亮",
         style_bold: "粗体",

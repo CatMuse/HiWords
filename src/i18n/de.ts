@@ -15,6 +15,8 @@ export default {
         enable_auto_highlight_desc: "Wörter aus den Wörterbüchern beim Lesen automatisch hervorheben",
         highlight_style: "Hervorhebungsstil",
         highlight_style_desc: "Wählen Sie, wie Wörter im Text hervorgehoben werden",
+        enable_section_tabs: "Abschnitt-Tabs aktivieren",
+        enable_section_tabs_desc: "Mehrteilige Definitionen als Tabs in der Seitenleiste und im Hover-Popup anzeigen",
         style_underline: "Unterstreichen",
         style_background: "Hintergrund",
         style_bold: "Fett",

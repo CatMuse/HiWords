@@ -5,11 +5,18 @@ import type { AllCanvasNodeData, CanvasData as ObsidianCanvasData } from 'obsidi
 export type CanvasNode = AllCanvasNodeData;
 export type CanvasData = ObsidianCanvasData;
 
+export interface WordSection {
+    title: string;
+    content: string;
+}
+
 // 词汇定义
 export interface WordDefinition {
     word: string;
     aliases?: string[]; // 单词的别名列表
-    definition: string;
+    definition: string; // 兼容旧版：有分区时保存首个分区内容
+    rawDefinition?: string; // 原始完整定义（包含所有分区）
+    sections?: WordSection[]; // 使用 --- 分隔的多分区内容
     source: string; // Canvas 文件路径
     nodeId: string; // Canvas 节点 ID
     color?: string;
@@ -59,6 +66,8 @@ export interface HiWordsSettings {
     highlightPaths?: string; // 文件路径列表（逗号分隔）
     // 文件节点解析模式
     fileNodeParseMode?: 'filename' | 'content' | 'filename-with-alias'; // 文件节点解析模式
+    // 启用分区 Tab 显示
+    enableSectionTabs?: boolean;
     // 划词翻译配置
     enableSelectionTranslate?: boolean;       // 是否启用划词翻译
     translateTargetLang?: string;              // 目标语言（默认 'zh-CN'）

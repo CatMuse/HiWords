@@ -15,6 +15,8 @@ export default {
         enable_auto_highlight_desc: "読書中に単語帳の単語を自動的にハイライトします",
         highlight_style: "ハイライトスタイル",
         highlight_style_desc: "テキスト中の単語のハイライト方法を選択",
+        enable_section_tabs: "セクションタブを有効化",
+        enable_section_tabs_desc: "複数セクションの定義をサイドバーとホバーポップオーバーでタブ表示します",
         style_underline: "下線",
         style_background: "背景",
         style_bold: "太字",

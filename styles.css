@@ -73,6 +73,33 @@
     transition: opacity 0.2s ease;
 }
 
+.hi-words-tooltip-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-tooltip-tab {
+    cursor: pointer;
+    color: var(--text-faint);
+    font-size: 13px;
+    line-height: 1.2;
+    padding: 2px 0;
+    transition: color 0.2s ease;
+}
+
+.hi-words-tooltip-tab:hover:not(.active) {
+    color: var(--text-normal);
+}
+
+.hi-words-tooltip-tab.active {
+    color: var(--text-accent);
+    font-weight: 600;
+}
+
 @keyframes hi-words-tooltip-fade-in {
     from {
         opacity: 0;
@@ -609,6 +636,33 @@
     z-index: 1;
     width: 100%;
     min-height: 24px;
+}
+
+.hi-words-card-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-card-tab {
+    cursor: pointer;
+    color: var(--text-faint);
+    font-size: 12px;
+    line-height: 1.2;
+    padding: 2px 0;
+    transition: color 0.2s ease;
+}
+
+.hi-words-card-tab:hover:not(.active) {
+    color: var(--text-normal);
+}
+
+.hi-words-card-tab.active {
+    color: var(--text-accent);
+    font-weight: 600;
 }
 
 .hi-words-title-mastered-button {

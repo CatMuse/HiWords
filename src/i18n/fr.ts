@@ -15,6 +15,8 @@ export default {
         enable_auto_highlight_desc: "Surligner automatiquement les mots des livres pendant la lecture",
         highlight_style: "Style de surlignage",
         highlight_style_desc: "Choisissez la façon dont les mots sont surlignés",
+        enable_section_tabs: "Activer les onglets de section",
+        enable_section_tabs_desc: "Affiche les définitions multi-sections sous forme d'onglets dans la barre latérale et l'infobulle",
         style_underline: "Souligné",
         style_background: "Fond",
         style_bold: "Gras",

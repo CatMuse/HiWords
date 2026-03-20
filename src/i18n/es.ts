@@ -15,6 +15,8 @@ export default {
         enable_auto_highlight_desc: "Resaltar automáticamente palabras de los libros mientras lees",
         highlight_style: "Estilo de resaltado",
         highlight_style_desc: "Elige cómo se resaltan las palabras en el texto",
+        enable_section_tabs: "Activar pestañas de secciones",
+        enable_section_tabs_desc: "Renderiza definiciones con varias secciones como pestañas en la barra lateral y en la vista emergente",
         style_underline: "Subrayado",
         style_background: "Fondo",
         style_bold: "Negrita",

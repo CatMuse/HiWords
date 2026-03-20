@@ -15,6 +15,8 @@ export default {
         enable_auto_highlight_desc: "Automatically highlight words from vocabulary books while reading",
         highlight_style: "Highlight style",
         highlight_style_desc: "Choose how words are highlighted in text",
+        enable_section_tabs: "Enable section tabs",
+        enable_section_tabs_desc: "Render multi-section definitions as tabs in the sidebar card and hover popover",
         style_underline: "Underline",
         style_background: "Background",
         style_bold: "Bold",

@@ -225,8 +225,8 @@ export class AddWordModal extends Modal {
         definitionInput.rows = 5;
         
         // 如果是编辑模式且当前词汇有定义，则预填充定义
-        if (this.isEditMode && this.definition && this.definition.definition) {
-            definitionInput.value = this.definition.definition;
+        if (this.isEditMode && this.definition) {
+            definitionInput.value = this.definition.rawDefinition || this.definition.definition;
         }
         // 如果有预填充释义（来自划词翻译），则填入
         else if (this.prefilledDefinition) {

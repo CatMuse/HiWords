@@ -250,6 +250,17 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        new Setting(containerEl)
+            .setName(t('settings.enable_section_tabs'))
+            .setDesc(t('settings.enable_section_tabs_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableSectionTabs ?? true)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableSectionTabs = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                }));
+
         // 高亮样式选择
         new Setting(containerEl)
             .setName(t('settings.highlight_style'))

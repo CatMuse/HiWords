@@ -31,6 +31,8 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     highlightPaths: '',
     // 文件节点解析模式
     fileNodeParseMode: 'filename-with-alias',
+    // 分区 Tab 显示
+    enableSectionTabs: true,
     // 划词翻译配置
     enableSelectionTranslate: false,
     translateTargetLang: 'zh-CN',

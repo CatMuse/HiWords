@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { CanvasData, CanvasNode, WordDefinition, HiWordsSettings } from '../utils';
+import { CanvasData, CanvasNode, WordDefinition, WordSection, HiWordsSettings } from '../utils';
 import { parsePhrase } from '../utils/pattern-matcher';
 
 export class CanvasParser {
@@ -64,6 +64,40 @@ export class CanvasParser {
             }
         }
         return text;
+    }
+
+    /**
+     * 解析分区内容：使用 --- 分隔，段首 **标题** 作为分区标题
+     */
+    private parseSections(content: string): WordSection[] {
+        if (!content) return [];
+
+        const sectionTexts = content.split(/\n\s*---\s*\n/);
+        const sections: WordSection[] = [];
+
+        for (const sectionText of sectionTexts) {
+            const trimmed = sectionText.trim();
+            if (!trimmed) continue;
+
+            const lines = trimmed.split('\n');
+            const firstLine = lines[0].trim();
+            const boldMatch = firstLine.match(/^\*\*(.+?)\*\*$/);
+
+            if (boldMatch) {
+                sections.push({
+                    title: boldMatch[1].trim(),
+                    content: lines.slice(1).join('\n').trim(),
+                });
+                continue;
+            }
+
+            sections.push({
+                title: sections.length === 0 ? '释义' : `内容 ${sections.length + 1}`,
+                content: trimmed,
+            });
+        }
+
+        return sections;
     }
 
     /**
@@ -162,7 +196,13 @@ export class CanvasParser {
                     const line = lines[i].trim();
                     
                     // 检查斜体格式别名 *alias1, alias2, alias3*
-                    if (line.startsWith('*') && line.endsWith('*') && line.length > 2) {
+                    if (
+                        line.startsWith('*') &&
+                        line.endsWith('*') &&
+                        line.length > 2 &&
+                        !line.startsWith('**') &&
+                        !line.endsWith('**')
+                    ) {
                         const aliasText = line.slice(1, -1); // 去掉首尾的 *
                         const aliasArray = aliasText.split(',').map(a => a.trim()).filter(a => a);
                         aliases.push(...aliasArray);
@@ -195,11 +235,22 @@ export class CanvasParser {
 
             // 解析短语，检测是否为模式短语
             const phraseInfo = parsePhrase(word);
+            const rawDefinition = definition;
+            let sections: WordSection[] | undefined;
+
+            if (definition && definition.includes('\n---\n')) {
+                sections = this.parseSections(definition);
+                if (sections.length > 0) {
+                    definition = sections[0].content;
+                }
+            }
             
             const result: WordDefinition = {
                 word: phraseInfo.isPattern ? phraseInfo.original : word.toLowerCase(), // 模式短语保持原样，普通单词转小写
                 aliases: aliases.length > 0 ? aliases : undefined,
                 definition,
+                rawDefinition: rawDefinition || definition,
+                sections,
                 source: sourcePath,
                 nodeId: node.id,
                 color: node.color,

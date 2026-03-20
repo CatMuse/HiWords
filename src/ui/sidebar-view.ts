@@ -19,6 +19,7 @@ export class HiWordsSidebarView extends ItemView {
     private lastInteractionTime = 0; // 最后一次交互的时间戳
     private patternDefinitionsCache: WordDefinition[] = []; // 缓存模式短语列表
     private normalDefinitionsCache: WordDefinition[] = []; // 缓存普通单词列表
+    private sectionTabStates: Map<string, number> = new Map(); // 记录每个单词当前激活的分区 Tab
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -101,12 +102,13 @@ export class HiWordsSidebarView extends ItemView {
             })
         );
         
-        // 监听文件修改（包括 Canvas 文件的修改）
+        // 监听文件修改（包括 Canvas 文件和被引用的 Markdown 文件）
         this.registerEvent(
             this.app.vault.on('modify', (file) => {
-                // 如果修改的是 Canvas 文件，则刷新侧边栏
-                if (file instanceof TFile && file.extension === 'canvas') {
-                    this.scheduleUpdate(250);
+                if (file instanceof TFile) {
+                    if (file.extension === 'canvas' || file.extension === 'md') {
+                        this.scheduleUpdate(250);
+                    }
                 }
             })
         );
@@ -422,9 +424,30 @@ export class HiWordsSidebarView extends ItemView {
             
             // 注意：点击事件由事件委托统一处理（bindDelegatedHandlers），无需在此添加监听器
         }
+
+        const enableSectionTabs = this.plugin.settings.enableSectionTabs ?? true;
+        const sections = wordDef.sections;
+        const savedSectionIndex = this.sectionTabStates.get(wordDef.word) ?? 0;
+        const activeSectionIndex = sections && sections.length > savedSectionIndex ? savedSectionIndex : 0;
+
+        if (sections && sections.length > 1 && enableSectionTabs) {
+            const tabsContainer = card.createEl('div', { cls: 'hi-words-card-tabs' });
+
+            sections.forEach((section, index) => {
+                tabsContainer.createEl('div', {
+                    cls: `hi-words-card-tab ${index === activeSectionIndex ? 'active' : ''}`,
+                    text: section.title,
+                    attr: { 'data-section-index': index.toString() }
+                });
+            });
+        }
+
+        const contentToRender = sections && sections.length > 0 && enableSectionTabs
+            ? sections[activeSectionIndex].content
+            : wordDef.definition;
         
         // 定义内容
-        if (wordDef.definition && wordDef.definition.trim()) {
+        if (contentToRender && contentToRender.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
 
             // 外层可折叠容器
@@ -436,26 +459,7 @@ export class HiWordsSidebarView extends ItemView {
             });
 
             // 渲染 Markdown 内容
-            try {
-                // 使用 getMostRecentLeaf 获取最近的视图
-                const leaf = this.app.workspace.getMostRecentLeaf();
-                const activeView = leaf?.view instanceof MarkdownView ? leaf.view : null;
-                const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
-                // 使用新的 render API
-                await MarkdownRenderer.render(
-                    this.plugin.app,
-                    wordDef.definition,
-                    defContainer,
-                    sourcePath,
-                    this
-                );
-                // 渲染完成后绑定交互（下一帧确保节点已生成）
-                requestAnimationFrame(() => this.bindInternalLinksAndTags(defContainer, sourcePath, defContainer));
-            } catch (error) {
-                console.error('Markdown 渲染失败:', error);
-                // 兜底文本
-                defContainer.textContent = wordDef.definition;
-            }
+            await this.renderSectionContent(defContainer, contentToRender);
 
             // 交由批量测量队列统一处理折叠逻辑，避免逐卡片触发布局计算
             this.measureQueue.push(collapsible);
@@ -475,6 +479,34 @@ export class HiWordsSidebarView extends ItemView {
         // 添加已掌握状态样式
         if (isMastered) {
             card.addClass('hi-words-word-card-mastered');
+        }
+    }
+
+    private async renderSectionContent(container: HTMLElement, content: string): Promise<void> {
+        container.empty();
+
+        if (!content || content.trim() === '') {
+            container.textContent = t('sidebar.no_definition');
+            return;
+        }
+
+        try {
+            const leaf = this.app.workspace.getMostRecentLeaf();
+            const activeView = leaf?.view instanceof MarkdownView ? leaf.view : null;
+            const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
+
+            await MarkdownRenderer.render(
+                this.plugin.app,
+                content,
+                container,
+                sourcePath,
+                this
+            );
+
+            requestAnimationFrame(() => this.bindInternalLinksAndTags(container, sourcePath, container));
+        } catch (error) {
+            console.error('Markdown 渲染失败:', error);
+            container.textContent = content;
         }
     }
 
@@ -516,6 +548,37 @@ export class HiWordsSidebarView extends ItemView {
                     e.stopPropagation();
                     const tab = (tabEl.getAttr('data-tab') as 'learning' | 'mastered') || 'learning';
                     if (tab !== this.activeTab) this.switchTab(tab);
+                    return;
+                }
+
+                const cardTabEl = target.closest('.hi-words-card-tab') as HTMLElement | null;
+                if (cardTabEl && root.contains(cardTabEl)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    this.lastInteractionTime = Date.now();
+                    if (this.updateTimer !== null) {
+                        clearTimeout(this.updateTimer);
+                        this.updateTimer = null;
+                    }
+
+                    const sectionIndex = parseInt(cardTabEl.getAttr('data-section-index') || '0', 10);
+                    const card = cardTabEl.closest('.hi-words-word-card') as HTMLElement | null;
+                    const wordText = card?.querySelector('.hi-words-word-text') as HTMLElement | null;
+                    const word = wordText?.textContent?.trim();
+                    if (!card || !word) return;
+
+                    const wordDef = this.currentWords.find(w => w.word === word);
+                    if (!wordDef?.sections || sectionIndex >= wordDef.sections.length) return;
+
+                    this.sectionTabStates.set(word, sectionIndex);
+                    card.querySelectorAll('.hi-words-card-tab').forEach(tab => tab.removeClass('active'));
+                    cardTabEl.addClass('active');
+
+                    const defContainer = card.querySelector('.hi-words-definition') as HTMLElement | null;
+                    if (defContainer) {
+                        void this.renderSectionContent(defContainer, wordDef.sections[sectionIndex].content);
+                    }
                     return;
                 }
 

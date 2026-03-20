@@ -162,6 +162,42 @@ export class DefinitionPopover extends Component {
         }, 80);
     }
 
+    private async renderSectionContent(contentEl: HTMLElement, content: string, tooltip: HTMLElement): Promise<void> {
+        contentEl.empty();
+
+        if (!content || content.trim() === '') {
+            contentEl.textContent = t('sidebar.no_definition');
+            return;
+        }
+
+        try {
+            const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+            const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
+
+            if (this.currentTooltipComponent) {
+                this.removeChild(this.currentTooltipComponent);
+                this.currentTooltipComponent = null;
+            }
+
+            const tempComponent = new Component();
+            this.addChild(tempComponent);
+            this.currentTooltipComponent = tempComponent;
+
+            await MarkdownRenderer.render(
+                this.app,
+                content,
+                contentEl,
+                sourcePath,
+                tempComponent
+            );
+
+            requestAnimationFrame(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip));
+        } catch (error) {
+            console.error('Markdown 渲染失败:', error);
+            contentEl.textContent = content;
+        }
+    }
+
     private handleMouseOver(event: MouseEvent) {
         // 检查是否启用了悬停预览功能
         if (!this.plugin.settings.showDefinitionOnHover) {
@@ -223,8 +259,36 @@ export class DefinitionPopover extends Component {
         // 先添加标题容器
         tooltip.appendChild(titleContainer);
 
+        const wordDef = this.vocabularyManager?.getDefinition(word);
+        const sections = wordDef?.sections;
+        const enableSectionTabs = this.plugin.settings.enableSectionTabs ?? true;
+
+        let contentEl: HTMLElement;
+
+        if (sections && sections.length > 1 && enableSectionTabs) {
+            const tabsContainer = document.createElement('div');
+            tabsContainer.className = 'hi-words-tooltip-tabs';
+
+            sections.forEach((section, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'hi-words-tooltip-tab';
+                if (index === 0) {
+                    tab.classList.add('active');
+                }
+                tab.textContent = section.title;
+                tab.addEventListener('click', () => {
+                    tabsContainer.querySelectorAll('.hi-words-tooltip-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    void this.renderSectionContent(contentEl, sections[index].content, tooltip);
+                });
+                tabsContainer.appendChild(tab);
+            });
+
+            tooltip.appendChild(tabsContainer);
+        }
+
         // 内容
-        const contentEl = document.createElement('div');
+        contentEl = document.createElement('div');
         contentEl.className = 'hi-words-tooltip-content';
         
         // 如果启用了模糊效果，为内容添加模糊样式
@@ -238,34 +302,14 @@ export class DefinitionPopover extends Component {
         // 这样后处理器可以通过 closest() 检测到 .hi-words-tooltip
         tooltip.appendChild(contentEl);
 
-        if (!definition || definition.trim() === '') {
+        const contentToRender = sections && sections.length > 0 && enableSectionTabs
+            ? sections[0].content
+            : definition;
+
+        if (!contentToRender || contentToRender.trim() === '') {
             contentEl.textContent = t('sidebar.no_definition');
         } else {
-            try {
-                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                const sourcePath = (activeView && activeView.file?.path) || this.app.workspace.getActiveFile()?.path || '';
-                
-                // 创建一个短生命周期的 Component
-                const tempComponent = new Component();
-                this.addChild(tempComponent);
-                this.currentTooltipComponent = tempComponent;
-                
-                // 使用新的 render API
-                await MarkdownRenderer.render(
-                    this.app,
-                    definition,
-                    contentEl,
-                    sourcePath,
-                    tempComponent
-                );
-                
-                // 渲染完成后绑定交互（下一帧，确保节点已生成）
-                requestAnimationFrame(() => this.bindInternalLinksAndTags(contentEl, sourcePath, tooltip));
-            } catch (error) {
-                console.error('Markdown 渲染失败:', error);
-                // 降级为纯文本显示
-                contentEl.textContent = definition;
-            }
+            await this.renderSectionContent(contentEl, contentToRender, tooltip);
         }
 
         // 添加已掌握按钮和源信息

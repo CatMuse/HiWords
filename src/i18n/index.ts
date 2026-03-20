@@ -22,6 +22,8 @@ export interface LanguagePack {
         enable_auto_highlight_desc: string;
         highlight_style: string;
         highlight_style_desc: string;
+        enable_section_tabs?: string;
+        enable_section_tabs_desc?: string;
         style_underline: string;
         style_background: string;
         style_bold: string;
