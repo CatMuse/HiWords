@@ -182,6 +182,14 @@
     color: var(--text-muted);
 }
 
+.hi-words-tooltip-content img {
+    display: block;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    margin: 8px 0;
+}
+
 /* Markdown 内容样式 - Tooltip 分隔线 */
 .hi-words-tooltip-content hr {
     border: none;
@@ -239,6 +247,14 @@
     margin: 4px 0;
     padding-left: 10px;
     color: var(--text-muted);
+}
+
+.hi-words-definition img {
+    display: block;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    margin: 8px 0;
 }
 
 /* Markdown 内容样式 - 侧边栏单词卡片 分隔线 */
