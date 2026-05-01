@@ -14,14 +14,56 @@ export function registerPDFHighlighter(plugin: {
   app: any;
   registerEvent: (eventRef: any) => void;
 }): void {
-  
-  // 使用公共的 Trie 构建函数
-
-  // 已处理的文本层集合，避免重复处理
   const processedTextLayers = new WeakSet<HTMLElement>();
-  
-  // 防抖定时器
   let debounceTimer: number | null = null;
+  let refreshTimer: number | null = null;
+  let refreshBurstTimers: number[] = [];
+  const observedTextLayers = new WeakSet<HTMLElement>();
+
+  const clearRefreshBurstTimers = () => {
+    refreshBurstTimers.forEach(timer => window.clearTimeout(timer));
+    refreshBurstTimers = [];
+  };
+
+  const debouncedRefreshPDF = (delay = 150) => {
+    if (refreshTimer) {
+      window.clearTimeout(refreshTimer);
+    }
+
+    refreshTimer = window.setTimeout(() => {
+      refreshVisiblePDFPages(plugin, processedTextLayers);
+      refreshTimer = null;
+    }, delay);
+  };
+
+  const refreshPDFSoon = () => {
+    clearRefreshBurstTimers();
+    [0, 80, 200, 500, 1000].forEach((delay) => {
+      const timer = window.setTimeout(() => {
+        refreshVisiblePDFPages(plugin, processedTextLayers);
+        refreshBurstTimers = refreshBurstTimers.filter(activeTimer => activeTimer !== timer);
+      }, delay);
+      refreshBurstTimers.push(timer);
+    });
+  };
+
+  const handleWindowResize = () => refreshPDFSoon();
+  const handleWindowScroll = () => debouncedRefreshPDF(120);
+
+  const resizeObserver = new ResizeObserver((entries) => {
+    let shouldRefresh = false;
+
+    entries.forEach((entry) => {
+      const target = entry.target as HTMLElement;
+      if (target.closest('.pdf-container, .mod-pdf')) {
+        shouldRefresh = true;
+      }
+    });
+
+    if (shouldRefresh) {
+      refreshPDFSoon();
+    }
+  });
 
   /**
    * 处理 PDF 文本层高亮
@@ -34,9 +76,21 @@ export function registerPDFHighlighter(plugin: {
     processedTextLayers.add(textLayer);
 
     try {
+      observePDFTextLayer(textLayer);
       highlightPDFTextSpans(textLayer, trie, plugin.settings.highlightStyle || 'underline');
     } catch (error) {
       console.error('PDF 文本层高亮处理失败:', error);
+    }
+  };
+
+  const observePDFTextLayer = (textLayer: HTMLElement) => {
+    if (observedTextLayers.has(textLayer)) return;
+    observedTextLayers.add(textLayer);
+    resizeObserver.observe(textLayer);
+
+    const page = textLayer.closest('.page');
+    if (page instanceof HTMLElement) {
+      resizeObserver.observe(page);
     }
   };
 
@@ -79,8 +133,18 @@ export function registerPDFHighlighter(plugin: {
   const setupPDFObserver = () => {
     const observer = new MutationObserver((mutations) => {
       let shouldProcess = false;
+      let shouldRefresh = false;
       
       mutations.forEach((mutation) => {
+        if (
+          mutation.type === 'attributes' &&
+          mutation.target instanceof HTMLElement &&
+          (mutation.target.classList.contains('textLayer') || mutation.target.classList.contains('page')) &&
+          mutation.target.closest('.pdf-container, .mod-pdf')
+        ) {
+          shouldRefresh = true;
+        }
+
         // 检查新增的节点
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
@@ -101,6 +165,10 @@ export function registerPDFHighlighter(plugin: {
         });
       });
       
+      if (shouldRefresh) {
+        refreshPDFSoon();
+      }
+
       if (shouldProcess) {
         debouncedProcessPDF();
       }
@@ -109,7 +177,8 @@ export function registerPDFHighlighter(plugin: {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      attributes: false,
+      attributes: true,
+      attributeFilter: ['style', 'class', 'data-main-rotation'],
       characterData: false
     });
 
@@ -123,10 +192,13 @@ export function registerPDFHighlighter(plugin: {
     plugin.app.workspace.on('layout-change', () => {
       // 延迟处理，确保 PDF 视图完全加载
       setTimeout(() => {
-        debouncedProcessPDF();
+        refreshPDFSoon();
       }, 500);
     })
   );
+
+  window.addEventListener('resize', handleWindowResize);
+  window.addEventListener('scroll', handleWindowScroll, true);
 
   /**
    * 监听活动叶子变化
@@ -168,9 +240,15 @@ export function registerPDFHighlighter(plugin: {
     if (debounceTimer) {
       window.clearTimeout(debounceTimer);
     }
+    if (refreshTimer) {
+      window.clearTimeout(refreshTimer);
+    }
+    clearRefreshBurstTimers();
     observer.disconnect();
-    // WeakSet 没有 clear 方法，重新创建一个新的 WeakSet
-    // processedTextLayers 会在函数作用域结束时自动清理
+    resizeObserver.disconnect();
+    window.removeEventListener('resize', handleWindowResize);
+    window.removeEventListener('scroll', handleWindowScroll, true);
+    clearAllPDFHighlights();
   };
 
   // 将清理函数存储到插件实例上（可选）
@@ -186,38 +264,26 @@ export function registerPDFHighlighter(plugin: {
  * 清除 PDF 文本层中的所有高亮标记
  */
 function clearPDFHighlights(textLayer: HTMLElement): void {
-  const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
-  
-  textSpans.forEach(span => {
-    // 查找高亮元素
-    const highlights = span.querySelectorAll('.hi-words-highlight');
-    if (highlights.length === 0) return;
-    
-    // 提取纯文本内容
-    let textContent = '';
-    span.childNodes.forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        textContent += node.textContent;
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        textContent += (node as HTMLElement).textContent;
-      }
-    });
-    
-    // 清空并重置为纯文本
-    span.innerHTML = '';
-    span.textContent = textContent;
-  });
+  textLayer.querySelectorAll('.hi-words-pdf-highlight').forEach(highlight => highlight.remove());
+}
+
+function clearAllPDFHighlights(): void {
+  document.querySelectorAll('.pdf-container .hi-words-pdf-highlight, .mod-pdf .hi-words-pdf-highlight')
+    .forEach(highlight => highlight.remove());
 }
 
 /**
  * 高亮 PDF 文本层中的所有文本 span
  */
 function highlightPDFTextSpans(textLayer: HTMLElement, trie: Trie, highlightStyle: string): void {
+  bindPDFOverlayHover(textLayer);
+
+  const overlayFragment = document.createDocumentFragment();
+  let hasHighlights = false;
   const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
   
   textSpans.forEach(span => {
-    // 跳过已经高亮的元素和 tooltip 内容
-    if (span.closest('.hi-words-highlight') || span.closest('.hi-words-tooltip')) {
+    if (span.closest('.hi-words-tooltip')) {
       return;
     }
 
@@ -246,44 +312,116 @@ function highlightPDFTextSpans(textLayer: HTMLElement, trie: Trie, highlightStyl
 
     if (filtered.length === 0) return;
 
-    // 创建高亮元素
-    const frag = document.createDocumentFragment();
-    let last = 0;
-    
     for (const match of filtered) {
-      // 添加匹配前的文本
-      if (match.from > last) {
-        frag.appendChild(document.createTextNode(text.slice(last, match.from)));
-      }
-
-      // 创建高亮元素（确保不影响文本流布局）
       const def = match.payload;
       const color = mapCanvasColorToCSSVar(def?.color, 'var(--color-base-60)');
-      const highlightSpan = document.createElement('span');
-      
-      highlightSpan.className = 'hi-words-highlight hi-words-pdf-highlight';
-      highlightSpan.setAttribute('data-word', match.word);
-      if (def?.definition) highlightSpan.setAttribute('data-definition', def.definition);
-      if (color) highlightSpan.setAttribute('data-color', color);
-      highlightSpan.setAttribute('data-style', highlightStyle);
-      // 内联样式：设置颜色变量 + 强制零布局影响
-      const inlineStyle = `${color ? `--word-highlight-color: ${color};` : ''} padding:0; margin:0; border:none;`;
-      highlightSpan.setAttribute('style', inlineStyle);
-      highlightSpan.textContent = text.slice(match.from, match.to);
-      
-      frag.appendChild(highlightSpan);
-      last = match.to;
+      const created = createPDFHighlightOverlay(textLayer, span as HTMLElement, match.from, match.to, {
+        word: match.word,
+        definition: def?.definition,
+        color,
+        style: highlightStyle
+      }, overlayFragment);
+      hasHighlights = hasHighlights || created;
     }
-
-    // 添加剩余文本
-    if (last < text.length) {
-      frag.appendChild(document.createTextNode(text.slice(last)));
-    }
-
-    // 替换原始内容
-    span.innerHTML = '';
-    span.appendChild(frag);
   });
+
+  clearPDFHighlights(textLayer);
+  if (hasHighlights) {
+    textLayer.appendChild(overlayFragment);
+  }
+}
+
+function createPDFHighlightOverlay(
+  textLayer: HTMLElement,
+  textSpan: HTMLElement,
+  from: number,
+  to: number,
+  data: { word: string; definition?: string; color?: string; style: string },
+  target: DocumentFragment
+): boolean {
+  const textNode = Array.from(textSpan.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+  if (!textNode) return false;
+
+  const range = document.createRange();
+  const textLength = textNode.textContent?.length || 0;
+  range.setStart(textNode, Math.min(from, textLength));
+  range.setEnd(textNode, Math.min(to, textLength));
+
+  const layerRect = textLayer.getBoundingClientRect();
+  const scaleX = layerRect.width && textLayer.offsetWidth ? layerRect.width / textLayer.offsetWidth : 1;
+  const scaleY = layerRect.height && textLayer.offsetHeight ? layerRect.height / textLayer.offsetHeight : 1;
+  const rects = Array.from(range.getClientRects());
+  range.detach();
+
+  let created = false;
+  rects.forEach(rect => {
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const overlay = document.createElement('span');
+    overlay.className = 'hi-words-highlight hi-words-pdf-highlight';
+    overlay.setAttribute('data-word', data.word);
+    if (data.definition) overlay.setAttribute('data-definition', data.definition);
+    if (data.color) overlay.setAttribute('data-color', data.color);
+    overlay.setAttribute('data-style', data.style);
+    overlay.style.setProperty('--word-highlight-color', data.color || 'var(--color-base-60)');
+    overlay.style.left = `${(rect.left - layerRect.left) / scaleX + textLayer.scrollLeft}px`;
+    overlay.style.top = `${(rect.top - layerRect.top) / scaleY + textLayer.scrollTop}px`;
+    overlay.style.width = `${rect.width / scaleX}px`;
+    overlay.style.height = `${rect.height / scaleY}px`;
+
+    target.appendChild(overlay);
+    created = true;
+  });
+
+  return created;
+}
+
+function bindPDFOverlayHover(textLayer: HTMLElement): void {
+  if (textLayer.dataset.hiWordsPdfHoverBound === 'true') return;
+  textLayer.dataset.hiWordsPdfHoverBound = 'true';
+
+  let activeOverlay: HTMLElement | null = null;
+
+  const clearActive = () => {
+    if (!activeOverlay) return;
+    activeOverlay.removeClass('is-hovered');
+    activeOverlay.dispatchEvent(new MouseEvent('mouseout', {
+      bubbles: true,
+      relatedTarget: textLayer
+    }));
+    activeOverlay = null;
+  };
+
+  textLayer.addEventListener('mousemove', (event) => {
+    if (event.buttons !== 0) {
+      clearActive();
+      return;
+    }
+
+    const overlays = Array.from(textLayer.querySelectorAll<HTMLElement>('.hi-words-pdf-highlight'));
+    const nextOverlay = overlays.find(overlay => {
+      const rect = overlay.getBoundingClientRect();
+      return event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom;
+    }) || null;
+
+    if (nextOverlay === activeOverlay) return;
+
+    clearActive();
+    activeOverlay = nextOverlay;
+    if (activeOverlay) {
+      activeOverlay.addClass('is-hovered');
+      activeOverlay.dispatchEvent(new MouseEvent('mouseover', {
+        bubbles: true,
+        relatedTarget: textLayer
+      }));
+    }
+  });
+
+  textLayer.addEventListener('mouseleave', clearActive);
+  textLayer.addEventListener('mousedown', clearActive);
 }
 
 /**
@@ -298,7 +436,10 @@ function refreshVisiblePDFPages(
   },
   processedTextLayers: WeakSet<HTMLElement>
 ): void {
-  if (!plugin.settings.enableAutoHighlight) return;
+  if (!plugin.settings.enableAutoHighlight) {
+    clearAllPDFHighlights();
+    return;
+  }
   
   try {
     // 重新构建 Trie
@@ -319,9 +460,6 @@ function refreshVisiblePDFPages(
       
       // 清除该文本层的已处理标记
       processedTextLayers.delete(htmlTextLayer);
-      
-      // 清除现有高亮
-      clearPDFHighlights(htmlTextLayer);
       
       // 重新高亮
       highlightPDFTextSpans(htmlTextLayer, trie, plugin.settings.highlightStyle || 'underline');

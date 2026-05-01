@@ -943,90 +943,96 @@
 
 /* PDF 高亮特定样式 */
 .hi-words-pdf-highlight {
-    /* 继承基础高亮样式，但针对 PDF 做优化 */
-    position: relative;
+    position: absolute;
     z-index: 1;
-    /* 关键：不能有 padding/margin/border，否则会撑开文本导致错位 */
+    pointer-events: none;
     padding: 0 !important;
     margin: 0 !important;
     box-sizing: border-box;
+    color: transparent;
 }
 
 /* PDF 中的下划线样式 - 使用 text-decoration 避免影响布局 */
 .hi-words-pdf-highlight[data-style="underline"] {
-    text-decoration: underline solid var(--word-highlight-color, var(--text-muted)) 2px;
-    border-bottom: none;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
+    text-decoration: none;
+    background: transparent;
+}
+
+.hi-words-pdf-highlight[data-style="underline"]:hover,
+.hi-words-pdf-highlight[data-style="underline"].is-hovered {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
 }
 
 .hi-words-pdf-highlight[data-style="underline"]:hover {
-    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
-    text-decoration: underline solid var(--word-highlight-color, var(--text-muted)) 2px;
-    border-bottom: none;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
 }
 
 /* PDF 中的背景高亮样式 - 使用 box-shadow 模拟 padding 效果，不影响布局 */
 .hi-words-pdf-highlight[data-style="background"] {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 80%, transparent);
     border-radius: 2px;
-    box-shadow: -2px 0 0 0 color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 80%, transparent),
-                2px 0 0 0 color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 80%, transparent);
 }
 
 .hi-words-pdf-highlight[data-style="background"]:hover {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 100%, transparent);
-    box-shadow: -2px 0 0 0 color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 100%, transparent),
-                2px 0 0 0 color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 100%, transparent);
+}
+
+.hi-words-pdf-highlight[data-style="background"].is-hovered {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 100%, transparent);
 }
 
 /* PDF 中的粗体样式 */
 .hi-words-pdf-highlight[data-style="bold"] {
-    font-weight: 700;
-    color: var(--word-highlight-color, var(--text-muted));
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 25%, transparent);
 }
 
 .hi-words-pdf-highlight[data-style="bold"]:hover {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
 }
 
+.hi-words-pdf-highlight[data-style="bold"].is-hovered {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+}
+
 /* PDF 中的点状下划线样式 - 使用 text-decoration 避免影响布局 */
 .hi-words-pdf-highlight[data-style="dotted"] {
-    text-decoration: underline dotted var(--word-highlight-color, var(--text-muted)) 2px;
-    border-bottom: none;
+    border-bottom: 2px dotted var(--word-highlight-color, var(--text-muted)) !important;
+    text-decoration: none;
 }
 
 .hi-words-pdf-highlight[data-style="dotted"]:hover {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
-    text-decoration: underline solid var(--word-highlight-color, var(--text-muted)) 2px;
-    border-bottom: none;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
+}
+
+.hi-words-pdf-highlight[data-style="dotted"].is-hovered {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
 }
 
 /* PDF 中的波浪线样式 */
 .hi-words-pdf-highlight[data-style="wavy"] {
-    text-decoration: wavy underline var(--word-highlight-color, var(--text-muted));
-    text-decoration-thickness: 1.5px;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
 }
 
 .hi-words-pdf-highlight[data-style="wavy"]:hover {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
 }
 
+.hi-words-pdf-highlight[data-style="wavy"].is-hovered {
+    background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
+}
+
 /* PDF 文本层特殊处理 */
 .textLayer .hi-words-pdf-highlight {
-    /* 确保在 PDF 文本层中正确显示，不影响文本布局 */
-    display: inline;
-    line-height: inherit;
-    font-family: inherit;
-    font-size: inherit;
-    letter-spacing: inherit;
-    word-spacing: inherit;
-    vertical-align: baseline;
+    display: block;
 }
 
 /* PDF 容器中的高亮优化 */
 .pdf-container .hi-words-pdf-highlight,
 .mod-pdf .hi-words-pdf-highlight {
-    /* 在 PDF 视图中的特殊优化 */
-    transition: all 0.2s ease;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
 /* 暗色主题下的 PDF 高亮优化 */
