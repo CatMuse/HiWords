@@ -1063,6 +1063,14 @@
     margin-bottom: 8px;
 }
 
+.hi-words-textarea-container .hi-words-reset-prompt-button {
+    margin-top: 8px;
+}
+
+.hi-words-ai-privacy-note {
+    margin: 4px 0 12px;
+}
+
 .hi-words-textarea-container textarea {
     width: 100%;
     resize: vertical;

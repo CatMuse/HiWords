@@ -35,6 +35,27 @@ export interface VocabularyBook {
 // 高亮样式类型
 export type HighlightStyle = 'underline' | 'background' | 'bold' | 'dotted' | 'wavy';
 
+export type AIProvider = 'openai-compatible' | 'anthropic' | 'gemini' | 'custom';
+
+export interface AIServiceSettings {
+    provider: AIProvider;
+    apiUrl: string;
+    apiKey: string;
+    model: string;
+    extraParams: string;
+}
+
+export interface AIDefinitionSettings {
+    enabled: boolean;
+    prompt: string;
+}
+
+export interface SelectionTranslateSettings {
+    enabled: boolean;
+    targetLang: string;
+    prompt: string;
+}
+
 // 插件设置
 export interface HiWordsSettings {
     vocabularyBooks: VocabularyBook[];
@@ -48,14 +69,9 @@ export interface HiWordsSettings {
     masteredDetection?: 'group' | 'color';
     // 发音地址模板（如：https://dict.youdao.com/dictvoice?audio={{word}}&type=2）
     ttsTemplate?: string;
-    // AI 词典配置
-    aiDictionary?: {
-        apiUrl: string;      // AI API 地址
-        apiKey: string;      // API Key
-        model: string;       // 模型名称
-        prompt: string;      // 自定义 prompt 模板
-        extraParams?: string; // 额外请求参数（JSON 字符串格式）
-    };
+    // AI 配置
+    aiService: AIServiceSettings;
+    aiDefinition: AIDefinitionSettings;
     // 自动布局设置（简化版）
     autoLayoutEnabled?: boolean; // 是否启用自动布局（使用固定参数的简单网格）
     // 卡片尺寸设置
@@ -69,9 +85,7 @@ export interface HiWordsSettings {
     // 启用分区 Tab 显示
     enableSectionTabs?: boolean;
     // 划词翻译配置
-    enableSelectionTranslate?: boolean;       // 是否启用划词翻译
-    translateTargetLang?: string;              // 目标语言（默认 'zh-CN'）
-    translatePrompt?: string;                  // AI 翻译的 prompt 模板
+    selectionTranslate: SelectionTranslateSettings;
 }
 
 // 词汇匹配信息

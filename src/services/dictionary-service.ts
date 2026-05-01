@@ -1,12 +1,10 @@
 import { requestUrl } from 'obsidian';
 import { t } from '../i18n';
+import type { AIProvider, AIServiceSettings } from '../utils';
 
 interface AIConfig {
-    apiUrl: string;
-    apiKey: string;
-    model: string;
+    service: AIServiceSettings;
     prompt: string;
-    extraParams?: string; // 额外请求参数（JSON 字符串格式）
 }
 
 type APIType = 'openai' | 'claude' | 'gemini';
@@ -52,7 +50,14 @@ export class DictionaryService {
             buildHeaders: (apiKey: string) => ({
                 'Authorization': `Bearer ${apiKey}`
             }),
-            extractResponse: (data: any) => data?.choices?.[0]?.message?.content
+            extractResponse: (data: any) => data?.choices?.[0]?.message?.content,
+            buildUrl: (baseUrl: string) => {
+                const normalized = baseUrl.replace(/\/$/, '');
+                if (normalized.endsWith('/chat/completions')) {
+                    return normalized;
+                }
+                return `${normalized}/chat/completions`;
+            }
         },
         claude: {
             buildRequest: (model: string, prompt: string) => ({
@@ -64,7 +69,14 @@ export class DictionaryService {
                 'x-api-key': apiKey,
                 'anthropic-version': '2023-06-01'
             }),
-            extractResponse: (data: any) => data?.content?.[0]?.text
+            extractResponse: (data: any) => data?.content?.[0]?.text,
+            buildUrl: (baseUrl: string) => {
+                const normalized = baseUrl.replace(/\/$/, '');
+                if (normalized.endsWith('/messages')) {
+                    return normalized;
+                }
+                return `${normalized}/v1/messages`;
+            }
         },
         gemini: {
             buildRequest: (model: string, prompt: string) => ({
@@ -90,7 +102,16 @@ export class DictionaryService {
      * 自动检测 API 类型
      */
     private detectAPIType(): APIType {
-        const url = this.config.apiUrl.toLowerCase();
+        if (this.config.service.provider !== 'custom') {
+            const providerMap: Record<Exclude<AIProvider, 'custom'>, APIType> = {
+                'openai-compatible': 'openai',
+                anthropic: 'claude',
+                gemini: 'gemini'
+            };
+            return providerMap[this.config.service.provider];
+        }
+
+        const url = this.config.service.apiUrl.toLowerCase();
         
         if (url.includes('anthropic')) {
             return 'claude';
@@ -108,15 +129,15 @@ export class DictionaryService {
      * 验证 AI 配置是否有效
      */
     private validateConfig(): { isValid: boolean; error?: string } {
-        if (!this.config.apiUrl?.trim()) {
+        if (!this.config.service.apiUrl?.trim()) {
             return { isValid: false, error: t('ai_errors.api_url_required') };
         }
         
-        if (!this.config.apiKey?.trim()) {
+        if (!this.config.service.apiKey?.trim()) {
             return { isValid: false, error: t('ai_errors.api_key_not_configured') };
         }
         
-        if (!this.config.model?.trim()) {
+        if (!this.config.service.model?.trim()) {
             return { isValid: false, error: t('ai_errors.model_required') };
         }
         
@@ -126,7 +147,7 @@ export class DictionaryService {
         
         // 验证 URL 格式
         try {
-            new URL(this.config.apiUrl);
+            new URL(this.config.service.apiUrl);
         } catch {
             return { isValid: false, error: t('ai_errors.invalid_api_url') };
         }
@@ -184,7 +205,7 @@ export class DictionaryService {
      * 合并用户自定义的额外参数到请求体
      */
     private mergeExtraParams(baseBody: any): any {
-        const extraParamsJson = this.config.extraParams?.trim();
+        const extraParamsJson = this.config.service.extraParams?.trim();
 
         if (!extraParamsJson || extraParamsJson === '{}' || extraParamsJson === '') {
             return baseBody;
@@ -234,10 +255,10 @@ export class DictionaryService {
 
             // 构建请求参数
             const url = adapter.buildUrl
-                ? adapter.buildUrl(this.config.apiUrl, this.config.model, this.config.apiKey)
-                : this.config.apiUrl;
-            const headers = adapter.buildHeaders(this.config.apiKey);
-            let body = adapter.buildRequest(this.config.model, prompt);
+                ? adapter.buildUrl(this.config.service.apiUrl, this.config.service.model, this.config.service.apiKey)
+                : this.config.service.apiUrl;
+            const headers = adapter.buildHeaders(this.config.service.apiKey);
+            let body = adapter.buildRequest(this.config.service.model, prompt);
 
             // 合并额外参数
             body = this.mergeExtraParams(body);

@@ -36,18 +36,10 @@ export class AddWordModal extends Modal {
         this.sentence = sentence;
         this.isEditMode = isEditMode;
         
-        // 安全地初始化 DictionaryService
-        if (this.plugin.settings.aiDictionary) {
-            this.dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
-        } else {
-            // 使用默认配置创建服务，实际使用时会进行验证
-            this.dictionaryService = new DictionaryService({
-                apiUrl: '',
-                apiKey: '',
-                model: '',
-                prompt: ''
-            });
-        }
+        this.dictionaryService = new DictionaryService({
+            service: this.plugin.settings.aiService,
+            prompt: this.plugin.settings.aiDefinition.prompt
+        });
         
         this.prefilledDefinition = prefilledDefinition;
         
@@ -187,10 +179,15 @@ export class AddWordModal extends Modal {
                 return;
             }
             
+            if (!this.plugin.settings.aiDefinition.enabled) {
+                new Notice(t('ai_errors.definition_disabled'));
+                return;
+            }
+
             // 检查 AI 配置是否完整
-            if (!this.plugin.settings.aiDictionary?.apiUrl || 
-                !this.plugin.settings.aiDictionary?.apiKey || 
-                !this.plugin.settings.aiDictionary?.model) {
+            if (!this.plugin.settings.aiService?.apiUrl || 
+                !this.plugin.settings.aiService?.apiKey || 
+                !this.plugin.settings.aiService?.model) {
                 new Notice(t('ai_errors.api_key_not_configured'));
                 return;
             }
@@ -202,7 +199,10 @@ export class AddWordModal extends Modal {
             
             try {
                 // 重新创建服务以确保使用最新配置
-                const dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
+                const dictionaryService = new DictionaryService({
+                    service: this.plugin.settings.aiService,
+                    prompt: this.plugin.settings.aiDefinition.prompt
+                });
                 const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
                 definitionInput.value = definition;
                 new Notice(t('notices.definition_fetched'));

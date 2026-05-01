@@ -1,9 +1,10 @@
 import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
-import { VocabularyBook, HighlightStyle } from '../utils';
+import { VocabularyBook, HighlightStyle, AIProvider } from '../utils';
 import { CanvasParser } from '../canvas';
 import { t } from '../i18n';
 import { DictionaryService } from '../services/dictionary-service';
+import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT } from '../settings';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
@@ -81,74 +82,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
-     * 4. 添加划词翻译设置
-     */
-    private addSelectionTranslateSection() {
-        const { containerEl } = this;
-
-        new Setting(containerEl)
-            .setName(t('settings.selection_translate'))
-            .setHeading();
-
-        // 启用划词翻译
-        new Setting(containerEl)
-            .setName(t('settings.enable_selection_translate'))
-            .setDesc(t('settings.enable_selection_translate_desc'))
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableSelectionTranslate ?? false)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableSelectionTranslate = value;
-                    await this.plugin.saveSettings();
-                    // 重新渲染设置页面以显示/隐藏子选项
-                    this.display();
-                }));
-
-        // 仅在启用划词翻译时显示以下设置
-        if (!this.plugin.settings.enableSelectionTranslate) return;
-
-        // 目标语言
-        new Setting(containerEl)
-            .setName(t('settings.translate_target_lang'))
-            .setDesc(t('settings.translate_target_lang_desc'))
-            .addText(text => text
-                .setPlaceholder('zh-CN')
-                .setValue(this.plugin.settings.translateTargetLang || 'zh-CN')
-                .onChange(async (value) => {
-                    this.plugin.settings.translateTargetLang = value.trim();
-                    await this.plugin.saveSettings();
-                }));
-
-        // AI 翻译提示词设置
-        this.addAITranslateSettings();
-    }
-
-    /**
-     * 添加 AI 翻译设置（翻译提示词）
-     */
-    private addAITranslateSettings() {
-        const { containerEl } = this;
-
-        // 翻译提示词
-        const promptSetting = new Setting(containerEl)
-            .setName(t('settings.translate_prompt'))
-            .setDesc(t('settings.translate_prompt_desc'));
-
-        promptSetting.settingEl.addClass('hi-words-setting-textarea');
-        promptSetting.controlEl.empty();
-
-        const textAreaContainer = promptSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
-        const textArea = textAreaContainer.createEl('textarea');
-        textArea.rows = 3;
-        textArea.value = this.plugin.settings.translatePrompt || '';
-        textArea.placeholder = 'Translate the following text to {{to}}. Only return the translation.\n\nText: {{text}}';
-
-        textArea.addEventListener('blur', async () => {
-            this.plugin.settings.translatePrompt = textArea.value;
-            await this.plugin.saveSettings();
-        });
-    }
-
-    /**
      * 添加自动布局设置
      */
     private addAutoLayoutSettings() {
@@ -209,8 +142,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
         // 3. 学习功能
         this.addLearningFeaturesSection();
 
-        // 4. 划词翻译设置
-        this.addSelectionTranslateSection();
+        // 4. AI 设置
+        this.addAISettingsSection();
 
         // 5. Canvas 设置
         this.addAutoLayoutSettings();
@@ -283,26 +216,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
-     * 确保 AI 词典配置已初始化
-     */
-    private ensureAIDictionaryConfig() {
-        if (!this.plugin.settings.aiDictionary) {
-            this.plugin.settings.aiDictionary = {
-                apiUrl: '',
-                apiKey: '',
-                model: '',
-                prompt: ''
-            };
-        }
-    }
-
-    /**
      * 测试 AI 服务连接
      */
     private async testAIConnection() {
         if (this.isTestingAIConnection) return;
 
-        this.ensureAIDictionaryConfig();
         this.isTestingAIConnection = true;
 
         const loadingNotice = new Notice(
@@ -311,7 +229,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         );
 
         try {
-            const service = new DictionaryService(this.plugin.settings.aiDictionary!);
+            const service = new DictionaryService({
+                service: this.plugin.settings.aiService,
+                prompt: 'Reply with "OK" for the word "{{word}}".'
+            });
             const result = await service.fetchDefinition(
                 'test',
                 'This is a test sentence for checking the AI connection.'
@@ -337,6 +258,282 @@ export class HiWordsSettingTab extends PluginSettingTab {
         } finally {
             this.isTestingAIConnection = false;
         }
+    }
+
+    private getProviderDefaults(provider: AIProvider): { apiUrl: string; model: string } {
+        switch (provider) {
+            case 'anthropic':
+                return { apiUrl: 'https://api.anthropic.com', model: 'claude-3-5-haiku-20241022' };
+            case 'gemini':
+                return { apiUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-2.5-flash' };
+            case 'openai-compatible':
+                return { apiUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' };
+            case 'custom':
+            default:
+                return { apiUrl: '', model: '' };
+        }
+    }
+
+    private addPromptTextArea(
+        name: string,
+        desc: string,
+        value: string,
+        placeholder: string,
+        rows: number,
+        onBlur: (value: string) => Promise<void>,
+        onReset?: () => Promise<void>
+    ) {
+        const { containerEl } = this;
+        const promptSetting = new Setting(containerEl)
+            .setName(name)
+            .setDesc(desc);
+
+        promptSetting.settingEl.addClass('hi-words-setting-textarea');
+        promptSetting.controlEl.empty();
+
+        const textAreaContainer = promptSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
+        const textArea = textAreaContainer.createEl('textarea');
+        textArea.rows = rows;
+        textArea.value = value;
+        textArea.placeholder = placeholder;
+
+        textArea.addEventListener('blur', async () => {
+            await onBlur(textArea.value);
+        });
+
+        if (onReset) {
+            const resetButton = textAreaContainer.createEl('button', {
+                text: t('settings.restore_default_prompt') || 'Restore default'
+            });
+            resetButton.addClass('hi-words-reset-prompt-button');
+            resetButton.addEventListener('click', async () => {
+                await onReset();
+                this.display();
+            });
+        }
+    }
+
+    private addAISettingsSection() {
+        this.addAIServiceSection();
+        this.addAIDefinitionSection();
+        this.addSelectionTranslateSection();
+    }
+
+    private addAIServiceSection() {
+        const { containerEl } = this;
+        let apiUrlText: any;
+        let modelText: any;
+        const currentDefaults = this.getProviderDefaults(this.plugin.settings.aiService.provider);
+
+        if (!this.plugin.settings.aiService.apiUrl && currentDefaults.apiUrl) {
+            this.plugin.settings.aiService.apiUrl = currentDefaults.apiUrl;
+            void this.plugin.saveSettings();
+        }
+
+        if (!this.plugin.settings.aiService.model && currentDefaults.model) {
+            this.plugin.settings.aiService.model = currentDefaults.model;
+            void this.plugin.saveSettings();
+        }
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_service') || 'AI service')
+            .setHeading();
+
+        containerEl.createEl('p', {
+            text: t('settings.ai_service_privacy_desc') || 'AI definition and selection translation share this service. Selected text, words, and context are sent to the provider you configure.',
+            cls: 'setting-item-description hi-words-ai-privacy-note'
+        });
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_provider') || 'Provider')
+            .setDesc(t('settings.ai_provider_desc') || 'Choose a provider preset. Custom keeps URL-based auto detection.')
+            .addDropdown(dropdown => dropdown
+                .addOption('openai-compatible', t('settings.ai_provider_openai_compatible') || 'OpenAI compatible')
+                .addOption('anthropic', t('settings.ai_provider_anthropic') || 'Anthropic Claude')
+                .addOption('gemini', t('settings.ai_provider_gemini') || 'Google Gemini')
+                .addOption('custom', t('settings.ai_provider_custom') || 'Custom')
+                .setValue(this.plugin.settings.aiService.provider)
+                .onChange(async (value) => {
+                    const provider = value as AIProvider;
+                    this.plugin.settings.aiService.provider = provider;
+                    const defaults = this.getProviderDefaults(provider);
+                    if (defaults.apiUrl) this.plugin.settings.aiService.apiUrl = defaults.apiUrl;
+                    if (defaults.model) this.plugin.settings.aiService.model = defaults.model;
+                    await this.plugin.saveSettings();
+                    apiUrlText?.setPlaceholder(defaults.apiUrl || 'https://...');
+                    modelText?.setPlaceholder(defaults.model || 'model-id');
+                    if (defaults.apiUrl) apiUrlText?.setValue(defaults.apiUrl);
+                    if (defaults.model) modelText?.setValue(defaults.model);
+                }));
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_api_url') || 'API URL')
+            .setDesc(t('settings.ai_api_url_desc') || 'Full API endpoint')
+            .addText(text => {
+                apiUrlText = text;
+                text.setPlaceholder(this.getProviderDefaults(this.plugin.settings.aiService.provider).apiUrl || 'https://...')
+                    .setValue(this.plugin.settings.aiService.apiUrl)
+                    .onChange(async (val) => {
+                        this.plugin.settings.aiService.apiUrl = val.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_api_key') || 'API Key')
+            .setDesc(t('settings.ai_api_key_desc') || 'Your AI API key')
+            .addText(text => {
+                text.inputEl.type = 'password';
+                text.setPlaceholder('sk-...')
+                    .setValue(this.plugin.settings.aiService.apiKey)
+                    .onChange(async (val) => {
+                        this.plugin.settings.aiService.apiKey = val.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_model') || 'Model ID')
+            .setDesc(t('settings.ai_model_desc') || 'AI model identifier')
+            .addText(text => {
+                modelText = text;
+                text.setPlaceholder(this.getProviderDefaults(this.plugin.settings.aiService.provider).model || 'model-id')
+                    .setValue(this.plugin.settings.aiService.model)
+                    .onChange(async (val) => {
+                        this.plugin.settings.aiService.model = val.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_test_connection') || 'Test AI connection')
+            .setDesc(t('settings.ai_test_connection_desc') || 'Send a small test request to verify your API URL, key, and model')
+            .addButton(button => button
+                .setButtonText(t('settings.ai_test_connection') || 'Test AI connection')
+                .setCta()
+                .onClick(async () => {
+                    await this.testAIConnection();
+                }));
+
+        this.addAIExtraParamsSetting();
+    }
+
+    private addAIDefinitionSection() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.ai_definition') || 'AI definition')
+            .setHeading();
+
+        new Setting(containerEl)
+            .setName(t('settings.enable_ai_definition') || 'Enable AI definition')
+            .setDesc(t('settings.enable_ai_definition_desc') || 'Show the auto-fill button when adding or editing words')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.aiDefinition.enabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.aiDefinition.enabled = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        if (!this.plugin.settings.aiDefinition.enabled) return;
+
+        this.addPromptTextArea(
+            t('settings.ai_prompt') || 'Definition prompt',
+            t('settings.ai_prompt_desc') || 'Use {{word}} and {{sentence}} as placeholders.',
+            this.plugin.settings.aiDefinition.prompt,
+            DEFAULT_AI_DEFINITION_PROMPT,
+            6,
+            async (value) => {
+                this.plugin.settings.aiDefinition.prompt = value;
+                await this.plugin.saveSettings();
+            },
+            async () => {
+                this.plugin.settings.aiDefinition.prompt = DEFAULT_AI_DEFINITION_PROMPT;
+                await this.plugin.saveSettings();
+            }
+        );
+    }
+
+    private addSelectionTranslateSection() {
+        const { containerEl } = this;
+
+        new Setting(containerEl)
+            .setName(t('settings.selection_translate'))
+            .setHeading();
+
+        new Setting(containerEl)
+            .setName(t('settings.enable_selection_translate'))
+            .setDesc(t('settings.enable_selection_translate_desc'))
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.selectionTranslate.enabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.selectionTranslate.enabled = value;
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        if (!this.plugin.settings.selectionTranslate.enabled) return;
+
+        new Setting(containerEl)
+            .setName(t('settings.translate_target_lang'))
+            .setDesc(t('settings.translate_target_lang_desc'))
+            .addText(text => text
+                .setPlaceholder('zh-CN')
+                .setValue(this.plugin.settings.selectionTranslate.targetLang)
+                .onChange(async (value) => {
+                    this.plugin.settings.selectionTranslate.targetLang = value.trim();
+                    await this.plugin.saveSettings();
+                }));
+
+        this.addPromptTextArea(
+            t('settings.translate_prompt'),
+            t('settings.translate_prompt_desc'),
+            this.plugin.settings.selectionTranslate.prompt,
+            DEFAULT_TRANSLATE_PROMPT,
+            3,
+            async (value) => {
+                this.plugin.settings.selectionTranslate.prompt = value;
+                await this.plugin.saveSettings();
+            },
+            async () => {
+                this.plugin.settings.selectionTranslate.prompt = DEFAULT_TRANSLATE_PROMPT;
+                await this.plugin.saveSettings();
+            }
+        );
+    }
+
+    private addAIExtraParamsSetting() {
+        const { containerEl } = this;
+
+        const extraParamsSetting = new Setting(containerEl)
+            .setName(t('settings.ai_extra_params') || 'Extra request parameters')
+            .setDesc(t('settings.ai_extra_params_desc') || 'Advanced JSON parameters merged into AI definition requests');
+
+        extraParamsSetting.settingEl.addClass('hi-words-setting-textarea');
+        extraParamsSetting.controlEl.empty();
+
+        const jsonContainer = extraParamsSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
+        const jsonTextArea = jsonContainer.createEl('textarea', { cls: 'hi-words-json-editor' });
+
+        jsonTextArea.placeholder = t('settings.ai_extra_params_placeholder') || '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}';
+        jsonTextArea.value = this.plugin.settings.aiService.extraParams || '{}';
+        jsonTextArea.rows = 5;
+
+        jsonTextArea.addEventListener('blur', async () => {
+            const jsonValue = jsonTextArea.value.trim();
+            try {
+                if (jsonValue && jsonValue !== '{}') {
+                    JSON.parse(jsonValue);
+                }
+                this.plugin.settings.aiService.extraParams = jsonValue || '{}';
+                await this.plugin.saveSettings();
+                jsonTextArea.removeClass('hi-words-json-error');
+            } catch (error) {
+                jsonTextArea.addClass('hi-words-json-error');
+                new Notice(t('ai_errors.invalid_json_format') || 'Invalid JSON format, please check syntax');
+            }
+        });
     }
 
     /**
@@ -417,118 +614,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .onChange(async (val) => {
                     this.plugin.settings.ttsTemplate = val.trim();
                     await this.plugin.saveSettings();
-                }));
-
-        // AI 词典配置
-        new Setting(containerEl)
-            .setName(t('settings.ai_dictionary') || 'AI Dictionary')
-            .setHeading();
-
-        // API URL
-        new Setting(containerEl)
-            .setName(t('settings.ai_api_url') || 'API URL')
-            .setDesc(t('settings.ai_api_url_desc') || 'API endpoint (auto-detects: OpenAI, Claude, Gemini). ⚠️ Privacy: Words and sentences will be sent to this external service.')
-            .addText(text => text
-                .setPlaceholder('https://api.openai.com/v1/chat/completions')
-                .setValue(this.plugin.settings.aiDictionary?.apiUrl || '')
-                .onChange(async (val) => {
-                    this.ensureAIDictionaryConfig();
-                    this.plugin.settings.aiDictionary!.apiUrl = val.trim();
-                    await this.plugin.saveSettings();
-                }));
-
-        // API Key
-        new Setting(containerEl)
-            .setName(t('settings.ai_api_key') || 'API Key')
-            .setDesc(t('settings.ai_api_key_desc') || 'Your AI API key')
-            .addText(text => {
-                text.inputEl.type = 'password';
-                text.setPlaceholder('sk-...')
-                    .setValue(this.plugin.settings.aiDictionary?.apiKey || '')
-                    .onChange(async (val) => {
-                        this.ensureAIDictionaryConfig();
-                        this.plugin.settings.aiDictionary!.apiKey = val.trim();
-                        await this.plugin.saveSettings();
-                    });
-            });
-
-        // Model
-        new Setting(containerEl)
-            .setName(t('settings.ai_model') || 'Model')
-            .setDesc(t('settings.ai_model_desc') || 'AI model name (e.g., gpt-4o-mini, deepseek-chat)')
-            .addText(text => text
-                .setPlaceholder('gpt-4o-mini')
-                .setValue(this.plugin.settings.aiDictionary?.model || '')
-                .onChange(async (val) => {
-                    this.ensureAIDictionaryConfig();
-                    this.plugin.settings.aiDictionary!.model = val.trim();
-                    await this.plugin.saveSettings();
-                }));
-
-        // Custom Prompt（将文本域放入同一个设置块内）
-        const promptSetting = new Setting(containerEl)
-            .setName(t('settings.ai_prompt') || 'Custom Prompt')
-            .setDesc(t('settings.ai_prompt_desc') || 'Use {{word}} and {{sentence}} as placeholders. The AI will use this prompt to generate definitions.');
-
-        promptSetting.settingEl.addClass('hi-words-setting-textarea');
-        promptSetting.controlEl.empty();
-
-        // 在当前设置项内创建全宽文本域
-        const promptContainer = promptSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
-        const promptTextArea = promptContainer.createEl('textarea');
-        const defaultPrompt = 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)';
-        promptTextArea.placeholder = defaultPrompt;
-        promptTextArea.value = this.plugin.settings.aiDictionary?.prompt || defaultPrompt;
-        promptTextArea.rows = 6;
-
-        // 使用 blur 事件，避免频繁保存
-        promptTextArea.addEventListener('blur', async () => {
-            this.ensureAIDictionaryConfig();
-            this.plugin.settings.aiDictionary!.prompt = promptTextArea.value;
-            await this.plugin.saveSettings();
-        });
-
-        // 额外请求参数设置
-        const extraParamsSetting = new Setting(containerEl)
-            .setName(t('settings.ai_extra_params') || 'Extra Request Parameters')
-            .setDesc(t('settings.ai_extra_params_desc') || 'Add custom JSON parameters to AI request body (Advanced)');
-
-        extraParamsSetting.settingEl.addClass('hi-words-setting-textarea');
-        extraParamsSetting.controlEl.empty();
-
-        const jsonContainer = extraParamsSetting.controlEl.createDiv({ cls: 'hi-words-textarea-container' });
-        const jsonTextArea = jsonContainer.createEl('textarea', { cls: 'hi-words-json-editor' });
-
-        jsonTextArea.placeholder = t('settings.ai_extra_params_placeholder') || '{\n  "temperature": 0.7,\n  "top_p": 0.9\n}';
-        jsonTextArea.value = this.plugin.settings.aiDictionary?.extraParams || '{}';
-        jsonTextArea.rows = 6;
-
-        jsonTextArea.addEventListener('blur', async () => {
-            const jsonValue = jsonTextArea.value.trim();
-            try {
-                // 验证 JSON 格式（空字符串也视为有效）
-                if (jsonValue && jsonValue !== '{}') {
-                    JSON.parse(jsonValue);
-                }
-                // 保存
-                this.ensureAIDictionaryConfig();
-                this.plugin.settings.aiDictionary!.extraParams = jsonValue || '{}';
-                await this.plugin.saveSettings();
-                jsonTextArea.removeClass('hi-words-json-error');
-            } catch (error) {
-                jsonTextArea.addClass('hi-words-json-error');
-                new Notice(t('ai_errors.invalid_json_format') || 'Invalid JSON format, please check syntax');
-            }
-        });
-
-        new Setting(containerEl)
-            .setName(t('settings.ai_test_connection') || 'Test AI connection')
-            .setDesc(t('settings.ai_test_connection_desc') || 'Send a small test request to verify your API URL, key, and model')
-            .addButton(button => button
-                .setButtonText(t('settings.ai_test_connection') || 'Test AI connection')
-                .setCta()
-                .onClick(async () => {
-                    await this.testAIConnection();
                 }));
 
     }
