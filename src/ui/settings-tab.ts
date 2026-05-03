@@ -339,11 +339,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setName(t('settings.ai_service') || 'AI service')
             .setHeading();
 
-        containerEl.createEl('p', {
-            text: t('settings.ai_service_privacy_desc') || 'AI definition and selection translation share this service. Selected text, words, and context are sent to the provider you configure.',
-            cls: 'setting-item-description hi-words-ai-privacy-note'
-        });
-
         new Setting(containerEl)
             .setName(t('settings.ai_provider') || 'Provider')
             .setDesc(t('settings.ai_provider_desc') || 'Choose a provider preset. Custom keeps URL-based auto detection.')
