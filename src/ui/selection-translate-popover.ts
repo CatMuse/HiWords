@@ -61,7 +61,7 @@ export class SelectionTranslatePopover extends Component {
      */
     private handleMouseUp(event: MouseEvent) {
         // 检查是否启用划词翻译
-        if (!this.plugin.settings.enableSelectionTranslate) {
+        if (!this.plugin.settings.selectionTranslate.enabled) {
             return;
         }
 

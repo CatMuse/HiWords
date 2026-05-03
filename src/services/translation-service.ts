@@ -1,6 +1,6 @@
 import { requestUrl } from 'obsidian';
 import { t } from '../i18n';
-import type { HiWordsSettings } from '../utils';
+import type { AIProvider, HiWordsSettings } from '../utils';
 
 /**
  * 缓存条目
@@ -73,13 +73,13 @@ export class TranslationService {
      * 使用 AI 引擎翻译（复用现有的 AI 配置）
      */
     private async translateWithAI(text: string): Promise<string> {
-        const aiConfig = this.settings.aiDictionary;
+        const aiConfig = this.settings.aiService;
         if (!aiConfig?.apiUrl || !aiConfig?.apiKey || !aiConfig?.model) {
             throw new Error(t('translate.ai_not_configured'));
         }
 
-        const targetLang = this.settings.translateTargetLang || 'zh-CN';
-        const promptTemplate = this.settings.translatePrompt || 
+        const targetLang = this.settings.selectionTranslate.targetLang || 'zh-CN';
+        const promptTemplate = this.settings.selectionTranslate.prompt || 
             'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}';
         
         const prompt = promptTemplate
@@ -88,7 +88,7 @@ export class TranslationService {
 
         // 自动检测 API 类型并构建请求
         const url = aiConfig.apiUrl;
-        const apiType = this.detectAPIType(url);
+        const apiType = this.detectAPIType(url, aiConfig.provider);
 
         let requestBody: any;
         let headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -108,10 +108,6 @@ export class TranslationService {
                 requestBody = {
                     contents: [{ parts: [{ text: prompt }] }]
                 };
-                if (!finalUrl.includes(':generateContent')) {
-                    finalUrl = `${finalUrl.replace(/\/$/, '')}/models/${aiConfig.model}:generateContent`;
-                }
-                finalUrl = `${finalUrl}?key=${aiConfig.apiKey}`;
                 break;
             default: // openai
                 requestBody = {
@@ -123,6 +119,9 @@ export class TranslationService {
                 headers['Authorization'] = `Bearer ${aiConfig.apiKey}`;
                 break;
         }
+
+        finalUrl = this.buildRequestUrl(finalUrl, aiConfig.model, aiConfig.apiKey, apiType);
+        requestBody = this.mergeExtraParams(requestBody, aiConfig.extraParams);
 
         const response = await requestUrl({
             url: finalUrl,
@@ -167,11 +166,69 @@ export class TranslationService {
     /**
      * 自动检测 API 类型
      */
-    private detectAPIType(url: string): 'openai' | 'claude' | 'gemini' {
+    private detectAPIType(url: string, provider: AIProvider): 'openai' | 'claude' | 'gemini' {
+        if (provider !== 'custom') {
+            const providerMap: Record<Exclude<AIProvider, 'custom'>, 'openai' | 'claude' | 'gemini'> = {
+                'openai-compatible': 'openai',
+                anthropic: 'claude',
+                gemini: 'gemini'
+            };
+            return providerMap[provider];
+        }
+
         const lowerUrl = url.toLowerCase();
         if (lowerUrl.includes('anthropic')) return 'claude';
         if (lowerUrl.includes('googleapis') || lowerUrl.includes('generativelanguage')) return 'gemini';
         return 'openai';
+    }
+
+    private buildRequestUrl(baseUrl: string, model: string, apiKey: string, apiType: 'openai' | 'claude' | 'gemini'): string {
+        const normalized = baseUrl.replace(/\/$/, '');
+
+        switch (apiType) {
+            case 'claude':
+                return normalized.endsWith('/messages') ? normalized : `${normalized}/v1/messages`;
+            case 'gemini':
+                if (normalized.includes(':generateContent')) {
+                    return `${normalized}?key=${apiKey}`;
+                }
+                return `${normalized}/models/${model}:generateContent?key=${apiKey}`;
+            case 'openai':
+            default:
+                return normalized.endsWith('/chat/completions') ? normalized : `${normalized}/chat/completions`;
+        }
+    }
+
+    private isObject(item: any): boolean {
+        return item && typeof item === 'object' && !Array.isArray(item);
+    }
+
+    private deepMerge(target: any, source: any): any {
+        const output = { ...target };
+
+        if (this.isObject(target) && this.isObject(source)) {
+            Object.keys(source).forEach(key => {
+                if (this.isObject(source[key])) {
+                    output[key] = key in target ? this.deepMerge(target[key], source[key]) : source[key];
+                } else {
+                    output[key] = source[key];
+                }
+            });
+        }
+
+        return output;
+    }
+
+    private mergeExtraParams(baseBody: any, extraParamsJson?: string): any {
+        const json = extraParamsJson?.trim();
+        if (!json || json === '{}') return baseBody;
+
+        try {
+            return this.deepMerge(baseBody, JSON.parse(json));
+        } catch (error) {
+            console.warn('Invalid JSON in extraParams, ignoring:', error);
+            return baseBody;
+        }
     }
 
     /**

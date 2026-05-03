@@ -13,7 +13,6 @@ export class AddWordModal extends Modal {
     private sentence: string;
     private isEditMode: boolean;
     private definition: WordDefinition | null;
-    private dictionaryService: DictionaryService;
     private prefilledDefinition: string;
     
     // 静态变量，记住用户上次选择的生词本（重启后丢失）
@@ -35,19 +34,6 @@ export class AddWordModal extends Modal {
         this.word = word;
         this.sentence = sentence;
         this.isEditMode = isEditMode;
-        
-        // 安全地初始化 DictionaryService
-        if (this.plugin.settings.aiDictionary) {
-            this.dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
-        } else {
-            // 使用默认配置创建服务，实际使用时会进行验证
-            this.dictionaryService = new DictionaryService({
-                apiUrl: '',
-                apiKey: '',
-                model: '',
-                prompt: ''
-            });
-        }
         
         this.prefilledDefinition = prefilledDefinition;
         
@@ -172,51 +158,56 @@ export class AddWordModal extends Modal {
         const definitionLabelContainer = definitionContainer.createDiv({ cls: 'hiwords-definition-label-container' });
         definitionLabelContainer.createEl('label', { text: t('modals.definition_label'), cls: 'hiwords-form-item-label' });
         
-        // 添加自动填充按钮
-        const autoFillBtn = definitionLabelContainer.createDiv({ cls: 'hiwords-auto-fill-btn' });
-        const iconContainer = autoFillBtn.createDiv({ cls: 'hiwords-auto-fill-icon' });
-        setIcon(iconContainer, 'sparkles');
-        autoFillBtn.setAttribute('aria-label', t('modals.auto_fill_definition'));
-        
-        autoFillBtn.addEventListener('click', async () => {
-            // 获取要查询的单词
-            const queryWord = this.isEditMode ? this.word : (wordInput?.value.trim() || '');
+        if (this.plugin.settings.aiDefinition.enabled) {
+            // 添加自动填充按钮
+            const autoFillBtn = definitionLabelContainer.createDiv({ cls: 'hiwords-auto-fill-btn' });
+            const iconContainer = autoFillBtn.createDiv({ cls: 'hiwords-auto-fill-icon' });
+            setIcon(iconContainer, 'sparkles');
+            autoFillBtn.setAttribute('aria-label', t('modals.auto_fill_definition'));
             
-            if (!queryWord) {
-                new Notice(t('notices.enter_word_first'));
-                return;
-            }
-            
-            // 检查 AI 配置是否完整
-            if (!this.plugin.settings.aiDictionary?.apiUrl || 
-                !this.plugin.settings.aiDictionary?.apiKey || 
-                !this.plugin.settings.aiDictionary?.model) {
-                new Notice(t('ai_errors.api_key_not_configured'));
-                return;
-            }
-            
-            // 显示加载状态
-            autoFillBtn.addClass('hiwords-loading');
-            iconContainer.empty();
-            setIcon(iconContainer, 'loader');
-            
-            try {
-                // 重新创建服务以确保使用最新配置
-                const dictionaryService = new DictionaryService(this.plugin.settings.aiDictionary);
-                const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
-                definitionInput.value = definition;
-                new Notice(t('notices.definition_fetched'));
-            } catch (error) {
-                console.error('Failed to fetch definition:', error);
-                const errorMessage = error instanceof Error ? error.message : t('notices.definition_fetch_failed');
-                new Notice(errorMessage);
-            } finally {
-                // 恢复按钮状态
-                autoFillBtn.removeClass('hiwords-loading');
+            autoFillBtn.addEventListener('click', async () => {
+                // 获取要查询的单词
+                const queryWord = this.isEditMode ? this.word : (wordInput?.value.trim() || '');
+                
+                if (!queryWord) {
+                    new Notice(t('notices.enter_word_first'));
+                    return;
+                }
+
+                // 检查 AI 配置是否完整
+                if (!this.plugin.settings.aiService?.apiUrl || 
+                    !this.plugin.settings.aiService?.apiKey || 
+                    !this.plugin.settings.aiService?.model) {
+                    new Notice(t('ai_errors.api_key_not_configured'));
+                    return;
+                }
+                
+                // 显示加载状态
+                autoFillBtn.addClass('hiwords-loading');
                 iconContainer.empty();
-                setIcon(iconContainer, 'sparkles');
-            }
-        });
+                setIcon(iconContainer, 'loader');
+                
+                try {
+                    // 重新创建服务以确保使用最新配置
+                    const dictionaryService = new DictionaryService({
+                        service: this.plugin.settings.aiService,
+                        prompt: this.plugin.settings.aiDefinition.prompt
+                    });
+                    const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
+                    definitionInput.value = definition;
+                    new Notice(t('notices.definition_fetched'));
+                } catch (error) {
+                    console.error('Failed to fetch definition:', error);
+                    const errorMessage = error instanceof Error ? error.message : t('notices.definition_fetch_failed');
+                    new Notice(errorMessage);
+                } finally {
+                    // 恢复按钮状态
+                    autoFillBtn.removeClass('hiwords-loading');
+                    iconContainer.empty();
+                    setIcon(iconContainer, 'sparkles');
+                }
+            });
+        }
         
         const definitionInput = definitionContainer.createEl('textarea', { 
             placeholder: t('modals.definition_placeholder'),

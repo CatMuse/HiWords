@@ -1,5 +1,9 @@
 import type { HiWordsSettings } from './utils';
 
+export const DEFAULT_AI_DEFINITION_PROMPT = 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)';
+
+export const DEFAULT_TRANSLATE_PROMPT = 'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}';
+
 /**
  * 插件默认设置
  */
@@ -13,13 +17,18 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     blurDefinitions: false, // 默认不启用模糊效果
     // 发音地址模板（用户可在设置里修改）
     ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
-    // AI 词典配置
-    aiDictionary: {
-        apiUrl: '',
+    // AI 服务配置
+    aiService: {
+        provider: 'openai-compatible',
+        apiUrl: 'https://api.openai.com/v1',
         apiKey: '',
-        model: '',
-        prompt: 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)',
-        extraParams: '{}' // 默认空 JSON 对象
+        model: 'gpt-4o-mini',
+        extraParams: '{}'
+    },
+    // AI 释义配置
+    aiDefinition: {
+        enabled: true,
+        prompt: DEFAULT_AI_DEFINITION_PROMPT
     },
     // 自动布局（简化版，使用固定参数）
     autoLayoutEnabled: true,
@@ -34,7 +43,9 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     // 分区 Tab 显示
     enableSectionTabs: true,
     // 划词翻译配置
-    enableSelectionTranslate: false,
-    translateTargetLang: 'zh-CN',
-    translatePrompt: 'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}',
+    selectionTranslate: {
+        enabled: false,
+        targetLang: 'zh-CN',
+        prompt: DEFAULT_TRANSLATE_PROMPT
+    },
 };
