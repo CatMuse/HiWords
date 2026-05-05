@@ -1,10 +1,12 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, setIcon } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, Modal, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
-import { VocabularyBook, HighlightStyle, AIProvider } from '../utils';
+import { VocabularyBook, HighlightStyle, AIProvider, mapCanvasColorToCSSVar, getColorWithOpacity } from '../utils';
 import { CanvasParser } from '../canvas';
+import { HiWordsParser } from '../card';
 import { t } from '../i18n';
 import { DictionaryService } from '../services/dictionary-service';
 import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT } from '../settings';
+import { renderWordCard } from './word-card-renderer';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
@@ -190,6 +192,19 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.enableSectionTabs ?? true)
                 .onChange(async (value) => {
                     this.plugin.settings.enableSectionTabs = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                }));
+
+        new Setting(containerEl)
+            .setName(t('settings.sidebar_default_display_mode') || 'Sidebar default display')
+            .setDesc(t('settings.sidebar_default_display_mode_desc') || 'Choose whether sidebar cards open with full details or only the word title')
+            .addDropdown(dropdown => dropdown
+                .addOption('detail', t('settings.sidebar_display_detail') || 'Show full details')
+                .addOption('word', t('settings.sidebar_display_word') || 'Show words only')
+                .setValue(this.plugin.settings.sidebarDefaultDisplayMode || 'detail')
+                .onChange(async (value) => {
+                    this.plugin.settings.sidebarDefaultDisplayMode = value as 'detail' | 'word';
                     await this.plugin.saveSettings();
                     this.plugin.app.workspace.trigger('hi-words:settings-changed');
                 }));
@@ -602,13 +617,28 @@ export class HiWordsSettingTab extends PluginSettingTab {
         // 发音地址模板（点击主词发音）
         new Setting(containerEl)
             .setName(t('settings.tts_template') || 'TTS template')
-            .setDesc(t('settings.tts_template_desc') || 'Use {{word}} as placeholder, e.g. https://dict.youdao.com/dictvoice?audio={{word}}&type=2')
+            .setDesc(t('settings.tts_template_desc') || 'Use {{word}}, {{type}}, and {{accent}} as placeholders.')
             .addText(text => text
                 .setPlaceholder('https://...{{word}}...')
                 .setValue(this.plugin.settings.ttsTemplate || 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2')
                 .onChange(async (val) => {
                     this.plugin.settings.ttsTemplate = val.trim();
                     await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName(t('settings.pronunciation_variant') || 'Pronunciation')
+            .setDesc(t('settings.pronunciation_variant_desc') || 'Choose which accent to display and play for structured word cards')
+            .addDropdown(dropdown => dropdown
+                .addOption('us', t('settings.pronunciation_us') || 'US')
+                .addOption('uk', t('settings.pronunciation_uk') || 'UK')
+                .setValue(this.plugin.settings.pronunciationVariant || 'us')
+                .onChange(async (value) => {
+                    this.plugin.settings.pronunciationVariant = value as 'us' | 'uk';
+                    await this.plugin.saveSettings();
+                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                    this.plugin.refreshHighlighter();
+                    this.display();
                 }));
 
     }
@@ -621,7 +651,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         // 添加生词本图标按钮
         const addBookContainer = containerEl.createDiv({ cls: 'hi-words-add-book-container' });
-        addBookContainer.addEventListener('click', () => this.showCanvasFilePicker());
+        addBookContainer.addEventListener('click', () => this.showVocabularyBookFilePicker());
 
         const addBookLabel = addBookContainer.createSpan({
             text: t('settings.add_vocabulary_book'),
@@ -640,19 +670,19 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     /**
-     * 显示 Canvas 文件选择器
+     * 显示词库文件选择器
      */
-    private async showCanvasFilePicker() {
-        const canvasFiles = this.app.vault.getFiles()
-            .filter(file => file.extension === 'canvas');
+    private async showVocabularyBookFilePicker() {
+        const vocabularyFiles = this.app.vault.getFiles()
+            .filter(file => file.extension === 'canvas' || file.extension === 'hiwords');
 
-        if (canvasFiles.length === 0) {
-            new Notice(t('notices.no_canvas_files'));
+        if (vocabularyFiles.length === 0) {
+            new Notice(t('notices.no_vocabulary_book_files'));
             return;
         }
 
         // 创建选择模态框
-        const modal = new CanvasPickerModal(this.app, canvasFiles, async (file) => {
+        const modal = new VocabularyBookPickerModal(this.app, vocabularyFiles, async (file) => {
             await this.addVocabularyBook(file);
         });
         modal.open();
@@ -669,11 +699,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
             return;
         }
 
-        // 验证 Canvas 文件
-        const parser = new CanvasParser(this.app, this.plugin.settings as any);
-        const isValid = await parser.validateCanvasFile(file);
+        // 验证词库文件
+        const isValid = file.extension === 'hiwords'
+            ? await new HiWordsParser(this.app).validateFile(file)
+            : await new CanvasParser(this.app, this.plugin.settings as any).validateCanvasFile(file);
         if (!isValid) {
-            new Notice(t('notices.invalid_canvas_file'));
+            new Notice(t('notices.invalid_vocabulary_book_file'));
             return;
         }
 
@@ -715,6 +746,17 @@ export class HiWordsSettingTab extends PluginSettingTab {
             // 创建图标容器
             const iconsContainer = setting.controlEl.createDiv({ cls: 'hi-words-book-icons' });
 
+            if (book.path.endsWith('.hiwords')) {
+                this.addHiWordsBookColorSelector(iconsContainer, book);
+
+                const previewIcon = iconsContainer.createDiv({ cls: 'clickable-icon' });
+                setIcon(previewIcon, 'panel-top-open');
+                previewIcon.setAttribute('aria-label', t('settings.preview_book'));
+                previewIcon.addEventListener('click', () => {
+                    new HiWordsPackPreviewModal(this.app, book, this.plugin.settings.pronunciationVariant || 'us').open();
+                });
+            }
+
             // 重新加载图标
             const reloadIcon = iconsContainer.createDiv({ cls: 'clickable-icon' });
             setIcon(reloadIcon, 'refresh-cw');
@@ -754,6 +796,106 @@ export class HiWordsSettingTab extends PluginSettingTab {
         });
     }
 
+    private addHiWordsBookColorSelector(container: HTMLElement, book: VocabularyBook) {
+        const options = [
+            { value: '', label: t('settings.book_color_default'), css: 'var(--text-muted)' },
+            { value: '1', label: t('modals.color_red'), css: 'var(--color-red)' },
+            { value: '2', label: t('modals.color_orange'), css: 'var(--color-orange)' },
+            { value: '3', label: t('modals.color_yellow'), css: 'var(--color-yellow)' },
+            { value: '4', label: t('modals.color_green'), css: 'var(--color-green)' },
+            { value: '5', label: t('modals.color_blue'), css: 'var(--color-cyan)' },
+            { value: '6', label: t('modals.color_purple'), css: 'var(--color-purple)' },
+        ];
+
+        const colorControl = container.createDiv({ cls: 'hi-words-book-color-control clickable-icon' });
+        colorControl.setAttribute('aria-label', t('settings.book_color'));
+        colorControl.setAttribute('role', 'button');
+        colorControl.setAttribute('tabindex', '0');
+        const swatch = colorControl.createSpan({ cls: 'hi-words-book-color-swatch' });
+
+        const updateSwatch = () => {
+            const selected = options.find(option => option.value === (book.color || '')) || options[0];
+            swatch.style.setProperty('--hi-words-book-color', selected.css);
+            colorControl.setAttribute('aria-label', `${t('settings.book_color')}: ${selected.label}`);
+        };
+
+        const applyColor = async (value: string) => {
+            book.color = value || undefined;
+            updateSwatch();
+            await this.plugin.saveSettings();
+            if (book.enabled) {
+                await this.plugin.vocabularyManager.loadVocabularyBook(book);
+            }
+            this.plugin.refreshHighlighter();
+        };
+
+        const openPalette = (event: MouseEvent | KeyboardEvent) => {
+            document.querySelectorAll('.hi-words-book-color-palette').forEach(el => el.remove());
+
+            const palette = document.body.createDiv({ cls: 'hi-words-book-color-palette' });
+
+            const closePalette = () => {
+                palette.remove();
+                document.removeEventListener('click', handleOutsideClick, true);
+                document.removeEventListener('keydown', handleEscape, true);
+            };
+            const handleOutsideClick = (outsideEvent: MouseEvent) => {
+                const target = outsideEvent.target as Node | null;
+                if (target && (palette.contains(target) || colorControl.contains(target))) {
+                    return;
+                }
+                closePalette();
+            };
+            const handleEscape = (keyboardEvent: KeyboardEvent) => {
+                if (keyboardEvent.key === 'Escape') {
+                    closePalette();
+                }
+            };
+
+            for (const option of options) {
+                const item = palette.createEl('button', {
+                    cls: 'hi-words-book-color-palette-item',
+                    attr: {
+                        type: 'button',
+                        'aria-label': option.label,
+                        title: option.label,
+                    },
+                });
+                item.style.setProperty('--hi-words-book-color', option.css);
+                item.style.setProperty('background-color', option.css, 'important');
+                if ((book.color || '') === option.value) {
+                    item.addClass('is-selected');
+                    setIcon(item, 'check');
+                }
+                item.addEventListener('click', () => {
+                    void applyColor(option.value);
+                    closePalette();
+                });
+            }
+
+            const rect = colorControl.getBoundingClientRect();
+            palette.style.left = `${Math.min(rect.left, window.innerWidth - 260)}px`;
+            palette.style.top = `${rect.bottom + 6}px`;
+
+            document.addEventListener('click', handleOutsideClick, true);
+            document.addEventListener('keydown', handleEscape, true);
+        };
+
+        colorControl.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openPalette(event);
+        });
+        colorControl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openPalette(event);
+            }
+        });
+
+        updateSwatch();
+    }
+
     /**
      * 显示统计信息
      */
@@ -780,8 +922,87 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 }
 
-// Canvas 文件选择模态框（使用 FuzzySuggestModal 支持模糊搜索）
-class CanvasPickerModal extends FuzzySuggestModal<TFile> {
+class HiWordsPackPreviewModal extends Modal {
+    private book: VocabularyBook;
+    private pronunciationVariant: 'uk' | 'us';
+
+    constructor(app: App, book: VocabularyBook, pronunciationVariant: 'uk' | 'us') {
+        super(app);
+        this.book = book;
+        this.pronunciationVariant = pronunciationVariant;
+    }
+
+    onOpen() {
+        this.contentEl.empty();
+        this.modalEl.addClass('hi-words-pack-preview-modal-container');
+        this.contentEl.addClass('hi-words-pack-preview-modal');
+        void this.render();
+    }
+
+    private async render() {
+        const file = this.app.vault.getAbstractFileByPath(this.book.path);
+        if (!(file instanceof TFile)) {
+            this.contentEl.createEl('p', { text: t('notices.invalid_vocabulary_book_file') });
+            return;
+        }
+
+        const parser = new HiWordsParser(this.app);
+        const metadata = await parser.readMetadata(file);
+        const definitions = await parser.parseFile(file);
+        if (this.book.color) {
+            for (const definition of definitions) {
+                if (!definition.color) {
+                    definition.color = this.book.color;
+                }
+            }
+        }
+
+        this.titleEl.setText(metadata?.title || this.book.name);
+
+        const summary = this.contentEl.createDiv({ cls: 'hi-words-pack-preview-summary' });
+
+        const metaGrid = summary.createDiv({ cls: 'hi-words-pack-preview-meta-grid' });
+        this.addMetaItem(metaGrid, t('modals.pack_words'), String(metadata?.cardCount ?? definitions.length));
+        this.addMetaItem(metaGrid, t('modals.pack_language'), metadata?.language || '-');
+        this.addMetaItem(metaGrid, t('modals.pack_version'), String(metadata?.version ?? 1));
+
+        const sampleTitle = this.contentEl.createDiv({
+            cls: 'hi-words-pack-preview-section-title',
+            text: t('modals.pack_samples'),
+        });
+        sampleTitle.toggleClass('is-empty', definitions.length === 0);
+
+        const sampleList = this.contentEl.createDiv({ cls: 'hi-words-pack-preview-samples' });
+        for (const definition of definitions.slice(0, 3)) {
+            const sample = sampleList.createDiv({ cls: 'hi-words-pack-preview-sample' });
+            if (definition.color) {
+                const accentColor = mapCanvasColorToCSSVar(definition.color, 'var(--color-base-60)');
+                sample.style.setProperty('--word-card-accent-color', accentColor);
+                sample.style.setProperty('--word-card-bg-color', getColorWithOpacity(accentColor, 0.08));
+            }
+            sample.createDiv({ cls: 'hi-words-pack-preview-word', text: definition.word });
+            const body = sample.createDiv({ cls: 'hi-words-pack-preview-card-body' });
+            renderWordCard(body, definition, {
+                mode: 'sidebar',
+                app: this.app,
+                pronunciationVariant: this.pronunciationVariant,
+            });
+        }
+
+        if (definitions.length === 0) {
+            sampleList.createDiv({ cls: 'setting-item-description', text: t('sidebar.empty_state') });
+        }
+    }
+
+    private addMetaItem(container: HTMLElement, label: string, value: string) {
+        const item = container.createDiv({ cls: 'hi-words-pack-preview-meta-item' });
+        item.createDiv({ cls: 'hi-words-pack-preview-meta-label', text: label });
+        item.createDiv({ cls: 'hi-words-pack-preview-meta-value', text: value });
+    }
+}
+
+// 词库文件选择模态框（使用 FuzzySuggestModal 支持模糊搜索）
+class VocabularyBookPickerModal extends FuzzySuggestModal<TFile> {
     private files: TFile[];
     private onSelect: (file: TFile) => void;
 
@@ -789,7 +1010,7 @@ class CanvasPickerModal extends FuzzySuggestModal<TFile> {
         super(app);
         this.files = files;
         this.onSelect = onSelect;
-        this.setPlaceholder(t('modals.select_canvas_file'));
+        this.setPlaceholder(t('modals.select_vocabulary_book_file'));
     }
 
     // 返回所有可选项

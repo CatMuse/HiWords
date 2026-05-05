@@ -1,10 +1,12 @@
 import { App, TFile, Notice } from 'obsidian';
 import { WordDefinition, VocabularyBook, HiWordsSettings } from '../utils';
 import { CanvasParser, CanvasEditor } from '../canvas';
+import { HiWordsParser } from '../card';
 
 export class VocabularyManager {
     private app: App;
     private canvasParser: CanvasParser;
+    private hiWordsParser: HiWordsParser;
     private canvasEditor: CanvasEditor;
     private definitions: Map<string, WordDefinition[]> = new Map();
     private settings: HiWordsSettings;
@@ -24,6 +26,7 @@ export class VocabularyManager {
     constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
         this.canvasParser = new CanvasParser(app, settings);
+        this.hiWordsParser = new HiWordsParser(app);
         this.canvasEditor = new CanvasEditor(app, settings);
         this.settings = settings;
     }
@@ -56,13 +59,20 @@ export class VocabularyManager {
             return;
         }
 
-        if (!CanvasParser.isCanvasFile(file)) {
-            console.warn(`File is not a canvas: ${book.path}`);
+        if (!CanvasParser.isCanvasFile(file) && !HiWordsParser.isHiWordsFile(file)) {
+            console.warn(`File is not a supported vocabulary book: ${book.path}`);
             return;
         }
 
         try {
-            const definitions = await this.canvasParser.parseCanvasFile(file);
+            const isHiWordsBook = HiWordsParser.isHiWordsFile(file);
+            const definitions = isHiWordsBook
+                ? await this.hiWordsParser.parseFile(file)
+                : await this.canvasParser.parseCanvasFile(file);
+            if (isHiWordsBook) {
+                this.applyBookColor(book, definitions);
+            }
+            this.applyStoredProgress(book.path, definitions);
             this.definitions.set(book.path, definitions);
             
             // 增量更新缓存而不是重建整个缓存
@@ -250,7 +260,32 @@ export class VocabularyManager {
         // 同步给 CanvasParser（影响掌握判定等）
         this.canvasParser.updateSettings(settings);
     }
-    
+
+    private applyStoredProgress(bookPath: string, definitions: WordDefinition[]): void {
+        const progress = this.settings.hiWordsProgress?.[bookPath];
+        if (!progress) return;
+
+        for (const definition of definitions) {
+            const itemProgress = progress[definition.nodeId];
+            if (itemProgress?.mastered !== undefined) {
+                definition.mastered = itemProgress.mastered;
+            }
+        }
+    }
+
+    private applyBookColor(book: VocabularyBook, definitions: WordDefinition[]): void {
+        if (!book.color) return;
+
+        for (const definition of definitions) {
+            if (!definition.color) {
+                definition.color = book.color;
+            }
+            if (definition.card && !definition.card.color) {
+                definition.card = { ...definition.card, color: book.color };
+            }
+        }
+    }
+
     /**
      * 检查生词本配置是否发生变化
      * @param oldBooks 旧的生词本配置
@@ -269,7 +304,8 @@ export class VocabularyManager {
             
             if (oldBook.path !== newBook.path || 
                 oldBook.enabled !== newBook.enabled ||
-                oldBook.name !== newBook.name) {
+                oldBook.name !== newBook.name ||
+                oldBook.color !== newBook.color) {
                 return true;
             }
         }
@@ -406,6 +442,7 @@ export class VocabularyManager {
         this.bookWordsCache.clear();
         
         const allWords = new Set<string>();
+        const mainWords = this.collectMainWords();
         
         // 遍历所有词汇本和定义
         for (const [bookPath, definitions] of this.definitions.entries()) {
@@ -414,14 +451,25 @@ export class VocabularyManager {
             for (const def of definitions) {
                 // 添加主单词到缓存
                 const normalizedWord = def.word.toLowerCase().trim();
+                if (!normalizedWord) continue;
+
                 this.wordDefinitionCache.set(normalizedWord, def);
                 allWords.add(normalizedWord);
                 bookWords.add(normalizedWord);
-                
+            }
+
+            for (const def of definitions) {
                 // 添加别名到缓存
                 if (def.aliases && def.aliases.length > 0) {
                     for (const alias of def.aliases) {
                         const normalizedAlias = alias.toLowerCase().trim();
+                        if (!normalizedAlias) continue;
+                        if (mainWords.has(normalizedAlias) || this.wordDefinitionCache.has(normalizedAlias)) {
+                            bookWords.add(normalizedAlias);
+                            allWords.add(normalizedAlias);
+                            continue;
+                        }
+
                         this.wordDefinitionCache.set(normalizedAlias, def);
                         allWords.add(normalizedAlias);
                         bookWords.add(normalizedAlias);
@@ -446,49 +494,22 @@ export class VocabularyManager {
      * @param definitions 该生词本的词汇定义
      */
     private updateCacheForBook(bookPath: string, definitions: WordDefinition[]): void {
-        // 如果缓存无效，直接重建
-        if (!this.cacheValid) {
-            this.rebuildCache();
-            return;
-        }
-        
-        // 清除该生词本的旧缓存
-        const oldBookWords = this.bookWordsCache.get(bookPath) || [];
-        const oldWordsSet = new Set(oldBookWords);
-        
-        // 从 wordDefinitionCache 中删除旧单词
-        oldBookWords.forEach(word => {
-            this.wordDefinitionCache.delete(word);
-        });
-        
-        // 重建 allWordsCache（更高效的方式）
-        this.allWordsCache = this.allWordsCache.filter(word => !oldWordsSet.has(word));
-        
-        // 添加新的缓存（与 rebuildCache 保持一致）
-        const newBookWords = new Set<string>();
-        const newAllWords = new Set(this.allWordsCache); // 保持现有的单词
-        
-        for (const def of definitions) {
-            // 添加主单词到缓存
-            const normalizedWord = def.word.toLowerCase().trim();
-            this.wordDefinitionCache.set(normalizedWord, def);
-            newAllWords.add(normalizedWord);
-            newBookWords.add(normalizedWord);
-            
-            // 添加别名到缓存
-            if (def.aliases && def.aliases.length > 0) {
-                for (const alias of def.aliases) {
-                    const normalizedAlias = alias.toLowerCase().trim();
-                    this.wordDefinitionCache.set(normalizedAlias, def);
-                    newAllWords.add(normalizedAlias);
-                    newBookWords.add(normalizedAlias);
+        this.rebuildCache();
+    }
+
+    private collectMainWords(): Set<string> {
+        const mainWords = new Set<string>();
+
+        for (const definitions of this.definitions.values()) {
+            for (const def of definitions) {
+                const normalizedWord = def.word.toLowerCase().trim();
+                if (normalizedWord) {
+                    mainWords.add(normalizedWord);
                 }
             }
         }
-        
-        // 更新缓存
-        this.allWordsCache = [...newAllWords];
-        this.bookWordsCache.set(bookPath, [...newBookWords]);
+
+        return mainWords;
     }
     
     /**
@@ -829,12 +850,13 @@ export class VocabularyManager {
         // 标记缓存需要重建
         this.cacheValid = false;
 
-        // 保存到 Canvas 文件
-        try {
-            await this.saveWordDefinitionToCanvas(bookPath, nodeId, updatedDef);
-        } catch (error) {
-            console.error('保存单词定义到 Canvas 失败:', error);
-            // 不返回 false，因为内存更新已经成功
+        if (!bookPath.endsWith('.hiwords')) {
+            try {
+                await this.saveWordDefinitionToCanvas(bookPath, nodeId, updatedDef);
+            } catch (error) {
+                console.error('保存单词定义到 Canvas 失败:', error);
+                // 不返回 false，因为内存更新已经成功
+            }
         }
 
         return true;

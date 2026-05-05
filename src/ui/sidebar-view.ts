@@ -3,6 +3,7 @@ import HiWordsPlugin from '../../main';
 import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
 import { findPatternMatches } from '../utils/pattern-matcher';
+import { renderWordCard } from './word-card-renderer';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -13,57 +14,16 @@ export class HiWordsSidebarView extends ItemView {
     private currentFile: TFile | null = null;
     private firstLoadForFile: boolean = false; // 仅在切换到新文件后的首次渲染生效
     private updateTimer: number | null = null; // 合并/防抖更新
-    private measureQueue: HTMLElement[] = []; // 批量测量的队列
-    private measureScheduled = false; // 是否已安排 RAF 测量
     private delegatedBound = false; // 是否已绑定根级事件委托
     private lastInteractionTime = 0; // 最后一次交互的时间戳
     private patternDefinitionsCache: WordDefinition[] = []; // 缓存模式短语列表
     private normalDefinitionsCache: WordDefinition[] = []; // 缓存普通单词列表
     private sectionTabStates: Map<string, number> = new Map(); // 记录每个单词当前激活的分区 Tab
+    private expandedWordStates: Map<string, boolean> = new Map(); // 记录用户手动展开/收起的词卡状态
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
         this.plugin = plugin;
-    }
-
-    /**
-     * 安排一次 requestAnimationFrame，把所有待测量的 collapsible 高度一次性计算并写回
-     */
-    private scheduleMeasure() {
-        if (this.measureScheduled) return;
-        this.measureScheduled = true;
-        requestAnimationFrame(() => {
-            this.measureScheduled = false;
-            if (this.measureQueue.length === 0) return;
-
-            const MAX_COLLAPSED = 140; // 与 CSS 保持一致
-            const items = this.measureQueue.splice(0, this.measureQueue.length);
-
-            // 先读后写：先生成读集
-            const results: Array<{ el: HTMLElement; needsToggle: boolean }> = items.map((el) => ({
-                el,
-                needsToggle: el.scrollHeight > MAX_COLLAPSED + 4,
-            }));
-
-            // 再统一写
-            for (const { el, needsToggle } of results) {
-                if (!needsToggle) {
-                    el.removeClass('collapsed');
-                    continue;
-                }
-                const definition = el.parentElement as HTMLElement; // collapsible 的父级就是 definition 容器
-                if (!definition) continue;
-                
-                // 检查是否已存在展开/收起按钮，避免重复创建
-                let overlay = definition.querySelector('.hi-words-expand-overlay') as HTMLElement | null;
-                if (!overlay) {
-                    overlay = definition.createEl('div', { cls: 'hi-words-expand-overlay' });
-                }
-                
-                // 更新按钮文本（根据当前状态）
-                overlay.setText(el.hasClass('collapsed') ? t('actions.expand') : t('actions.collapse'));
-            }
-        });
     }
 
     getViewType(): string {
@@ -357,9 +317,6 @@ export class HiWordsSidebarView extends ItemView {
                 this.createEmptyState(container, t('sidebar.no_mastered_words'));
             }
         }
-
-        // 在完成当前 Tab 的所有渲染后，统一安排一次测量折叠高度
-        this.scheduleMeasure();
     }
     
     /**
@@ -390,7 +347,12 @@ export class HiWordsSidebarView extends ItemView {
      * @param isMastered 是否为已掌握单词
      */
     private async createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered: boolean = false) {
-        const card = container.createEl('div', { cls: 'hi-words-word-card' });
+        const wordKey = this.getWordStateKey(wordDef);
+        const isExpanded = this.getWordExpandedState(wordDef);
+        const card = container.createEl('div', {
+            cls: `hi-words-word-card ${isExpanded ? 'is-expanded' : 'is-collapsed'}`,
+            attr: { 'data-word-key': wordKey }
+        });
         
         // 设置 CSS 自定义属性，让 CSS 处理实际样式
         if (wordDef.color) {
@@ -403,11 +365,23 @@ export class HiWordsSidebarView extends ItemView {
 
         // 词汇标题
         const wordTitle = card.createEl('div', { cls: 'hi-words-word-title' });
-        const wordTextEl = wordTitle.createEl('span', { text: wordDef.word, cls: 'hi-words-word-text' });
+        const wordTextEl = wordTitle.createEl('span', {
+            text: wordDef.word,
+            cls: 'hi-words-word-text'
+        });
+
         // 点击主词发音
         wordTextEl.addEventListener('click', async (e) => {
             e.stopPropagation();
-            await playWordTTS(this.plugin, wordDef.word);
+            await playWordTTS(this.plugin, wordDef.word, wordDef);
+        });
+
+        wordTitle.createEl('div', {
+            cls: 'hi-words-card-toggle-spacer',
+            attr: {
+                'aria-label': isExpanded ? t('actions.collapse') : t('actions.expand'),
+                'data-word-key': wordKey
+            }
         });
         
         // 已掌握按钮（如果启用了功能）
@@ -430,7 +404,7 @@ export class HiWordsSidebarView extends ItemView {
         const savedSectionIndex = this.sectionTabStates.get(wordDef.word) ?? 0;
         const activeSectionIndex = sections && sections.length > savedSectionIndex ? savedSectionIndex : 0;
 
-        if (sections && sections.length > 1 && enableSectionTabs) {
+        if (isExpanded && !wordDef.card && sections && sections.length > 1 && enableSectionTabs) {
             const tabsContainer = card.createEl('div', { cls: 'hi-words-card-tabs' });
 
             sections.forEach((section, index) => {
@@ -447,39 +421,59 @@ export class HiWordsSidebarView extends ItemView {
             : wordDef.definition;
         
         // 定义内容
-        if (contentToRender && contentToRender.trim()) {
+        if (isExpanded && wordDef.card) {
+            const definition = card.createEl('div', { cls: 'hi-words-word-definition hi-words-word-definition-structured' });
+            const defContainer = definition.createEl('div', {
+                cls: this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition'
+            });
+            renderWordCard(defContainer, wordDef, {
+                mode: 'sidebar',
+                app: this.app,
+                pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
+                onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
+            });
+        } else if (isExpanded && contentToRender && contentToRender.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
 
-            // 外层可折叠容器
-            const collapsible = definition.createEl('div', { cls: 'hi-words-collapsible collapsed' });
-
             // 真正的 Markdown 内容容器
-            const defContainer = collapsible.createEl('div', {
+            const defContainer = definition.createEl('div', {
                 cls: this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition'
             });
 
             // 渲染 Markdown 内容
             await this.renderSectionContent(defContainer, contentToRender);
-
-            // 交由批量测量队列统一处理折叠逻辑，避免逐卡片触发布局计算
-            this.measureQueue.push(collapsible);
         }
         
         // 来源信息
-        const source = card.createEl('div', { cls: 'hi-words-word-source' });
-        const bookName = this.getBookNameFromPath(wordDef.source);
-        source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
-        
-        // 添加点击事件到来源信息：导航到源文件
-        source.addEventListener('click', (e) => {
-            e.stopPropagation(); // 阻止事件冒泡
-            this.navigateToSource(wordDef);
-        });
+        if (isExpanded) {
+            const source = card.createEl('div', { cls: 'hi-words-word-source' });
+            const bookName = this.getBookNameFromPath(wordDef.source);
+            source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
+
+            // 添加点击事件到来源信息：导航到源文件
+            source.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                this.navigateToSource(wordDef);
+            });
+        }
         
         // 添加已掌握状态样式
         if (isMastered) {
             card.addClass('hi-words-word-card-mastered');
         }
+    }
+
+    private getDefaultExpandedState(): boolean {
+        return (this.plugin.settings.sidebarDefaultDisplayMode || 'detail') === 'detail';
+    }
+
+    private getWordStateKey(wordDef: WordDefinition): string {
+        return `${wordDef.source}::${wordDef.nodeId}::${wordDef.word}`;
+    }
+
+    private getWordExpandedState(wordDef: WordDefinition): boolean {
+        const wordKey = this.getWordStateKey(wordDef);
+        return this.expandedWordStates.get(wordKey) ?? this.getDefaultExpandedState();
     }
 
     private async renderSectionContent(container: HTMLElement, content: string): Promise<void> {
@@ -582,9 +576,9 @@ export class HiWordsSidebarView extends ItemView {
                     return;
                 }
 
-                // 展开/收起：覆盖层
-                const overlay = target.closest('.hi-words-expand-overlay') as HTMLElement | null;
-                if (overlay && root.contains(overlay)) {
+                // 展开/收起词卡
+                const toggleEl = target.closest('.hi-words-card-toggle-spacer') as HTMLElement | null;
+                if (toggleEl && root.contains(toggleEl)) {
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -594,14 +588,14 @@ export class HiWordsSidebarView extends ItemView {
                         clearTimeout(this.updateTimer);
                         this.updateTimer = null;
                     }
-                    
-                    const definition = overlay.parentElement as HTMLElement | null;
-                    const collapsible = definition?.querySelector('.hi-words-collapsible') as HTMLElement | null;
-                    const el = collapsible || definition;
-                    if (el) {
-                        const nextCollapsed = !el.hasClass('collapsed');
-                        el.toggleClass('collapsed', nextCollapsed);
-                        overlay.setText(nextCollapsed ? t('actions.expand') : t('actions.collapse'));
+
+                    const card = toggleEl.closest('.hi-words-word-card') as HTMLElement | null;
+                    const wordKey = toggleEl.getAttr('data-word-key') || card?.getAttr('data-word-key');
+                    if (wordKey) {
+                        const currentState = this.expandedWordStates.get(wordKey);
+                        const isCurrentlyExpanded = currentState ?? this.getDefaultExpandedState();
+                        this.expandedWordStates.set(wordKey, !isCurrentlyExpanded);
+                        void this.renderWordList();
                     }
                     return;
                 }

@@ -9,6 +9,7 @@ export const DEFAULT_TRANSLATE_PROMPT = 'Translate the following text to {{to}}.
  */
 export const DEFAULT_SETTINGS: HiWordsSettings = {
     vocabularyBooks: [],
+    hiWordsProgress: {},
     showDefinitionOnHover: true,
     enableAutoHighlight: true,
     highlightStyle: 'underline', // 默认使用下划线样式
@@ -17,6 +18,7 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     blurDefinitions: false, // 默认不启用模糊效果
     // 发音地址模板（用户可在设置里修改）
     ttsTemplate: 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2',
+    pronunciationVariant: 'us',
     // AI 服务配置
     aiService: {
         provider: 'openai-compatible',
@@ -42,6 +44,8 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     fileNodeParseMode: 'filename-with-alias',
     // 分区 Tab 显示
     enableSectionTabs: true,
+    // 侧边栏默认显示模式
+    sidebarDefaultDisplayMode: 'detail',
     // 划词翻译配置
     selectionTranslate: {
         enabled: false,

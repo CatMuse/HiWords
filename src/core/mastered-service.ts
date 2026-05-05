@@ -47,12 +47,21 @@ export class MasteredService {
 
         try {
             const mode = this.plugin.settings.masteredDetection ?? 'group';
+            const isHiWordsPack = bookPath.endsWith('.hiwords');
 
             // 1. 更新内存缓存中的已掌握状态
             const success = await this.updateWordMasteredStatus(bookPath, nodeId, true);
             if (!success) {
                 new Notice(t('notices.update_word_status_failed'));
                 return false;
+            }
+
+            if (isHiWordsPack) {
+                await this.saveHiWordsProgress(bookPath, nodeId, true);
+                this.plugin.refreshHighlighter();
+                this.plugin.app.workspace.trigger('hi-words:mastered-changed');
+                new Notice(t('notices.word_marked_as_mastered').replace('{0}', word));
+                return true;
             }
 
             // 2. 根据模式更新 Canvas
@@ -107,12 +116,21 @@ export class MasteredService {
 
         try {
             const mode = this.plugin.settings.masteredDetection ?? 'group';
+            const isHiWordsPack = bookPath.endsWith('.hiwords');
 
             // 1. 更新内存缓存中的已掌握状态
             const success = await this.updateWordMasteredStatus(bookPath, nodeId, false);
             if (!success) {
                 new Notice(t('notices.update_word_status_failed'));
                 return false;
+            }
+
+            if (isHiWordsPack) {
+                await this.saveHiWordsProgress(bookPath, nodeId, false);
+                this.plugin.refreshHighlighter();
+                this.plugin.app.workspace.trigger('hi-words:mastered-changed');
+                new Notice(t('notices.word_unmarked_as_mastered').replace('{0}', word));
+                return true;
             }
 
             // 2. 根据模式更新 Canvas
@@ -294,6 +312,19 @@ export class MasteredService {
         }
     }
 
+    private async saveHiWordsProgress(bookPath: string, nodeId: string, mastered: boolean): Promise<void> {
+        if (!this.plugin.settings.hiWordsProgress) {
+            this.plugin.settings.hiWordsProgress = {};
+        }
+
+        if (!this.plugin.settings.hiWordsProgress[bookPath]) {
+            this.plugin.settings.hiWordsProgress[bookPath] = {};
+        }
+
+        this.plugin.settings.hiWordsProgress[bookPath][nodeId] = { mastered };
+        await this.plugin.saveSettings();
+    }
+
     /**
      * 同步 Canvas 分组状态与内存状态
      * 用于修复可能的不一致状态
@@ -301,6 +332,7 @@ export class MasteredService {
      */
     async syncMasteredStatus(bookPath: string): Promise<void> {
         if (!this.isEnabled) return;
+        if (bookPath.endsWith('.hiwords')) return;
 
         try {
             const allWords = await this.vocabularyManager.getWordDefinitionsByBook(bookPath);

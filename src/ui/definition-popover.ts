@@ -3,6 +3,7 @@ import { VocabularyManager, MasteredService } from '../core';
 import { playWordTTS } from '../utils';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
+import { renderWordCard } from './word-card-renderer';
 
 export class DefinitionPopover extends Component {
     private app: App;
@@ -239,6 +240,7 @@ export class DefinitionPopover extends Component {
 
         const tooltip = document.createElement('div');
         tooltip.className = 'hi-words-tooltip';
+        const wordDef = this.vocabularyManager?.getDefinition(word);
 
         // 标题容器
         const titleContainer = document.createElement('div');
@@ -253,14 +255,13 @@ export class DefinitionPopover extends Component {
         titleEl.title = '点击发音';
         titleEl.addEventListener('click', async (e) => {
             e.stopPropagation();
-            await playWordTTS(this.plugin, word);
+            await playWordTTS(this.plugin, word, wordDef || undefined);
         });
         
         // 先添加标题容器
         tooltip.appendChild(titleContainer);
 
-        const wordDef = this.vocabularyManager?.getDefinition(word);
-        const sections = wordDef?.sections;
+        const sections = wordDef?.card ? undefined : wordDef?.sections;
         const enableSectionTabs = this.plugin.settings.enableSectionTabs ?? true;
 
         let contentEl: HTMLElement;
@@ -302,14 +303,23 @@ export class DefinitionPopover extends Component {
         // 这样后处理器可以通过 closest() 检测到 .hi-words-tooltip
         tooltip.appendChild(contentEl);
 
-        const contentToRender = sections && sections.length > 0 && enableSectionTabs
-            ? sections[0].content
-            : definition;
-
-        if (!contentToRender || contentToRender.trim() === '') {
-            contentEl.textContent = t('sidebar.no_definition');
+        if (wordDef?.card) {
+            renderWordCard(contentEl, wordDef, {
+                mode: 'popover',
+                app: this.app,
+                pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
+                onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
+            });
         } else {
-            await this.renderSectionContent(contentEl, contentToRender, tooltip);
+            const contentToRender = sections && sections.length > 0 && enableSectionTabs
+                ? sections[0].content
+                : definition;
+
+            if (!contentToRender || contentToRender.trim() === '') {
+                contentEl.textContent = t('sidebar.no_definition');
+            } else {
+                await this.renderSectionContent(contentEl, contentToRender, tooltip);
+            }
         }
 
         // 添加已掌握按钮和源信息

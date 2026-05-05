@@ -24,6 +24,10 @@ export interface LanguagePack {
         highlight_style_desc: string;
         enable_section_tabs?: string;
         enable_section_tabs_desc?: string;
+        sidebar_default_display_mode?: string;
+        sidebar_default_display_mode_desc?: string;
+        sidebar_display_detail?: string;
+        sidebar_display_word?: string;
         style_underline: string;
         style_background: string;
         style_bold: string;
@@ -33,6 +37,9 @@ export interface LanguagePack {
         no_vocabulary_books: string;
         path: string;
         reload_book: string;
+        preview_book?: string;
+        book_color?: string;
+        book_color_default?: string;
         statistics: string;
         total_books: string;
         enabled_books: string;
@@ -49,6 +56,10 @@ export interface LanguagePack {
         // TTS template (optional for backward compatibility)
         tts_template?: string;
         tts_template_desc?: string;
+        pronunciation_variant?: string;
+        pronunciation_variant_desc?: string;
+        pronunciation_uk?: string;
+        pronunciation_us?: string;
         // AI Dictionary
         ai_dictionary?: string;
         ai_api_url?: string;
@@ -116,8 +127,10 @@ export interface LanguagePack {
         word_added_success: string;
         add_word_failed: string;
         no_canvas_files: string;
+        no_vocabulary_book_files?: string;
         book_already_exists: string;
         invalid_canvas_file: string;
+        invalid_vocabulary_book_file?: string;
         book_added: string;
         book_reloaded: string;
         book_removed: string;
@@ -140,6 +153,12 @@ export interface LanguagePack {
         add_button: string;
         cancel_button: string;
         select_canvas_file: string;
+        select_vocabulary_book_file?: string;
+        pack_words?: string;
+        pack_language?: string;
+        pack_version?: string;
+        pack_id?: string;
+        pack_samples?: string;
         delete_confirmation: string;
         save_button: string;
     };
