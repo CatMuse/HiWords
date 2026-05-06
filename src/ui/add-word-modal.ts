@@ -48,6 +48,18 @@ export class AddWordModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
+
+        if (this.isEditMode && this.definition?.source.endsWith('.hiwords')) {
+            contentEl.createEl('p', {
+                text: t('notices.readonly_hiwords_book'),
+                cls: 'setting-item-description'
+            });
+
+            const buttonContainer = contentEl.createDiv({ cls: 'hiwords-button-container' });
+            const closeButton = buttonContainer.createEl('button', { text: t('modals.cancel_button') });
+            closeButton.onclick = () => this.close();
+            return;
+        }
         
         // 单词输入（仅在添加模式下显示）
         let wordInput: HTMLInputElement | null = null;
@@ -75,7 +87,8 @@ export class AddWordModal extends Modal {
         const bookSelect = bookSelectContainer.createEl('select', { cls: 'dropdown' });
         bookSelect.createEl('option', { text: t('modals.select_book'), value: '' });
         
-        const enabledBooks = this.plugin.settings.vocabularyBooks.filter(book => book.enabled);
+        const enabledBooks = this.plugin.settings.vocabularyBooks
+            .filter(book => book.enabled && book.path.endsWith('.canvas'));
         let defaultBookSelected = false;
         enabledBooks.forEach((book, index) => {
             const option = bookSelect.createEl('option', { text: book.name, value: book.path });

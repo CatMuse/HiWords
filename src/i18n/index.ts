@@ -123,6 +123,7 @@ export interface LanguagePack {
         word_exists: string;
         error_adding_word: string;
         select_book_required: string;
+        readonly_hiwords_book?: string;
         adding_word: string;
         word_added_success: string;
         add_word_failed: string;

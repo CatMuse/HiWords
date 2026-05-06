@@ -316,13 +316,34 @@ export class MasteredService {
         if (!this.plugin.settings.hiWordsProgress) {
             this.plugin.settings.hiWordsProgress = {};
         }
+        const progressKey = this.getProgressKey(bookPath);
 
-        if (!this.plugin.settings.hiWordsProgress[bookPath]) {
-            this.plugin.settings.hiWordsProgress[bookPath] = {};
+        if (!mastered) {
+            delete this.plugin.settings.hiWordsProgress[progressKey]?.[nodeId];
+            if (progressKey !== bookPath) {
+                delete this.plugin.settings.hiWordsProgress[bookPath]?.[nodeId];
+            }
+            if (this.plugin.settings.hiWordsProgress[progressKey] && Object.keys(this.plugin.settings.hiWordsProgress[progressKey]).length === 0) {
+                delete this.plugin.settings.hiWordsProgress[progressKey];
+            }
+            if (this.plugin.settings.hiWordsProgress[bookPath] && Object.keys(this.plugin.settings.hiWordsProgress[bookPath]).length === 0) {
+                delete this.plugin.settings.hiWordsProgress[bookPath];
+            }
+            await this.plugin.saveSettings();
+            return;
         }
 
-        this.plugin.settings.hiWordsProgress[bookPath][nodeId] = { mastered };
+        if (!this.plugin.settings.hiWordsProgress[progressKey]) {
+            this.plugin.settings.hiWordsProgress[progressKey] = {};
+        }
+
+        this.plugin.settings.hiWordsProgress[progressKey][nodeId] = { mastered };
         await this.plugin.saveSettings();
+    }
+
+    private getProgressKey(bookPath: string): string {
+        const book = this.plugin.settings.vocabularyBooks.find(item => item.path === bookPath);
+        return book?.progressKey || bookPath;
     }
 
     /**

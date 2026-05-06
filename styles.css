@@ -133,8 +133,13 @@
     font-size: 14px;
     margin-bottom: 6px;
     /* 限制悬停预览高度，避免过长内容撑开 */
-    max-height: 260px;
+    max-height: 280px;
     overflow: auto;
+}
+
+.hi-words-tooltip-structured .hi-words-tooltip-content {
+    max-height: none;
+    overflow: visible;
 }
 
 .hi-words-tooltip-source {
@@ -888,7 +893,6 @@
     max-height: 220px;
     object-fit: cover;
     object-position: center;
-    vertical-align: top;
 }
 
 .hi-words-structured-image figcaption {

@@ -155,6 +155,7 @@ export default {
         word_exists: "Word already exists in vocabulary book",
         error_adding_word: "Error adding word to vocabulary book",
         select_book_required: "Please select a vocabulary book",
+        readonly_hiwords_book: "Structured .hiwords packs are read-only and cannot be edited here. Please use a Canvas word book.",
         adding_word: "Adding word to vocabulary book...",
         updating_word: "Updating word...",
         word_added_success: "Word \"{0}\" successfully added to vocabulary book",

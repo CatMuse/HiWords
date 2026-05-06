@@ -241,6 +241,9 @@ export class DefinitionPopover extends Component {
         const tooltip = document.createElement('div');
         tooltip.className = 'hi-words-tooltip';
         const wordDef = this.vocabularyManager?.getDefinition(word);
+        if (wordDef?.card) {
+            tooltip.classList.add('hi-words-tooltip-structured');
+        }
 
         // 标题容器
         const titleContainer = document.createElement('div');
@@ -358,22 +361,24 @@ export class DefinitionPopover extends Component {
                     titleContainer.appendChild(buttonContainer);
                 }
                 
-                // 源信息
-                const sourceEl = document.createElement('div');
-                sourceEl.className = 'hi-words-tooltip-source';
-                const fileName = detailDef.source.split('/').pop() || '';
-                const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
-                sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
-                
-                // 添加点击事件到来源信息：导航到源文件
-                sourceEl.addEventListener('click', (e) => {
-                    e.stopPropagation(); // 阻止事件冒泡
-                    this.navigateToSource(detailDef);
-                    // 点击跳转后清理预览框
-                    this.removeTooltip();
-                });
-                
-                tooltip.appendChild(sourceEl);
+                if (!detailDef.source.endsWith('.hiwords')) {
+                    // 源信息
+                    const sourceEl = document.createElement('div');
+                    sourceEl.className = 'hi-words-tooltip-source';
+                    const fileName = detailDef.source.split('/').pop() || '';
+                    const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
+                    sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
+
+                    // 添加点击事件到来源信息：导航到源文件
+                    sourceEl.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 阻止事件冒泡
+                        this.navigateToSource(detailDef);
+                        // 点击跳转后清理预览框
+                        this.removeTooltip();
+                    });
+
+                    tooltip.appendChild(sourceEl);
+                }
             }
         }
 

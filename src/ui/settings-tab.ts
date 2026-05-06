@@ -700,8 +700,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         }
 
         // 验证词库文件
-        const isValid = file.extension === 'hiwords'
-            ? await new HiWordsParser(this.app).validateFile(file)
+        const hiWordsParser = file.extension === 'hiwords' ? new HiWordsParser(this.app) : null;
+        const metadata = hiWordsParser ? await hiWordsParser.readMetadata(file) : null;
+        const isValid = hiWordsParser
+            ? metadata !== null && await hiWordsParser.validateFile(file)
             : await new CanvasParser(this.app, this.plugin.settings as any).validateCanvasFile(file);
         if (!isValid) {
             new Notice(t('notices.invalid_vocabulary_book_file'));
@@ -712,7 +714,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const newBook: VocabularyBook = {
             path: file.path,
             name: file.basename,
-            enabled: true
+            enabled: true,
+            progressKey: metadata?.id ? `hiwords:${metadata.id}` : undefined,
         };
 
         this.plugin.settings.vocabularyBooks.push(newBook);

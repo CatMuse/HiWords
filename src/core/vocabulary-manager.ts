@@ -70,9 +70,10 @@ export class VocabularyManager {
                 ? await this.hiWordsParser.parseFile(file)
                 : await this.canvasParser.parseCanvasFile(file);
             if (isHiWordsBook) {
+                await this.ensureHiWordsProgressKey(book, file);
                 this.applyBookColor(book, definitions);
             }
-            this.applyStoredProgress(book.path, definitions);
+            this.applyStoredProgress(book, definitions);
             this.definitions.set(book.path, definitions);
             
             // 增量更新缓存而不是重建整个缓存
@@ -261,16 +262,38 @@ export class VocabularyManager {
         this.canvasParser.updateSettings(settings);
     }
 
-    private applyStoredProgress(bookPath: string, definitions: WordDefinition[]): void {
-        const progress = this.settings.hiWordsProgress?.[bookPath];
-        if (!progress) return;
+    private applyStoredProgress(book: VocabularyBook, definitions: WordDefinition[]): void {
+        const progressKeys = this.getProgressKeys(book);
 
         for (const definition of definitions) {
-            const itemProgress = progress[definition.nodeId];
+            const itemProgress = progressKeys
+                .map(key => this.settings.hiWordsProgress?.[key]?.[definition.nodeId])
+                .find(progress => progress?.mastered !== undefined);
             if (itemProgress?.mastered !== undefined) {
                 definition.mastered = itemProgress.mastered;
             }
         }
+    }
+
+    private async ensureHiWordsProgressKey(book: VocabularyBook, file: TFile): Promise<void> {
+        const metadata = await this.hiWordsParser.readMetadata(file);
+        if (!metadata?.id) return;
+
+        const progressKey = `hiwords:${metadata.id}`;
+        book.progressKey = progressKey;
+
+        const legacyProgress = this.settings.hiWordsProgress?.[book.path];
+        if (legacyProgress) {
+            this.settings.hiWordsProgress![progressKey] = {
+                ...(this.settings.hiWordsProgress![progressKey] || {}),
+                ...legacyProgress,
+            };
+            delete this.settings.hiWordsProgress![book.path];
+        }
+    }
+
+    private getProgressKeys(book: VocabularyBook): string[] {
+        return [book.progressKey, book.path].filter((key): key is string => !!key);
     }
 
     private applyBookColor(book: VocabularyBook, definitions: WordDefinition[]): void {

@@ -96,6 +96,7 @@ export interface VocabularyBook {
     name: string; // 显示名称
     enabled: boolean; // 是否启用
     color?: string; // .hiwords 词库默认颜色，使用 Canvas-style color id: "1".."6"
+    progressKey?: string; // .hiwords 进度稳定键，优先使用词库包 ID
 }
 
 // 高亮样式类型

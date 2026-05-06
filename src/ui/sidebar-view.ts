@@ -445,7 +445,7 @@ export class HiWordsSidebarView extends ItemView {
         }
         
         // 来源信息
-        if (isExpanded) {
+        if (isExpanded && !wordDef.source.endsWith('.hiwords')) {
             const source = card.createEl('div', { cls: 'hi-words-word-source' });
             const bookName = this.getBookNameFromPath(wordDef.source);
             source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });

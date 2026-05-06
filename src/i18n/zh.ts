@@ -155,6 +155,7 @@ export default {
         word_exists: "单词已存在于生词本中",
         error_adding_word: "添加单词到生词本时出错",
         select_book_required: "请选择生词本",
+        readonly_hiwords_book: "结构化 .hiwords 词库是只读词库，不能在这里添加或编辑单词。请改用 Canvas 单词本。",
         adding_word: "正在添加词汇到生词本...",
         updating_word: "正在更新词汇...",
         word_added_success: "词汇 \"{0}\" 已成功添加到生词本",
