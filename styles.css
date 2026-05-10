@@ -1862,8 +1862,8 @@
 }
 
 .hi-words-library-icon-button {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
     padding: 0;
 }
 
@@ -1874,9 +1874,9 @@
 }
 
 .hi-words-library-icon-button svg {
-    width: 18px;
-    height: 18px;
-    stroke-width: 2.1;
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
 }
 
 .hi-words-library-button:hover,

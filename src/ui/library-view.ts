@@ -35,6 +35,7 @@ export class HiWordsLibraryView extends ItemView {
     private activeTooltip: HTMLElement | null = null;
     private tooltipShowTimer: number | null = null;
     private tooltipHideTimer: number | null = null;
+    private renderToken = 0;
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -75,9 +76,10 @@ export class HiWordsLibraryView extends ItemView {
     }
 
     private async render() {
-        const root = this.containerEl.children[1] as HTMLElement;
+        const token = ++this.renderToken;
+        const content = this.containerEl.children[1] as HTMLElement;
+        const root = document.createElement('div');
         this.removeTooltip();
-        root.empty();
         root.addClass('hi-words-library');
         this.wordListEl = null;
         this.detailEl = null;
@@ -105,6 +107,15 @@ export class HiWordsLibraryView extends ItemView {
         const body = root.createDiv({ cls: 'hi-words-library-body' });
         await this.renderBookList(body);
         await this.renderBookDetail(body);
+
+        if (token !== this.renderToken) return;
+
+        content.empty();
+        content.removeClass('hi-words-library');
+        while (root.firstChild) {
+            content.appendChild(root.firstChild);
+        }
+        content.addClass('hi-words-library');
     }
 
     private clearCaches() {
