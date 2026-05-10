@@ -4,6 +4,7 @@ import type { StudyItem, VocabularyBook, WordDefinition } from '../utils';
 import { mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
 import { renderWordCard } from './word-card-renderer';
+import { AddWordModal } from './add-word-modal';
 
 export const LIBRARY_VIEW_TYPE = 'hi-words-library';
 
@@ -377,6 +378,13 @@ export class HiWordsLibraryView extends ItemView {
         main.createDiv({ cls: 'hi-words-library-study-key', text: definition.studyKey || `${definition.source}:${definition.nodeId}` });
 
         const actions = row.createDiv({ cls: 'hi-words-library-actions' });
+        if (!definition.source.endsWith('.hiwords')) {
+            const editButton = this.addIconButton(actions, 'pencil', t('library.edit_word'), () => {
+                this.removeTooltip();
+                new AddWordModal(this.app, this.plugin, definition.word, '', true, '', definition).open();
+            });
+            editButton.addClass('hi-words-library-edit-button');
+        }
         this.addIconButton(actions, definition.mastered ? 'undo' : 'check', definition.mastered ? t('library.unmark_mastered') : t('library.mark_mastered'), async () => {
             if (definition.mastered) {
                 await this.plugin.masteredService.unmarkWordAsMastered(definition.source, definition.nodeId, definition.word);

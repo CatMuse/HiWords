@@ -220,6 +220,7 @@ export default {
         loaded_all: "Alle {0} Einträge angezeigt.",
         mark_mastered: "Als beherrscht markieren",
         unmark_mastered: "Beherrschung aufheben",
+        edit_word: "Wort bearbeiten",
     },
     // Allgemeine Aktionsbeschriftungen
     actions: {

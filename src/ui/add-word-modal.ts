@@ -28,7 +28,7 @@ export class AddWordModal extends Modal {
      * @param sentence 单词所在的句子（可选）
      * @param isEditMode 是否为编辑模式
      */
-    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence: string = '', isEditMode: boolean = false, prefilledDefinition: string = '') {
+    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence: string = '', isEditMode: boolean = false, prefilledDefinition: string = '', definition?: WordDefinition) {
         super(app);
         this.plugin = plugin;
         this.word = word;
@@ -39,7 +39,7 @@ export class AddWordModal extends Modal {
         
         // 如果是编辑模式，获取单词的定义
         if (isEditMode) {
-            this.definition = this.plugin.vocabularyManager.getDefinition(word);
+            this.definition = definition || this.plugin.vocabularyManager.getDefinition(word);
         } else {
             this.definition = null;
         }

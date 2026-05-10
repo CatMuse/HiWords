@@ -190,6 +190,7 @@ export interface LanguagePack {
         loaded_all: string;
         mark_mastered: string;
         unmark_mastered: string;
+        edit_word: string;
     };
     // Common action labels used in UI
     actions?: {

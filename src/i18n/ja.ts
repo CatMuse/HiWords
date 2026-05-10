@@ -220,6 +220,7 @@ export default {
         loaded_all: "全 {0} 件を表示中",
         mark_mastered: "習得済みにする",
         unmark_mastered: "習得済みを解除",
+        edit_word: "単語を編集",
     },
     // 共通アクションラベル
     actions: {

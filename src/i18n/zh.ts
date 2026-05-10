@@ -248,6 +248,7 @@ export default {
         loaded_all: "已显示全部 {0} 条",
         mark_mastered: "标记掌握",
         unmark_mastered: "取消掌握",
+        edit_word: "编辑单词",
     },
     // 通用操作文案
     actions: {

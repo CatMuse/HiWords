@@ -222,6 +222,7 @@ export default {
         loaded_all: "{0} entrées affichées.",
         mark_mastered: "Marquer maîtrisé",
         unmark_mastered: "Retirer maîtrisé",
+        edit_word: "Modifier le mot",
     },
     // Libellés d'actions communs
     actions: {

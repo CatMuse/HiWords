@@ -248,6 +248,7 @@ export default {
         loaded_all: "Showing all {0} entries.",
         mark_mastered: "Mark mastered",
         unmark_mastered: "Unmark mastered",
+        edit_word: "Edit word",
     },
     // Common action labels
     actions: {

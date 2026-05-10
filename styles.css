@@ -1879,6 +1879,11 @@
     stroke-width: 2;
 }
 
+.hi-words-library-edit-button svg {
+    width: 14px;
+    height: 14px;
+}
+
 .hi-words-library-button:hover,
 .hi-words-library-icon-button:hover {
     background: var(--background-modifier-hover);

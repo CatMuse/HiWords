@@ -222,6 +222,7 @@ export default {
         loaded_all: "Mostrando las {0} entradas.",
         mark_mastered: "Marcar dominada",
         unmark_mastered: "Desmarcar dominada",
+        edit_word: "Editar palabra",
     },
     // Etiquetas comunes de acciones
     actions: {
