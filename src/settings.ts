@@ -9,7 +9,7 @@ export const DEFAULT_TRANSLATE_PROMPT = 'Translate the following text to {{to}}.
  */
 export const DEFAULT_SETTINGS: HiWordsSettings = {
     vocabularyBooks: [],
-    hiWordsProgress: {},
+    studyProgress: {},
     showDefinitionOnHover: true,
     enableAutoHighlight: true,
     highlightStyle: 'underline', // 默认使用下划线样式

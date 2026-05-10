@@ -113,10 +113,12 @@ export function clearHighlights(element: HTMLElement): void {
  */
 export function buildTrieFromVocabulary(vocabularyManager: VocabularyManager): Trie {
     const trie = new Trie();
-    const words = vocabularyManager.getAllWordsForHighlight();
-    for (const w of words) {
-        const def = vocabularyManager.getDefinition(w);
-        if (def) trie.addWord(w, def);
+    const definitions = vocabularyManager.getStudyDefinitionsForHighlight();
+    for (const def of definitions) {
+        trie.addWord(def.word, def);
+        def.aliases?.forEach(alias => {
+            if (alias) trie.addWord(alias, def);
+        });
     }
     return trie;
 }

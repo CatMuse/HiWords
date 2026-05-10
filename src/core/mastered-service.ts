@@ -8,6 +8,7 @@ import { VocabularyManager } from './vocabulary-manager';
 import { MasteredGroupManager } from '../canvas';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
+import type { WordDefinition } from '../utils';
 
 export class MasteredService {
     private plugin: HiWordsPlugin;
@@ -57,7 +58,11 @@ export class MasteredService {
             }
 
             if (isHiWordsPack) {
-                await this.saveHiWordsProgress(bookPath, nodeId, true);
+                const wordDef = await this.vocabularyManager.getWordDefinitionByNodeId(bookPath, nodeId);
+                await this.saveStudyProgress(wordDef, true);
+                if (wordDef?.studyKey) {
+                    this.vocabularyManager.updateStudyKeyMasteredStatus(wordDef.studyKey, true);
+                }
                 this.plugin.refreshHighlighter();
                 this.plugin.app.workspace.trigger('hi-words:mastered-changed');
                 new Notice(t('notices.word_marked_as_mastered').replace('{0}', word));
@@ -126,7 +131,11 @@ export class MasteredService {
             }
 
             if (isHiWordsPack) {
-                await this.saveHiWordsProgress(bookPath, nodeId, false);
+                const wordDef = await this.vocabularyManager.getWordDefinitionByNodeId(bookPath, nodeId);
+                await this.saveStudyProgress(wordDef, false);
+                if (wordDef?.studyKey) {
+                    this.vocabularyManager.updateStudyKeyMasteredStatus(wordDef.studyKey, false);
+                }
                 this.plugin.refreshHighlighter();
                 this.plugin.app.workspace.trigger('hi-words:mastered-changed');
                 new Notice(t('notices.word_unmarked_as_mastered').replace('{0}', word));
@@ -312,38 +321,26 @@ export class MasteredService {
         }
     }
 
-    private async saveHiWordsProgress(bookPath: string, nodeId: string, mastered: boolean): Promise<void> {
-        if (!this.plugin.settings.hiWordsProgress) {
-            this.plugin.settings.hiWordsProgress = {};
+    private async saveStudyProgress(wordDef: WordDefinition | null, mastered: boolean): Promise<void> {
+        if (!wordDef?.studyKey) return;
+
+        if (!this.plugin.settings.studyProgress) {
+            this.plugin.settings.studyProgress = {};
         }
-        const progressKey = this.getProgressKey(bookPath);
 
         if (!mastered) {
-            delete this.plugin.settings.hiWordsProgress[progressKey]?.[nodeId];
-            if (progressKey !== bookPath) {
-                delete this.plugin.settings.hiWordsProgress[bookPath]?.[nodeId];
-            }
-            if (this.plugin.settings.hiWordsProgress[progressKey] && Object.keys(this.plugin.settings.hiWordsProgress[progressKey]).length === 0) {
-                delete this.plugin.settings.hiWordsProgress[progressKey];
-            }
-            if (this.plugin.settings.hiWordsProgress[bookPath] && Object.keys(this.plugin.settings.hiWordsProgress[bookPath]).length === 0) {
-                delete this.plugin.settings.hiWordsProgress[bookPath];
-            }
+            delete this.plugin.settings.studyProgress[wordDef.studyKey];
             await this.plugin.saveSettings();
             return;
         }
 
-        if (!this.plugin.settings.hiWordsProgress[progressKey]) {
-            this.plugin.settings.hiWordsProgress[progressKey] = {};
-        }
-
-        this.plugin.settings.hiWordsProgress[progressKey][nodeId] = { mastered };
+        const now = new Date().toISOString();
+        this.plugin.settings.studyProgress[wordDef.studyKey] = {
+            status: 'mastered',
+            masteredAt: this.plugin.settings.studyProgress[wordDef.studyKey]?.masteredAt || now,
+            updatedAt: now,
+        };
         await this.plugin.saveSettings();
-    }
-
-    private getProgressKey(bookPath: string): string {
-        const book = this.plugin.settings.vocabularyBooks.find(item => item.path === bookPath);
-        return book?.progressKey || bookPath;
     }
 
     /**

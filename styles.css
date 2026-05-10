@@ -73,6 +73,10 @@
     transition: opacity 0.2s ease;
 }
 
+.hi-words-library-tooltip {
+    max-width: min(440px, calc(100vw - 20px));
+}
+
 .hi-words-tooltip-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -1794,4 +1798,312 @@
 
 .hi-words-translate-btn-add:hover {
     color: var(--interactive-accent);
+}
+
+/* Library view */
+.hi-words-library {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+    padding: 18px;
+    overflow: hidden;
+}
+
+.hi-words-library-header,
+.hi-words-library-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.hi-words-library-title h2,
+.hi-words-library-detail h3,
+.hi-words-library-books h3 {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.hi-words-library-title p,
+.hi-words-library-detail-header p {
+    margin: 6px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.hi-words-library-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.hi-words-library-button,
+.hi-words-library-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    cursor: pointer;
+}
+
+.hi-words-library-button {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+}
+
+.hi-words-library-icon-button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+}
+
+.hi-words-library-button svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+.hi-words-library-icon-button svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.1;
+}
+
+.hi-words-library-button:hover,
+.hi-words-library-icon-button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.hi-words-library-stats,
+.hi-words-library-book-summary {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.hi-words-library-stat {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    background: var(--background-primary);
+}
+
+.hi-words-library-stat span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.hi-words-library-stat strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-normal);
+    font-size: 18px;
+}
+
+.hi-words-library-body {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    gap: 14px;
+    min-height: 0;
+    flex: 1;
+}
+
+.hi-words-library-books,
+.hi-words-library-detail {
+    min-height: 0;
+    padding: 14px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    background: var(--background-secondary);
+    overflow: auto;
+}
+
+.hi-words-library-books {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hi-words-library-book {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    background: var(--background-primary);
+    cursor: pointer;
+}
+
+.hi-words-library-book:hover,
+.hi-words-library-book.is-selected {
+    border-color: var(--interactive-accent);
+    background: var(--background-modifier-hover);
+}
+
+.hi-words-library-book.is-disabled {
+    opacity: 0.62;
+}
+
+.hi-words-library-book-main {
+    display: grid;
+    gap: 3px;
+}
+
+.hi-words-library-book-main strong {
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.hi-words-library-book-main span,
+.hi-words-library-book-meta span,
+.hi-words-library-aliases,
+.hi-words-library-study-key {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.hi-words-library-book-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.hi-words-library-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.hi-words-library-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px 140px;
+    gap: 10px;
+}
+
+.hi-words-library-filters input,
+.hi-words-library-filters select {
+    height: 34px;
+    min-width: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 0 10px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+}
+
+.hi-words-library-word-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.hi-words-library-result-note {
+    padding: 9px 11px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 7px;
+    background: var(--background-primary);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.hi-words-library-load-state {
+    grid-column: 1 / -1;
+    padding: 2px 0 4px;
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 12px;
+}
+
+.hi-words-library-word {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 11px;
+    border: 1px solid var(--background-modifier-border);
+    border-left: 3px solid var(--word-card-accent-color, var(--background-modifier-border));
+    border-radius: 8px;
+    background: var(--word-card-bg-color, var(--background-primary));
+}
+
+.hi-words-library-word.is-mastered {
+    opacity: 0.78;
+}
+
+.hi-words-library-word-main {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.hi-words-library-word-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.hi-words-library-word-name {
+    display: inline;
+    color: var(--text-normal);
+    font-weight: 700;
+    line-height: 1.35;
+    cursor: pointer;
+}
+
+.hi-words-library-word-name:hover {
+    color: var(--interactive-accent);
+}
+
+.hi-words-library-word-name:focus-visible {
+    outline: 2px solid var(--background-modifier-border-focus);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.hi-words-library-study-key {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-monospace);
+}
+
+.hi-words-library-empty {
+    grid-column: 1 / -1;
+    padding: 16px;
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .hi-words-library-stats,
+    .hi-words-library-book-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hi-words-library-body {
+        grid-template-columns: 1fr;
+    }
+
+    .hi-words-library-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .hi-words-library-word-list {
+        grid-template-columns: 1fr;
+    }
 }

@@ -8,3 +8,4 @@ export * from './color-utils';
 export * from './types';
 export * from './tts';
 export * from './pattern-matcher';
+export * from './study-key';

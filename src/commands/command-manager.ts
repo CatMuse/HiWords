@@ -28,6 +28,14 @@ export function registerCommands(plugin: HiWordsPlugin) {
         }
     });
 
+    plugin.addCommand({
+        id: 'open-vocabulary-library',
+        name: t('commands.open_library'),
+        callback: () => {
+            plugin.activateLibraryView();
+        }
+    });
+
     // 添加选中单词到生词本命令（智能适配所有视图模式）
     plugin.addCommand({
         id: 'add-selected-word',

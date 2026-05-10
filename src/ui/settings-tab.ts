@@ -715,7 +715,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
             path: file.path,
             name: file.basename,
             enabled: true,
-            progressKey: metadata?.id ? `hiwords:${metadata.id}` : undefined,
         };
 
         this.plugin.settings.vocabularyBooks.push(newBook);

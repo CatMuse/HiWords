@@ -114,8 +114,11 @@ export interface LanguagePack {
     };
     commands: {
         add_word: string;
+        add_selected_word?: string;
+        edit_word?: string;
         refresh_vocabulary: string;
         show_sidebar: string;
+        open_library?: string;
     };
     notices: {
         vocabulary_refreshed: string;
@@ -162,6 +165,31 @@ export interface LanguagePack {
         pack_samples?: string;
         delete_confirmation: string;
         save_button: string;
+    };
+    library?: {
+        title: string;
+        description: string;
+        refresh: string;
+        books: string;
+        book_stat: string;
+        cards: string;
+        items: string;
+        learning: string;
+        mastered: string;
+        progress: string;
+        total_progress: string;
+        enabled: string;
+        disabled: string;
+        select_book: string;
+        type: string;
+        search_placeholder: string;
+        all_statuses: string;
+        all_types: string;
+        no_results: string;
+        load_more: string;
+        loaded_all: string;
+        mark_mastered: string;
+        unmark_mastered: string;
     };
     // Common action labels used in UI
     actions?: {

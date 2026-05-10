@@ -1,10 +1,11 @@
 import { App, TFile } from 'obsidian';
 import type { WordCard, WordDefinition, WordSection } from '../utils';
+import { buildStudyKey, inferLearningItemType } from '../utils';
 import { parsePhrase } from '../utils/pattern-matcher';
 
 interface HiWordsPack {
     schema?: string;
-    version?: number;
+    version?: number | string;
     id?: string;
     title?: string;
     language?: string;
@@ -14,7 +15,7 @@ interface HiWordsPack {
 
 export interface HiWordsPackMetadata {
     schema: string;
-    version: number;
+    version: number | string;
     id: string;
     title: string;
     language: string;
@@ -42,8 +43,10 @@ export class HiWordsParser {
                 return [];
             }
 
+            const packLanguage = Array.isArray(pack) ? undefined : pack.language;
+
             return cards
-                .map((card, index) => this.cardToDefinition(card, file.path, index))
+                .map((card, index) => this.cardToDefinition(card, file.path, index, packLanguage))
                 .filter((definition): definition is WordDefinition => definition !== null);
         } catch (error) {
             console.error(`Failed to parse .hiwords file ${file.path}:`, error);
@@ -92,12 +95,15 @@ export class HiWordsParser {
         return Array.isArray(pack) ? pack : (pack.cards || pack.words || []);
     }
 
-    private cardToDefinition(card: WordCard, sourcePath: string, index: number): WordDefinition | null {
+    private cardToDefinition(card: WordCard, sourcePath: string, index: number, packLanguage?: string): WordDefinition | null {
         if (!card || typeof card.word !== 'string') return null;
 
         const word = card.word.trim();
         if (!word) return null;
 
+        const language = card.language || packLanguage;
+        const type = card.type || inferLearningItemType(word, language);
+        const studyKey = buildStudyKey({ word, language, type });
         const aliases = Array.isArray(card.aliases)
             ? card.aliases.map(alias => String(alias).trim().toLowerCase()).filter(Boolean)
             : undefined;
@@ -107,6 +113,9 @@ export class HiWordsParser {
 
         return {
             word: phraseInfo.isPattern ? phraseInfo.original : word.toLowerCase(),
+            type,
+            language,
+            studyKey,
             aliases: aliases && aliases.length > 0 ? aliases : undefined,
             definition: sections[0]?.content || rawDefinition,
             rawDefinition,

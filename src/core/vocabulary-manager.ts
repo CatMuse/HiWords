@@ -1,5 +1,5 @@
 import { App, TFile, Notice } from 'obsidian';
-import { WordDefinition, VocabularyBook, HiWordsSettings } from '../utils';
+import { StudyItem, WordDefinition, VocabularyBook, HiWordsSettings } from '../utils';
 import { CanvasParser, CanvasEditor } from '../canvas';
 import { HiWordsParser } from '../card';
 
@@ -15,6 +15,7 @@ export class VocabularyManager {
     private wordDefinitionCache: Map<string, WordDefinition> = new Map(); // 单词 -> 定义映射
     private allWordsCache: string[] = []; // 所有单词的缓存
     private bookWordsCache: Map<string, string[]> = new Map(); // 书本路径 -> 单词列表映射
+    private studyItemCache: Map<string, StudyItem> = new Map(); // 全局学习对象映射
     private cacheValid: boolean = false; // 缓存是否有效
     
     // 增量更新优化
@@ -70,10 +71,9 @@ export class VocabularyManager {
                 ? await this.hiWordsParser.parseFile(file)
                 : await this.canvasParser.parseCanvasFile(file);
             if (isHiWordsBook) {
-                await this.ensureHiWordsProgressKey(book, file);
                 this.applyBookColor(book, definitions);
             }
-            this.applyStoredProgress(book, definitions);
+            this.applyStoredProgress(definitions);
             this.definitions.set(book.path, definitions);
             
             // 增量更新缓存而不是重建整个缓存
@@ -218,6 +218,24 @@ export class VocabularyManager {
         return uniqueWords;
     }
 
+    getStudyItems(): StudyItem[] {
+        if (!this.cacheValid) {
+            this.rebuildCache();
+        }
+
+        return [...this.studyItemCache.values()];
+    }
+
+    getStudyDefinitionsForHighlight(): WordDefinition[] {
+        return this.getStudyItems()
+            .filter(item => !this.settings.enableMasteredFeature || !item.mastered)
+            .map(item => item.primary);
+    }
+
+    getStudyDefinitions(): WordDefinition[] {
+        return this.getStudyItems().map(item => item.primary);
+    }
+
     /**
      * 重新加载指定的生词本
      */
@@ -262,38 +280,15 @@ export class VocabularyManager {
         this.canvasParser.updateSettings(settings);
     }
 
-    private applyStoredProgress(book: VocabularyBook, definitions: WordDefinition[]): void {
-        const progressKeys = this.getProgressKeys(book);
-
+    private applyStoredProgress(definitions: WordDefinition[]): void {
         for (const definition of definitions) {
-            const itemProgress = progressKeys
-                .map(key => this.settings.hiWordsProgress?.[key]?.[definition.nodeId])
-                .find(progress => progress?.mastered !== undefined);
-            if (itemProgress?.mastered !== undefined) {
-                definition.mastered = itemProgress.mastered;
+            if (!definition.studyKey) continue;
+
+            const progress = this.settings.studyProgress?.[definition.studyKey];
+            if (progress?.status === 'mastered') {
+                definition.mastered = true;
             }
         }
-    }
-
-    private async ensureHiWordsProgressKey(book: VocabularyBook, file: TFile): Promise<void> {
-        const metadata = await this.hiWordsParser.readMetadata(file);
-        if (!metadata?.id) return;
-
-        const progressKey = `hiwords:${metadata.id}`;
-        book.progressKey = progressKey;
-
-        const legacyProgress = this.settings.hiWordsProgress?.[book.path];
-        if (legacyProgress) {
-            this.settings.hiWordsProgress![progressKey] = {
-                ...(this.settings.hiWordsProgress![progressKey] || {}),
-                ...legacyProgress,
-            };
-            delete this.settings.hiWordsProgress![book.path];
-        }
-    }
-
-    private getProgressKeys(book: VocabularyBook): string[] {
-        return [book.progressKey, book.path].filter((key): key is string => !!key);
     }
 
     private applyBookColor(book: VocabularyBook, definitions: WordDefinition[]): void {
@@ -452,6 +447,7 @@ export class VocabularyManager {
         this.wordDefinitionCache.clear();
         this.allWordsCache = [];
         this.bookWordsCache.clear();
+        this.studyItemCache.clear();
     }
     
     /**
@@ -463,21 +459,43 @@ export class VocabularyManager {
         this.wordDefinitionCache.clear();
         this.allWordsCache = [];
         this.bookWordsCache.clear();
+        this.studyItemCache.clear();
         
         const allWords = new Set<string>();
         const mainWords = this.collectMainWords();
+        const sourceDefinitions = [
+            ...Array.from(this.definitions.values()).flat(),
+            ...Array.from(this.memoryOnlyWords.values()).flat(),
+        ];
+        this.studyItemCache = this.buildStudyItemCache(sourceDefinitions);
         
-        // 遍历所有词汇本和定义
+        for (const item of this.studyItemCache.values()) {
+            const normalizedWord = item.word.toLowerCase().trim();
+            if (!normalizedWord) continue;
+
+            this.wordDefinitionCache.set(normalizedWord, item.primary);
+            allWords.add(normalizedWord);
+
+            for (const alias of item.aliases) {
+                const normalizedAlias = alias.toLowerCase().trim();
+                if (!normalizedAlias) continue;
+                if (mainWords.has(normalizedAlias) || this.wordDefinitionCache.has(normalizedAlias)) {
+                    allWords.add(normalizedAlias);
+                    continue;
+                }
+                this.wordDefinitionCache.set(normalizedAlias, item.primary);
+                allWords.add(normalizedAlias);
+            }
+        }
+
+        // 遍历所有词汇本和定义，保留按词库查询的缓存
         for (const [bookPath, definitions] of this.definitions.entries()) {
             const bookWords = new Set<string>();
             
             for (const def of definitions) {
-                // 添加主单词到缓存
                 const normalizedWord = def.word.toLowerCase().trim();
                 if (!normalizedWord) continue;
 
-                this.wordDefinitionCache.set(normalizedWord, def);
-                allWords.add(normalizedWord);
                 bookWords.add(normalizedWord);
             }
 
@@ -487,14 +505,6 @@ export class VocabularyManager {
                     for (const alias of def.aliases) {
                         const normalizedAlias = alias.toLowerCase().trim();
                         if (!normalizedAlias) continue;
-                        if (mainWords.has(normalizedAlias) || this.wordDefinitionCache.has(normalizedAlias)) {
-                            bookWords.add(normalizedAlias);
-                            allWords.add(normalizedAlias);
-                            continue;
-                        }
-
-                        this.wordDefinitionCache.set(normalizedAlias, def);
-                        allWords.add(normalizedAlias);
                         bookWords.add(normalizedAlias);
                     }
                 }
@@ -509,6 +519,57 @@ export class VocabularyManager {
         
         // 标记缓存为有效
         this.cacheValid = true;
+    }
+
+    private buildStudyItemCache(definitions: WordDefinition[]): Map<string, StudyItem> {
+        const items = new Map<string, StudyItem>();
+
+        for (const definition of definitions) {
+            const studyKey = definition.studyKey || `${definition.source}:${definition.nodeId}`;
+            const existing = items.get(studyKey);
+
+            if (existing) {
+                existing.sources.push(definition);
+                existing.aliases = this.mergeAliases(existing.aliases, definition.aliases);
+                existing.mastered = existing.mastered || definition.mastered === true;
+                if (!existing.primary.card && definition.card) {
+                    existing.primary = definition;
+                    existing.word = definition.word;
+                    existing.type = definition.type;
+                    existing.language = definition.language;
+                }
+                continue;
+            }
+
+            items.set(studyKey, {
+                studyKey,
+                word: definition.word,
+                type: definition.type,
+                language: definition.language,
+                aliases: this.mergeAliases([], definition.aliases),
+                mastered: definition.mastered === true,
+                sources: [definition],
+                primary: definition,
+            });
+        }
+
+        for (const item of items.values()) {
+            item.sources.forEach((definition) => {
+                definition.mastered = item.mastered;
+            });
+            item.primary.mastered = item.mastered;
+        }
+
+        return items;
+    }
+
+    private mergeAliases(base: string[], aliases?: string[]): string[] {
+        const merged = new Set(base.map(alias => alias.toLowerCase().trim()).filter(Boolean));
+        aliases?.forEach(alias => {
+            const normalized = alias.toLowerCase().trim();
+            if (normalized) merged.add(normalized);
+        });
+        return [...merged];
     }
     
     /**
@@ -885,6 +946,26 @@ export class VocabularyManager {
         return true;
     }
 
+    updateStudyKeyMasteredStatus(studyKey: string, mastered: boolean): void {
+        for (const definitions of this.definitions.values()) {
+            definitions.forEach((definition) => {
+                if (definition.studyKey === studyKey) {
+                    definition.mastered = mastered;
+                }
+            });
+        }
+
+        for (const definitions of this.memoryOnlyWords.values()) {
+            definitions.forEach((definition) => {
+                if (definition.studyKey === studyKey) {
+                    definition.mastered = mastered;
+                }
+            });
+        }
+
+        this.cacheValid = false;
+    }
+
     /**
      * 保存单词定义到 Canvas 文件
      * @param bookPath 生词本路径
@@ -935,21 +1016,10 @@ export class VocabularyManager {
 
     /**
      * 获取所有单词定义
-     * @returns 所有单词定义数组
+     * @returns 按 StudyKey 去重后的主单词定义数组
      */
     async getAllWordDefinitions(): Promise<WordDefinition[]> {
-        const allDefs: WordDefinition[] = [];
-        
-        for (const bookWords of this.definitions.values()) {
-            allDefs.push(...bookWords);
-        }
-        
-        // 也包括仅内存中的词汇
-        for (const memoryWords of this.memoryOnlyWords.values()) {
-            allDefs.push(...memoryWords);
-        }
-        
-        return allDefs;
+        return this.getStudyDefinitions();
     }
 
     /**

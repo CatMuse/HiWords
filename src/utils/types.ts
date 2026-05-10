@@ -53,6 +53,7 @@ export interface WordCardConfusable {
 
 export interface WordCard {
     word: string;
+    type?: LearningItemType;
     aliases?: string[];
     color?: string; // Optional Canvas-style color id: "1".."6"
     phonetic?: string; // v1 compatibility; prefer phonetics in new .hiwords packs
@@ -77,6 +78,9 @@ export interface WordCard {
 // 词汇定义
 export interface WordDefinition {
     word: string;
+    type?: LearningItemType;
+    language?: string;
+    studyKey?: string;
     aliases?: string[]; // 单词的别名列表
     definition: string; // 兼容旧版：有分区时保存首个分区内容
     rawDefinition?: string; // 原始完整定义（包含所有分区）
@@ -90,13 +94,23 @@ export interface WordDefinition {
     card?: WordCard; // HiWords 结构化词卡（来自 .hiwords 词库包）
 }
 
+export interface StudyItem {
+    studyKey: string;
+    word: string;
+    type?: LearningItemType;
+    language?: string;
+    aliases: string[];
+    mastered: boolean;
+    sources: WordDefinition[];
+    primary: WordDefinition;
+}
+
 // 生词本配置
 export interface VocabularyBook {
     path: string; // Canvas 文件路径
     name: string; // 显示名称
     enabled: boolean; // 是否启用
     color?: string; // .hiwords 词库默认颜色，使用 Canvas-style color id: "1".."6"
-    progressKey?: string; // .hiwords 进度稳定键，优先使用词库包 ID
 }
 
 // 高亮样式类型
@@ -123,10 +137,18 @@ export interface SelectionTranslateSettings {
     prompt: string;
 }
 
+export type LearningItemType = 'word' | 'phrase' | 'concept' | 'term';
+
+export interface StudyProgressItem {
+    status: 'mastered';
+    masteredAt?: string;
+    updatedAt: string;
+}
+
 // 插件设置
 export interface HiWordsSettings {
     vocabularyBooks: VocabularyBook[];
-    hiWordsProgress?: Record<string, Record<string, { mastered?: boolean }>>;
+    studyProgress?: Record<string, StudyProgressItem>;
     showDefinitionOnHover: boolean;
     enableAutoHighlight: boolean;
     highlightStyle: HighlightStyle; // 高亮样式

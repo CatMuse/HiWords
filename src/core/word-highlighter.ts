@@ -119,20 +119,21 @@ export class WordHighlighter implements PluginValue {
         this.wordTrie.clear();
         this.patternDefinitions = []; // 清空模式短语缓存
         
-        // 获取未掌握的单词（已掌握的单词不会被高亮）
-        const words = this.vocabularyManager.getAllWordsForHighlight();
+        // 获取去重后的未掌握学习对象（已掌握的对象不会被高亮）
+        const definitions = this.vocabularyManager.getStudyDefinitionsForHighlight();
         
-        // 将单词添加到前缀树，同时缓存模式短语
-        for (const word of words) {
-            const definition = this.vocabularyManager.getDefinition(word);
-            if (definition) {
-                if (definition.isPattern) {
-                    // 缓存模式短语到列表，避免重复查找
-                    this.patternDefinitions.push(definition);
-                } else {
-                    // 只添加普通单词到 Trie
-                    this.wordTrie.addWord(word, definition);
-                }
+        // 将主词和别名添加到前缀树，同时缓存模式短语
+        for (const definition of definitions) {
+            if (definition.isPattern) {
+                this.patternDefinitions.push(definition);
+                continue;
+            }
+
+            this.wordTrie.addWord(definition.word, definition);
+            if (definition.aliases) {
+                definition.aliases.forEach(alias => {
+                    if (alias) this.wordTrie.addWord(alias, definition);
+                });
             }
         }
     }

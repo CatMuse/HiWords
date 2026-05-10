@@ -81,16 +81,6 @@ export function registerEvents(plugin: HiWordsPlugin) {
                 const bookIndex = plugin.settings.vocabularyBooks.findIndex(book => book.path === oldPath);
                 if (bookIndex !== -1) {
                     // 更新为新路径
-                    const book = plugin.settings.vocabularyBooks[bookIndex];
-                    const progressKey = book.progressKey || file.path;
-                    if (plugin.settings.hiWordsProgress?.[oldPath]) {
-                        plugin.settings.hiWordsProgress[progressKey] = {
-                            ...(plugin.settings.hiWordsProgress[progressKey] || {}),
-                            ...plugin.settings.hiWordsProgress[oldPath],
-                        };
-                        delete plugin.settings.hiWordsProgress[oldPath];
-                    }
-
                     plugin.settings.vocabularyBooks[bookIndex].path = file.path;
                     // 更新名称（使用新的文件名）
                     plugin.settings.vocabularyBooks[bookIndex].name = file.basename;

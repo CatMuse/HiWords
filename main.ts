@@ -6,7 +6,7 @@ import { DEFAULT_SETTINGS } from './src/settings';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
-import { DefinitionPopover, HiWordsSettingTab, HiWordsSidebarView, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionTranslatePopover } from './src/ui';
+import { DefinitionPopover, HiWordsLibraryView, HiWordsSettingTab, HiWordsSidebarView, LIBRARY_VIEW_TYPE, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionTranslatePopover } from './src/ui';
 import { i18n } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
@@ -48,6 +48,11 @@ export default class HiWordsPlugin extends Plugin {
         this.registerView(
             SIDEBAR_VIEW_TYPE,
             (leaf) => new HiWordsSidebarView(leaf, this)
+        );
+
+        this.registerView(
+            LIBRARY_VIEW_TYPE,
+            (leaf) => new HiWordsLibraryView(leaf, this)
         );
         
         // 注册编辑器扩展
@@ -138,6 +143,13 @@ export default class HiWordsPlugin extends Plugin {
                 leaf.view.refresh();
             }
         });
+
+        const libraryLeaves = this.app.workspace.getLeavesOfType(LIBRARY_VIEW_TYPE);
+        libraryLeaves.forEach(leaf => {
+            if (leaf.view instanceof HiWordsLibraryView) {
+                leaf.view.refresh();
+            }
+        });
     }
 
     /**
@@ -172,6 +184,26 @@ export default class HiWordsPlugin extends Plugin {
             }
         }
         
+        if (leaf) {
+            workspace.revealLeaf(leaf);
+        }
+    }
+
+    async activateLibraryView() {
+        const { workspace } = this.app;
+
+        let leaf: WorkspaceLeaf | null = null;
+        const leaves = workspace.getLeavesOfType(LIBRARY_VIEW_TYPE);
+
+        if (leaves.length > 0) {
+            leaf = leaves[0];
+        } else {
+            leaf = workspace.getLeaf(false);
+            if (leaf) {
+                await leaf.setViewState({ type: LIBRARY_VIEW_TYPE, active: true });
+            }
+        }
+
         if (leaf) {
             workspace.revealLeaf(leaf);
         }

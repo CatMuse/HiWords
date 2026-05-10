@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon, Notice } from 'obsidian';
 import HiWordsPlugin from '../../main';
-import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
+import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS, Trie } from '../utils';
 import { t } from '../i18n';
 import { findPatternMatches } from '../utils/pattern-matcher';
 import { renderWordCard } from './word-card-renderer';
@@ -159,38 +159,26 @@ export class HiWordsSidebarView extends ItemView {
             // 优化：获取并缓存分类后的单词列表
             await this.updateDefinitionsCache();
 
-            // 创建一个数组来存储找到的单词及其位置
-            const foundWordsWithPosition: { wordDef: WordDefinition, position: number }[] = [];
+            const foundWordsByKey = new Map<string, { wordDef: WordDefinition, position: number }>();
             
-            // 扫描普通单词
+            // 使用 Trie 一次扫描普通单词和别名，避免在大词库下逐词正则扫描当前文档
+            const trie = new Trie();
             for (const wordDef of this.normalDefinitionsCache) {
-                // 普通单词匹配
-                // 使用 Unicode 感知的匹配：
-                // 英文等拉丁词使用 \b 边界；含日语/CJK/韩语的词不使用 \b，以便能在无空格文本中命中
-                let regex = this.buildSearchRegex(wordDef.word);
-                let match = regex.exec(content);
-                let position = match ? match.index : -1;
-                
-                // 检查别名
-                if (position === -1 && wordDef.aliases) {
-                    for (const alias of wordDef.aliases) {
-                        regex = this.buildSearchRegex(alias);
-                        match = regex.exec(content);
-                        if (match) {
-                            position = match.index;
-                            break;
-                        }
-                    }
-                }
-                
-                if (position !== -1) {
-                    // 避免重复添加
-                    if (!foundWordsWithPosition.some(w => w.wordDef.nodeId === wordDef.nodeId)) {
-                        foundWordsWithPosition.push({
-                            wordDef: wordDef,
-                            position: position
-                        });
-                    }
+                trie.addWord(wordDef.word, wordDef);
+                wordDef.aliases?.forEach(alias => {
+                    if (alias) trie.addWord(alias, wordDef);
+                });
+            }
+
+            for (const match of trie.findAllMatches(content)) {
+                const wordDef = match.payload as WordDefinition;
+                const key = this.getWordStateKey(wordDef);
+                const existing = foundWordsByKey.get(key);
+                if (!existing || match.from < existing.position) {
+                    foundWordsByKey.set(key, {
+                        wordDef,
+                        position: match.from
+                    });
                 }
             }
             
@@ -201,9 +189,10 @@ export class HiWordsSidebarView extends ItemView {
                     const matches = findPatternMatches(content, wordDef.patternParts, 0);
                     if (matches.length > 0) {
                         const position = matches[0].from;
-                        // 避免重复添加
-                        if (!foundWordsWithPosition.some(w => w.wordDef.nodeId === wordDef.nodeId)) {
-                            foundWordsWithPosition.push({
+                        const key = this.getWordStateKey(wordDef);
+                        const existing = foundWordsByKey.get(key);
+                        if (!existing || position < existing.position) {
+                            foundWordsByKey.set(key, {
                                 wordDef: wordDef,
                                 position: position
                             });
@@ -213,6 +202,7 @@ export class HiWordsSidebarView extends ItemView {
             }
 
             // 按照单词在文档中首次出现的位置排序
+            const foundWordsWithPosition = [...foundWordsByKey.values()];
             foundWordsWithPosition.sort((a, b) => a.position - b.position);
             this.currentWords = foundWordsWithPosition.map(item => item.wordDef);
         } catch (error) {
@@ -226,7 +216,7 @@ export class HiWordsSidebarView extends ItemView {
      * 将单词分类为普通单词和模式短语，避免重复判断
      */
     private async updateDefinitionsCache(): Promise<void> {
-        const allWordDefinitions = await this.plugin.vocabularyManager.getAllWordDefinitions();
+        const allWordDefinitions = this.plugin.vocabularyManager.getStudyDefinitions();
         
         this.normalDefinitionsCache = [];
         this.patternDefinitionsCache = [];
