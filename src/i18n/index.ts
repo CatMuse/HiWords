@@ -119,6 +119,7 @@ export interface LanguagePack {
         refresh_vocabulary: string;
         show_sidebar: string;
         open_library?: string;
+        toggle_sidebar_default_display?: string;
     };
     notices: {
         vocabulary_refreshed: string;

@@ -142,7 +142,8 @@ export default {
         add_word: "HiWords: Add word",
         edit_word: "HiWords: Edit word",
         show_sidebar: "Show HiWords sidebar",
-        open_library: "HiWords: Open vocabulary library",
+        open_library: "Open vocabulary library",
+        toggle_sidebar_default_display: "Toggle word card details",
         add_selected_word: "Add word",
     },
 

@@ -136,6 +136,7 @@ export interface WordCard {
     audio?: WordCardAudio;
     language?: string;
     level?: string;
+    partsOfSpeech?: string[];
     difficulty?: number;
     priority?: number;
     tags?: string[];

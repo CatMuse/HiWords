@@ -210,6 +210,7 @@ export class HiWordsLibraryView extends ItemView {
     private tooltipShowTimer: number | null = null;
     private tooltipHideTimer: number | null = null;
     private renderToken = 0;
+    private resizeObserver: ResizeObserver | null = null;
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -229,7 +230,9 @@ export class HiWordsLibraryView extends ItemView {
     }
 
     async onOpen() {
-        this.containerEl.children[1].empty();
+        const content = this.containerEl.children[1] as HTMLElement;
+        content.empty();
+        this.observeLibraryWidth(content);
         await this.render();
     }
 
@@ -245,6 +248,8 @@ export class HiWordsLibraryView extends ItemView {
         }
         this.clearTooltipTimers();
         this.removeTooltip();
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = null;
         this.wordListEl = null;
         this.detailEl = null;
     }
@@ -290,6 +295,28 @@ export class HiWordsLibraryView extends ItemView {
             content.appendChild(root.firstChild);
         }
         content.addClass('hi-words-library');
+        this.updateResponsiveClasses(content);
+    }
+
+    private observeLibraryWidth(content: HTMLElement) {
+        this.resizeObserver?.disconnect();
+        this.updateResponsiveClasses(content);
+
+        if (typeof ResizeObserver === 'undefined') {
+            return;
+        }
+
+        this.resizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[0];
+            if (!entry) return;
+            this.updateResponsiveClasses(content, entry.contentRect.width);
+        });
+        this.resizeObserver.observe(content);
+    }
+
+    private updateResponsiveClasses(content: HTMLElement, width = content.getBoundingClientRect().width) {
+        content.toggleClass('is-narrow', width > 0 && width < 900);
+        content.toggleClass('is-compact', width > 0 && width < 560);
     }
 
     private clearCaches() {
@@ -533,7 +560,20 @@ export class HiWordsLibraryView extends ItemView {
     }
 
     private renderWordRow(container: HTMLElement, definition: WordDefinition) {
-        const row = container.createDiv({ cls: `hi-words-library-word ${definition.mastered ? 'is-mastered' : ''}` });
+        const row = container.createDiv({
+            cls: `hi-words-library-word ${definition.mastered ? 'is-mastered' : ''}`,
+            attr: { role: 'button', tabindex: '0' },
+        });
+        row.onclick = async () => {
+            this.removeTooltip();
+            await this.plugin.showWordInSidebar(definition, 'library');
+        };
+        row.onkeydown = async (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            this.removeTooltip();
+            await this.plugin.showWordInSidebar(definition, 'library');
+        };
         if (definition.color) {
             const accent = mapCanvasColorToCSSVar(definition.color, 'var(--color-base-60)');
             row.style.setProperty('--word-card-accent-color', accent);
@@ -547,12 +587,16 @@ export class HiWordsLibraryView extends ItemView {
             cls: 'hi-words-library-word-name',
             attr: { role: 'button', tabindex: '0' },
         });
-        word.onclick = async () => playWordTTS(this.plugin, definition.word, definition);
+        word.onclick = async (event) => {
+            event.stopPropagation();
+            await playWordTTS(this.plugin, definition.word, definition);
+        };
         word.onmouseenter = () => this.scheduleTooltip(word, definition);
         word.onmouseleave = () => this.scheduleTooltipHide();
         word.onkeydown = async (event) => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
+            event.stopPropagation();
             await playWordTTS(this.plugin, definition.word, definition);
         };
         if (definition.aliases?.length) {

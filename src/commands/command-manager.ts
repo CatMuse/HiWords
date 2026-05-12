@@ -36,6 +36,30 @@ export function registerCommands(plugin: HiWordsPlugin) {
         }
     });
 
+    plugin.addCommand({
+        id: 'toggle-sidebar-default-display',
+        name: t('commands.toggle_sidebar_default_display'),
+        callback: async () => {
+            const nextMode = (plugin.settings.sidebarDefaultDisplayMode || 'detail') === 'detail' ? 'word' : 'detail';
+            plugin.settings.sidebarDefaultDisplayMode = nextMode;
+            await plugin.saveSettings();
+
+            const leaves = plugin.app.workspace.getLeavesOfType('hi-words-sidebar');
+            leaves.forEach((leaf) => {
+                const view = leaf.view as { applyDefaultDisplayMode?: () => void };
+                if (typeof view.applyDefaultDisplayMode === 'function') {
+                    view.applyDefaultDisplayMode();
+                }
+            });
+
+            plugin.app.workspace.trigger('hi-words:settings-changed');
+            const label = nextMode === 'detail'
+                ? t('settings.sidebar_display_detail')
+                : t('settings.sidebar_display_word');
+            new Notice(`${t('settings.sidebar_default_display_mode')}: ${label}`);
+        }
+    });
+
     // 添加选中单词到生词本命令（智能适配所有视图模式）
     plugin.addCommand({
         id: 'add-selected-word',

@@ -142,7 +142,8 @@ export default {
         add_word: "HiWords: 添加单词",
         edit_word: "HiWords: 编辑单词",
         show_sidebar: "显示 HiWords 侧边栏",
-        open_library: "HiWords: 打开词库管理中心",
+        open_library: "打开词库管理中心",
+        toggle_sidebar_default_display: "展开/收起词卡详情",
         add_selected_word: "添加单词",
     },
 

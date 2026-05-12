@@ -120,7 +120,8 @@ export default {
         add_word: "HiWords: 単語を追加",
         edit_word: "HiWords: 単語を編集",
         show_sidebar: "HiWords サイドバーを表示",
-        open_library: "HiWords: 単語帳管理を開く",
+        open_library: "単語帳管理を開く",
+        toggle_sidebar_default_display: "単語カードの詳細を切り替え",
         add_selected_word: "単語を追加",
     },
 

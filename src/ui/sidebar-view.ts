@@ -137,6 +137,11 @@ export class HiWordsSidebarView extends ItemView {
         this.scrollWordCardIntoView(key);
     }
 
+    public applyDefaultDisplayMode() {
+        this.expandedWordStates.clear();
+        void this.renderWordList();
+    }
+
     private scrollWordCardIntoView(wordKey: string) {
         requestAnimationFrame(() => {
             const cards = this.containerEl.querySelectorAll('.hi-words-word-card');

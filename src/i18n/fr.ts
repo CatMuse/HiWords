@@ -122,7 +122,8 @@ export default {
         add_word: "HiWords : Ajouter un mot",
         edit_word: "HiWords : Éditer un mot",
         show_sidebar: "Afficher la barre latérale HiWords",
-        open_library: "HiWords : ouvrir la bibliothèque de vocabulaire",
+        open_library: "Ouvrir la bibliothèque de vocabulaire",
+        toggle_sidebar_default_display: "Basculer les détails des cartes de mots",
         add_selected_word: "Ajouter un mot",
     },
 

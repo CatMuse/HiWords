@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
 import { normalizePath, setIcon } from 'obsidian';
-import type { VocabularyBookDisplaySettings, WordCard, WordCardDetailSection, WordCardPreviewDensity, WordDefinition } from '../utils';
+import type { VocabularyBookDisplaySettings, WordCard, WordCardDetailSection, WordCardPreviewDensity, WordCardRelation, WordDefinition } from '../utils';
 
 export type WordCardRenderMode = 'popover' | 'sidebar';
 
@@ -60,7 +60,7 @@ export function renderWordCard(container: HTMLElement, wordDef: WordDefinition, 
 
     const sections = isPreview ? previewSections : [...previewSections, ...detailSections];
     for (const section of sections) {
-        renderDetailSection(root, card, section, isPreview ? previewDensity : undefined);
+        renderDetailSection(root, card, section, isPreview ? previewDensity : undefined, options.mode);
     }
 
     if (isPreview && options.onOpenDetail) {
@@ -83,7 +83,7 @@ function uniqueSections(sections: WordCardDetailSection[]): WordCardDetailSectio
     return result;
 }
 
-function renderDetailSection(root: HTMLElement, card: WordCard, section: WordCardDetailSection, previewDensity?: WordCardPreviewDensity): void {
+function renderDetailSection(root: HTMLElement, card: WordCard, section: WordCardDetailSection, previewDensity?: WordCardPreviewDensity, mode: WordCardRenderMode = 'sidebar'): void {
     switch (section) {
         case 'definitions':
             renderDefinitions(root, card);
@@ -110,7 +110,7 @@ function renderDetailSection(root: HTMLElement, card: WordCard, section: WordCar
             renderConfusables(root, card);
             return;
         case 'relations':
-            renderRelations(root, card);
+            renderRelations(root, card, mode);
             return;
         case 'memory':
             renderMemory(root, card);
@@ -192,11 +192,7 @@ function renderMeta(
         meta.createSpan({ text: card.register, cls: 'hi-words-structured-tag' });
     }
 
-    const allTags = [
-        ...(card.tags || []),
-        ...(card.domains || []),
-        ...(card.examTags || []),
-    ];
+    const allTags = getDisplayTags(card);
 
     if (allTags.length) {
         const tags = meta.createSpan({ cls: 'hi-words-structured-tags' });
@@ -210,6 +206,31 @@ function renderMeta(
         aliases.createSpan({ text: 'Forms', cls: 'hi-words-structured-label' });
         aliases.createSpan({ text: card.aliases.join(', '), cls: 'hi-words-structured-muted' });
     }
+}
+
+function getDisplayTags(card: WordCard): string[] {
+    const seen = new Set<string>();
+    const tags: string[] = [];
+
+    for (const rawTag of [...(card.tags || []), ...(card.domains || []), ...(card.examTags || [])]) {
+        const tag = rawTag.trim();
+        const normalized = tag.toLowerCase();
+        if (!tag || seen.has(normalized) || isInternalDisplayTag(normalized)) continue;
+
+        seen.add(normalized);
+        tags.push(tag);
+    }
+
+    return tags;
+}
+
+function isInternalDisplayTag(normalizedTag: string): boolean {
+    return (
+        /^cet\d+$/.test(normalizedTag) ||
+        /^cet\d+-v\d+$/.test(normalizedTag) ||
+        /^batch-\d+$/.test(normalizedTag) ||
+        /^[a-z](?:-[a-z])?-words$/.test(normalizedTag)
+    );
 }
 
 function getPhoneticItems(card: WordCard, pronunciationVariant: 'uk' | 'us'): Array<{ label: string; value: string; variant: 'uk' | 'us' }> {
@@ -332,20 +353,36 @@ function renderForms(root: HTMLElement, card: WordCard): void {
     if (!card.forms || Object.keys(card.forms).length === 0) return;
 
     const section = createSection(root, 'Word forms');
-    const grid = section.createDiv({ cls: 'hi-words-structured-key-value-grid' });
+    const list = section.createDiv({ cls: 'hi-words-structured-form-list' });
+    const forms = uniqueValues(Object.values(card.forms).flatMap(value => valueToList(value)));
 
-    for (const [key, value] of Object.entries(card.forms)) {
-        const text = formatValue(value);
-        if (!text) continue;
-
-        const row = grid.createDiv({ cls: 'hi-words-structured-key-value' });
-        row.createSpan({ text: formatLabel(key), cls: 'hi-words-structured-label' });
-        row.createSpan({ text, cls: 'hi-words-structured-memory-text' });
+    for (const form of forms) {
+        list.createSpan({ text: form, cls: 'hi-words-structured-form-chip' });
     }
 
-    if (!grid.children.length) {
+    if (!list.children.length) {
         section.remove();
     }
+}
+
+function valueToList(value: string | string[] | number | boolean | null | undefined): string[] {
+    if (Array.isArray(value)) {
+        return value.map(item => String(item).trim()).filter(Boolean);
+    }
+    if (value === null || value === undefined || value === '') return [];
+    return [String(value).trim()].filter(Boolean);
+}
+
+function uniqueValues(values: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const value of values) {
+        const key = value.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(value);
+    }
+    return result;
 }
 
 function renderMorphology(root: HTMLElement, card: WordCard): void {
@@ -455,14 +492,25 @@ function renderUsage(root: HTMLElement, card: WordCard): void {
     }
 }
 
-function renderRelations(root: HTMLElement, card: WordCard): void {
+function renderRelations(root: HTMLElement, card: WordCard, mode: WordCardRenderMode): void {
     if (!card.relations?.length) return;
 
     const section = createSection(root, 'Related');
+
+    const relations = card.relations.filter(relation => relation.target);
+    if (relations.length === 0) {
+        section.remove();
+        return;
+    }
+
+    if (mode === 'sidebar') {
+        renderRelationGraph(section, card, relations);
+        return;
+    }
+
     const list = section.createDiv({ cls: 'hi-words-structured-relation-list' });
 
-    for (const relation of card.relations) {
-        if (!relation.target) continue;
+    for (const relation of relations) {
         const item = list.createDiv({ cls: 'hi-words-structured-relation' });
         item.createSpan({ text: relation.type || 'related', cls: 'hi-words-structured-relation-type' });
         item.createSpan({ text: relation.target, cls: 'hi-words-structured-relation-target' });
@@ -475,6 +523,84 @@ function renderRelations(root: HTMLElement, card: WordCard): void {
     }
 
     if (!list.children.length) section.remove();
+}
+
+function renderRelationGraph(section: HTMLElement, card: WordCard, relations: WordCardRelation[]): void {
+    const graphRelations = relations.slice(0, 8);
+    const extraRelations = relations.slice(8);
+    const graph = section.createDiv({ cls: 'hi-words-structured-relation-graph' });
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'hi-words-structured-relation-svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    graph.appendChild(svg);
+
+    const center = { x: 50, y: 50 };
+    graph.createDiv({
+        cls: 'hi-words-structured-relation-node hi-words-structured-relation-node-center',
+        text: card.word,
+        attr: { style: `left: ${center.x}%; top: ${center.y}%;` },
+    });
+
+    graphRelations.forEach((relation, index) => {
+        const point = getRelationGraphPoint(index, graphRelations.length);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', String(center.x));
+        line.setAttribute('y1', String(center.y));
+        line.setAttribute('x2', String(point.x));
+        line.setAttribute('y2', String(point.y));
+        line.setAttribute('class', `hi-words-structured-relation-edge is-${sanitizeClassName(relation.type || 'related')}`);
+        svg.appendChild(line);
+
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', String((center.x + point.x) / 2));
+        label.setAttribute('y', String((center.y + point.y) / 2));
+        label.setAttribute('class', 'hi-words-structured-relation-edge-label');
+        label.textContent = relation.type || 'related';
+        svg.appendChild(label);
+
+        const node = graph.createDiv({
+            cls: `hi-words-structured-relation-node hi-words-structured-relation-node-target is-${sanitizeClassName(relation.targetType || relation.type || 'related')}`,
+            attr: { style: `left: ${point.x}%; top: ${point.y}%;` },
+        });
+        node.createDiv({ cls: 'hi-words-structured-relation-node-word', text: relation.target });
+        if (relation.targetType) {
+            node.createDiv({ cls: 'hi-words-structured-relation-node-type', text: relation.targetType });
+        }
+    });
+
+    const notedRelations = relations.filter(relation => relation.note);
+    if (notedRelations.length) {
+        const notes = section.createDiv({ cls: 'hi-words-structured-relation-notes' });
+        for (const relation of notedRelations.slice(0, 4)) {
+            const note = notes.createDiv({ cls: 'hi-words-structured-relation-note' });
+            note.createSpan({ cls: 'hi-words-structured-relation-note-target', text: relation.target });
+            note.createSpan({ cls: 'hi-words-structured-memory-text', text: relation.note || '' });
+        }
+    }
+
+    if (extraRelations.length) {
+        const list = section.createDiv({ cls: 'hi-words-structured-relation-list hi-words-structured-relation-extra-list' });
+        for (const relation of extraRelations) {
+            const item = list.createDiv({ cls: 'hi-words-structured-relation' });
+            item.createSpan({ text: relation.type || 'related', cls: 'hi-words-structured-relation-type' });
+            item.createSpan({ text: relation.target, cls: 'hi-words-structured-relation-target' });
+            if (relation.targetType) item.createSpan({ text: relation.targetType, cls: 'hi-words-structured-relation-target-type' });
+            if (relation.note) item.createDiv({ text: relation.note, cls: 'hi-words-structured-memory-text' });
+        }
+    }
+}
+
+function getRelationGraphPoint(index: number, total: number): { x: number; y: number } {
+    const angle = -Math.PI / 2 + (2 * Math.PI * index) / Math.max(total, 1);
+    return {
+        x: 50 + Math.cos(angle) * 34,
+        y: 50 + Math.sin(angle) * 34,
+    };
+}
+
+function sanitizeClassName(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'related';
 }
 
 function renderConfusables(root: HTMLElement, card: WordCard): void {

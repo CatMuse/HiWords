@@ -120,7 +120,8 @@ export default {
         add_word: "HiWords: Wort hinzufügen",
         edit_word: "HiWords: Wort bearbeiten",
         show_sidebar: "HiWords-Seitenleiste anzeigen",
-        open_library: "HiWords: Vokabelbibliothek öffnen",
+        open_library: "Vokabelbibliothek öffnen",
+        toggle_sidebar_default_display: "Details der Wortkarten umschalten",
         add_selected_word: "Wort hinzufügen",
     },
 
