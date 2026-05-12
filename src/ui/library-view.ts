@@ -1,9 +1,9 @@
-import { ItemView, MarkdownRenderer, Notice, setIcon, WorkspaceLeaf } from 'obsidian';
+import { App, ItemView, MarkdownRenderer, Modal, Notice, setIcon, WorkspaceLeaf } from 'obsidian';
 import type HiWordsPlugin from '../../main';
-import type { StudyItem, VocabularyBook, WordDefinition } from '../utils';
+import type { StudyItem, VocabularyBook, VocabularyBookDisplaySettings, WordCardDetailSection, WordDefinition } from '../utils';
 import { mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
-import { renderWordCard } from './word-card-renderer';
+import { DEFAULT_WORD_CARD_DETAIL_SECTIONS, DEFAULT_WORD_CARD_PREVIEW_SECTIONS, renderWordCard } from './word-card-renderer';
 import { AddWordModal } from './add-word-modal';
 
 export const LIBRARY_VIEW_TYPE = 'hi-words-library';
@@ -11,6 +11,18 @@ export const LIBRARY_VIEW_TYPE = 'hi-words-library';
 type StatusFilter = 'all' | 'learning' | 'mastered';
 type TypeFilter = 'all' | 'word' | 'phrase' | 'concept' | 'term';
 const WORD_BATCH_SIZE = 200;
+const DETAIL_SECTION_OPTIONS: Array<{ key: WordCardDetailSection; labelKey: string }> = [
+    { key: 'definitions', labelKey: 'library.section_definitions' },
+    { key: 'examples', labelKey: 'library.section_examples' },
+    { key: 'collocations', labelKey: 'library.section_collocations' },
+    { key: 'phrases', labelKey: 'library.section_phrases' },
+    { key: 'usage', labelKey: 'library.section_usage' },
+    { key: 'forms', labelKey: 'library.section_forms' },
+    { key: 'morphology', labelKey: 'library.section_morphology' },
+    { key: 'confusables', labelKey: 'library.section_confusables' },
+    { key: 'relations', labelKey: 'library.section_relations' },
+    { key: 'memory', labelKey: 'library.section_memory' },
+];
 
 interface BookStats {
     rawCount: number;
@@ -18,6 +30,167 @@ interface BookStats {
     masteredCount: number;
     learningCount: number;
     progress: number;
+}
+
+class BookDisplaySettingsModal extends Modal {
+    private plugin: HiWordsPlugin;
+    private book: VocabularyBook;
+    private onSaved: () => void | Promise<void>;
+    private previewSections: WordCardDetailSection[];
+    private detailSections: WordCardDetailSection[];
+    private hiddenSections: WordCardDetailSection[];
+
+    constructor(app: App, plugin: HiWordsPlugin, book: VocabularyBook, onSaved: () => void | Promise<void>) {
+        super(app);
+        this.plugin = plugin;
+        this.book = book;
+        this.onSaved = onSaved;
+        this.previewSections = this.normalizeSections(book.display?.previewSections || DEFAULT_WORD_CARD_PREVIEW_SECTIONS);
+        const detailDefaults = DEFAULT_WORD_CARD_DETAIL_SECTIONS.filter(section => !this.previewSections.includes(section));
+        this.detailSections = this.normalizeSections(book.display?.detailSections || detailDefaults)
+            .filter(section => !this.previewSections.includes(section));
+        this.hiddenSections = this.normalizeSections(book.display?.hiddenSections || []);
+        for (const section of DETAIL_SECTION_OPTIONS.map(option => option.key)) {
+            if (!this.previewSections.includes(section) && !this.detailSections.includes(section) && !this.hiddenSections.includes(section)) {
+                this.detailSections.push(section);
+            }
+        }
+    }
+
+    onOpen() {
+        this.titleEl.setText(t('library.book_display_settings'));
+        this.contentEl.empty();
+        this.contentEl.addClass('hi-words-library-display-modal');
+
+        this.contentEl.createDiv({
+            cls: 'setting-item-description',
+            text: this.format(t('library.book_display_settings_desc'), this.book.name),
+        });
+
+        this.renderSectionOrder();
+
+        const actions = this.contentEl.createDiv({ cls: 'hi-words-library-display-actions' });
+        const reset = actions.createEl('button', { text: t('library.reset_display_settings') });
+        reset.onclick = () => {
+            this.previewSections = [...DEFAULT_WORD_CARD_PREVIEW_SECTIONS];
+            this.detailSections = DEFAULT_WORD_CARD_DETAIL_SECTIONS.filter(section => !this.previewSections.includes(section));
+            this.hiddenSections = [];
+            this.saveAndClose();
+        };
+
+        const save = actions.createEl('button', { text: t('library.save_display_settings'), cls: 'mod-cta' });
+        save.onclick = () => this.saveAndClose();
+    }
+
+    private async saveAndClose() {
+        const index = this.plugin.settings.vocabularyBooks.findIndex(book => book.path === this.book.path);
+        if (index >= 0) {
+            const nextDisplay: VocabularyBookDisplaySettings = {
+                previewSections: this.previewSections,
+                detailSections: this.detailSections,
+                hiddenSections: this.hiddenSections,
+            };
+            this.plugin.settings.vocabularyBooks[index] = {
+                ...this.plugin.settings.vocabularyBooks[index],
+                display: nextDisplay,
+            };
+            await this.plugin.saveSettings();
+            await this.onSaved();
+        }
+        this.close();
+    }
+
+    private renderSectionOrder() {
+        const list = this.contentEl.createDiv({ cls: 'hi-words-library-display-list' });
+        const ordered = [...this.previewSections, ...this.detailSections];
+
+        ordered.forEach((section, index) => {
+            if (index === 0) {
+                list.createDiv({ cls: 'hi-words-library-display-zone', text: t('library.preview_area') });
+            }
+            if (index === this.previewSections.length) {
+                list.createDiv({ cls: 'hi-words-library-display-zone', text: t('library.detail_area') });
+            }
+
+            const isHidden = this.hiddenSections.includes(section);
+            const row = list.createDiv({ cls: `hi-words-library-display-row ${isHidden ? 'is-hidden' : ''}` });
+            const toggle = row.createEl('input', {
+                type: 'checkbox',
+                cls: 'hi-words-library-display-toggle',
+            });
+            toggle.checked = !isHidden;
+            toggle.onchange = () => this.toggleSection(index, toggle.checked);
+            row.createDiv({ cls: 'hi-words-library-display-row-label', text: this.getSectionLabel(section) });
+
+            const actions = row.createDiv({ cls: 'hi-words-library-display-row-actions' });
+            const up = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('library.move_up'), title: t('library.move_up') } });
+            setIcon(up, 'arrow-up');
+            up.disabled = index === 0;
+            up.onclick = () => this.moveSection(index, -1);
+
+            const down = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('library.move_down'), title: t('library.move_down') } });
+            setIcon(down, 'arrow-down');
+            down.disabled = index === ordered.length - 1;
+            down.onclick = () => this.moveSection(index, 1);
+        });
+    }
+
+    private moveSection(index: number, delta: -1 | 1) {
+        const previewCount = this.previewSections.length;
+        const ordered = [...this.previewSections, ...this.detailSections];
+        const targetIndex = index + delta;
+        if (targetIndex < 0 || targetIndex >= ordered.length) return;
+
+        const [item] = ordered.splice(index, 1);
+        ordered.splice(targetIndex, 0, item);
+
+        let nextPreviewCount = previewCount;
+        if (delta === -1 && index === previewCount) {
+            nextPreviewCount += 1;
+        }
+        if (delta === 1 && index === previewCount - 1) {
+            nextPreviewCount -= 1;
+        }
+
+        this.previewSections = ordered.slice(0, nextPreviewCount);
+        this.detailSections = ordered.slice(nextPreviewCount);
+        this.onOpen();
+    }
+
+    private toggleSection(index: number, visible: boolean) {
+        const ordered = [...this.previewSections, ...this.detailSections];
+        const section = ordered[index];
+        if (!section) return;
+
+        if (visible && this.hiddenSections.includes(section)) {
+            this.hiddenSections = this.hiddenSections.filter(item => item !== section);
+        }
+        if (!visible && !this.hiddenSections.includes(section)) {
+            this.hiddenSections.push(section);
+        }
+
+        this.onOpen();
+    }
+
+    private getSectionLabel(section: WordCardDetailSection): string {
+        const option = DETAIL_SECTION_OPTIONS.find(item => item.key === section);
+        return option ? t(option.labelKey) : section;
+    }
+
+    private normalizeSections(sections: WordCardDetailSection[]): WordCardDetailSection[] {
+        const allowed = new Set(DETAIL_SECTION_OPTIONS.map(option => option.key));
+        const normalized: WordCardDetailSection[] = [];
+        for (const section of sections) {
+            if (allowed.has(section) && !normalized.includes(section)) {
+                normalized.push(section);
+            }
+        }
+        return normalized;
+    }
+
+    private format(template: string, ...values: string[]): string {
+        return values.reduce((result, value, index) => result.replace(new RegExp(`\\{${index}\\}`, 'g'), value), template);
+    }
 }
 
 export class HiWordsLibraryView extends ItemView {
@@ -217,6 +390,16 @@ export class HiWordsLibraryView extends ItemView {
         const title = header.createDiv();
         title.createEl('h3', { text: book.name });
         title.createEl('p', { text: book.path });
+        if (book.path.endsWith('.hiwords')) {
+            const detailActions = header.createDiv({ cls: 'hi-words-library-actions' });
+            const displayButton = this.addIconButton(detailActions, 'settings', t('library.book_display_settings'), () => {
+                new BookDisplaySettingsModal(this.app, this.plugin, book, async () => {
+                    this.clearCaches();
+                    await this.render();
+                }).open();
+            });
+            displayButton.addClass('hi-words-library-book-settings-button');
+        }
 
         const summary = section.createDiv({ cls: 'hi-words-library-book-summary' });
         this.addStat(summary, t('library.type'), this.getBookType(book));
@@ -462,6 +645,11 @@ export class HiWordsLibraryView extends ItemView {
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
                 onPronunciationClick: (variant) => playWordTTS(this.plugin, definition.word, definition, variant),
+                display: this.plugin.getVocabularyBookDisplaySettings(definition.source),
+                onOpenDetail: async () => {
+                    this.removeTooltip();
+                    await this.plugin.showWordInSidebar(definition, 'library');
+                },
             });
         } else {
             await this.renderTooltipMarkdown(content, definition);

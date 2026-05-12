@@ -191,6 +191,33 @@ export interface LanguagePack {
         mark_mastered: string;
         unmark_mastered: string;
         edit_word: string;
+        book_display_settings: string;
+        book_display_settings_desc: string;
+        preview_density: string;
+        preview_density_desc: string;
+        preview_simple: string;
+        preview_standard: string;
+        preview_rich: string;
+        display_order: string;
+        display_order_desc: string;
+        preview_area: string;
+        detail_area: string;
+        move_up: string;
+        move_down: string;
+        detail_sections: string;
+        detail_sections_desc: string;
+        section_definitions: string;
+        section_examples: string;
+        section_collocations: string;
+        section_phrases: string;
+        section_usage: string;
+        section_forms: string;
+        section_morphology: string;
+        section_confusables: string;
+        section_relations: string;
+        section_memory: string;
+        save_display_settings: string;
+        reset_display_settings: string;
     };
     // Common action labels used in UI
     actions?: {

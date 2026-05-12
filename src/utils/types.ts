@@ -26,6 +26,7 @@ export interface WordCardMemory {
     hint?: string;
     note?: string;
     root?: string;
+    mnemonic?: string;
 }
 
 export interface WordCardPhonetics {
@@ -49,9 +50,83 @@ export interface WordCardImage {
 export interface WordCardConfusable {
     word: string;
     note: string;
+    examples?: string[];
+}
+
+export interface WordCardAffix {
+    text: string;
+    meaning?: string;
+    role?: string;
+}
+
+export interface WordCardMorphology {
+    type?: string;
+    root?: string;
+    prefixes?: WordCardAffix[];
+    suffixes?: WordCardAffix[];
+    compound?: string[];
+    breakdown?: string;
+    explanation?: string;
+}
+
+export interface WordCardPhrase {
+    phrase: string;
+    meaning?: string;
+    note?: string;
+    example?: string;
+}
+
+export interface WordCardRelation {
+    type: string;
+    target: string;
+    targetType?: LearningItemType | 'topic' | 'grammar' | 'pattern' | 'concept';
+    note?: string;
+}
+
+export interface WordCardUsageMistake {
+    wrong: string;
+    correct: string;
+    note?: string;
+}
+
+export interface WordCardUsage {
+    register?: string;
+    domains?: string[];
+    topics?: string[];
+    commonPatterns?: string[];
+    mistakes?: WordCardUsageMistake[];
+}
+
+export interface WordCardLearning {
+    depth?: 'light' | 'medium' | 'core' | string;
+    priority?: number;
+    reason?: string;
+}
+
+export type WordCardDetailSection =
+    'definitions' |
+    'examples' |
+    'collocations' |
+    'memory' |
+    'forms' |
+    'morphology' |
+    'phrases' |
+    'usage' |
+    'confusables' |
+    'relations';
+
+export type WordCardPreviewDensity = 'simple' | 'standard' | 'rich';
+
+export interface VocabularyBookDisplaySettings {
+    previewDensity?: WordCardPreviewDensity;
+    previewSections?: WordCardDetailSection[];
+    detailSections?: WordCardDetailSection[];
+    hiddenSections?: WordCardDetailSection[];
 }
 
 export interface WordCard {
+    id?: string;
+    version?: number;
     word: string;
     type?: LearningItemType;
     aliases?: string[];
@@ -61,6 +136,8 @@ export interface WordCard {
     audio?: WordCardAudio;
     language?: string;
     level?: string;
+    difficulty?: number;
+    priority?: number;
     tags?: string[];
     frequency?: number;
     register?: string;
@@ -71,6 +148,12 @@ export interface WordCard {
     examples?: WordCardExample[];
     memory?: WordCardMemory;
     collocations?: string[];
+    phrases?: WordCardPhrase[];
+    forms?: Record<string, string | string[] | number | boolean | null | undefined>;
+    morphology?: WordCardMorphology;
+    relations?: WordCardRelation[];
+    usage?: WordCardUsage;
+    learning?: WordCardLearning;
     confusables?: WordCardConfusable[];
     images?: WordCardImage[];
 }
@@ -111,6 +194,7 @@ export interface VocabularyBook {
     name: string; // 显示名称
     enabled: boolean; // 是否启用
     color?: string; // .hiwords 词库默认颜色，使用 Canvas-style color id: "1".."6"
+    display?: VocabularyBookDisplaySettings; // 词库级详情显示偏好
 }
 
 // 高亮样式类型

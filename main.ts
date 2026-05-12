@@ -1,7 +1,7 @@
 import { App, Plugin, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
-import { HiWordsSettings } from './src/utils';
+import { HiWordsSettings, VocabularyBookDisplaySettings, WordDefinition } from './src/utils';
 import { DEFAULT_SETTINGS } from './src/settings';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
@@ -187,6 +187,19 @@ export default class HiWordsPlugin extends Plugin {
         if (leaf) {
             workspace.revealLeaf(leaf);
         }
+    }
+
+    async showWordInSidebar(wordDef: WordDefinition, origin: 'document' | 'library' = 'document') {
+        await this.activateSidebarView();
+        const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);
+        const view = leaves[0]?.view;
+        if (view instanceof HiWordsSidebarView) {
+            await view.focusWord(wordDef, origin);
+        }
+    }
+
+    getVocabularyBookDisplaySettings(sourcePath: string): VocabularyBookDisplaySettings | undefined {
+        return this.settings.vocabularyBooks.find(book => book.path === sourcePath)?.display;
     }
 
     async activateLibraryView() {

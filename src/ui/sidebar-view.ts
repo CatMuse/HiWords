@@ -20,6 +20,7 @@ export class HiWordsSidebarView extends ItemView {
     private normalDefinitionsCache: WordDefinition[] = []; // 缓存普通单词列表
     private sectionTabStates: Map<string, number> = new Map(); // 记录每个单词当前激活的分区 Tab
     private expandedWordStates: Map<string, boolean> = new Map(); // 记录用户手动展开/收起的词卡状态
+    private manualDetailMode = false; // 单词管理页打开详情时，不跟随当前文档扫描结果
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
@@ -50,6 +51,9 @@ export class HiWordsSidebarView extends ItemView {
         // 监听文件打开事件（使用 file-open 代替 active-leaf-change，避免侧边栏激活触发更新）
         this.registerEvent(
             this.app.workspace.on('file-open', (file: TFile | null) => {
+                if (file && (file.extension === 'md' || file.extension === 'pdf')) {
+                    this.manualDetailMode = false;
+                }
                 this.scheduleUpdate(120);
             })
         );
@@ -92,10 +96,67 @@ export class HiWordsSidebarView extends ItemView {
         // 清理资源
     }
 
+    async focusWord(wordDef: WordDefinition, origin: 'document' | 'library' = 'document') {
+        if (this.updateTimer !== null) {
+            clearTimeout(this.updateTimer);
+            this.updateTimer = null;
+        }
+
+        const key = this.getWordStateKey(wordDef);
+
+        if (origin === 'library') {
+            this.manualDetailMode = true;
+            this.currentFile = null;
+            this.currentWords = [wordDef];
+            this.activeTab = wordDef.mastered ? 'mastered' : 'learning';
+            this.expandedWordStates.set(key, true);
+            this.firstLoadForFile = false;
+            this.lastInteractionTime = Date.now();
+            await this.renderWordList();
+            this.scrollWordCardIntoView(key);
+            return;
+        }
+
+        this.manualDetailMode = false;
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile && (activeFile.extension === 'md' || activeFile.extension === 'pdf') && (activeFile !== this.currentFile || this.currentWords.length === 0)) {
+            this.currentFile = activeFile;
+            this.firstLoadForFile = true;
+            await this.scanCurrentDocument();
+        }
+
+        const existingIndex = this.currentWords.findIndex(item => this.getWordStateKey(item) === key);
+        if (existingIndex < 0) {
+            this.currentWords.unshift(wordDef);
+        }
+        this.activeTab = wordDef.mastered ? 'mastered' : 'learning';
+        this.expandedWordStates.set(key, true);
+        this.firstLoadForFile = false;
+        this.lastInteractionTime = Date.now();
+        await this.renderWordList();
+        this.scrollWordCardIntoView(key);
+    }
+
+    private scrollWordCardIntoView(wordKey: string) {
+        requestAnimationFrame(() => {
+            const cards = this.containerEl.querySelectorAll('.hi-words-word-card');
+            for (const card of Array.from(cards)) {
+                if ((card as HTMLElement).getAttr('data-word-key') === wordKey) {
+                    card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    return;
+                }
+            }
+        });
+    }
+
     /**
      * 更新侧边栏视图
      */
     private async updateView() {
+        if (this.manualDetailMode) {
+            return;
+        }
+
         const activeFile = this.app.workspace.getActiveFile();
         
         if (!activeFile || (activeFile.extension !== 'md' && activeFile.extension !== 'pdf')) {
@@ -421,6 +482,7 @@ export class HiWordsSidebarView extends ItemView {
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
                 onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
+                display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
             });
         } else if (isExpanded && contentToRender && contentToRender.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });

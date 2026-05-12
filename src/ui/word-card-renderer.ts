@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
-import { normalizePath } from 'obsidian';
-import type { WordCard, WordDefinition } from '../utils';
+import { normalizePath, setIcon } from 'obsidian';
+import type { VocabularyBookDisplaySettings, WordCard, WordCardDetailSection, WordCardPreviewDensity, WordDefinition } from '../utils';
 
 export type WordCardRenderMode = 'popover' | 'sidebar';
 
@@ -9,7 +9,30 @@ interface RenderOptions {
     app?: App;
     pronunciationVariant?: 'uk' | 'us';
     onPronunciationClick?: (variant: 'uk' | 'us') => void | Promise<void>;
+    onOpenDetail?: () => void | Promise<void>;
+    display?: VocabularyBookDisplaySettings;
 }
+
+export const DEFAULT_WORD_CARD_DETAIL_SECTIONS: WordCardDetailSection[] = [
+    'definitions',
+    'examples',
+    'collocations',
+    'phrases',
+    'usage',
+    'forms',
+    'morphology',
+    'confusables',
+    'relations',
+    'memory',
+];
+
+export const DEFAULT_WORD_CARD_PREVIEW_SECTIONS: WordCardDetailSection[] = [
+    'definitions',
+    'examples',
+    'collocations',
+];
+
+export const DEFAULT_WORD_CARD_PREVIEW_DENSITY: WordCardPreviewDensity = 'standard';
 
 export function renderWordCard(container: HTMLElement, wordDef: WordDefinition, options: RenderOptions): boolean {
     const card = wordDef.card;
@@ -21,15 +44,95 @@ export function renderWordCard(container: HTMLElement, wordDef: WordDefinition, 
         cls: `hi-words-structured-card hi-words-structured-card-${options.mode}`,
     });
 
+    const isPreview = options.mode === 'popover';
+    const previewDensity = options.display?.previewDensity || DEFAULT_WORD_CARD_PREVIEW_DENSITY;
+    const hiddenSections = options.display?.hiddenSections || [];
+    const previewSections = uniqueSections(options.display?.previewSections || getLegacyPreviewSections(previewDensity))
+        .filter(section => !hiddenSections.includes(section));
+    const detailDefaults = DEFAULT_WORD_CARD_DETAIL_SECTIONS.filter(section => !previewSections.includes(section));
+    const detailSections = uniqueSections(options.display?.detailSections || detailDefaults)
+        .filter(section => !hiddenSections.includes(section) && !previewSections.includes(section));
+
     renderMeta(root, card, options.pronunciationVariant || 'us', options.onPronunciationClick);
-    renderImages(root, card, options.app);
-    renderDefinitions(root, card);
-    renderExamples(root, card);
-    renderMemory(root, card);
-    renderCollocations(root, card);
-    renderConfusables(root, card);
+    if (!isPreview) {
+        renderImages(root, card, options.app);
+    }
+
+    const sections = isPreview ? previewSections : [...previewSections, ...detailSections];
+    for (const section of sections) {
+        renderDetailSection(root, card, section, isPreview ? previewDensity : undefined);
+    }
+
+    if (isPreview && options.onOpenDetail) {
+        renderDetailAction(root, options.onOpenDetail);
+    }
 
     return true;
+}
+
+function uniqueSections(sections: WordCardDetailSection[]): WordCardDetailSection[] {
+    const seen = new Set<WordCardDetailSection>();
+    const result: WordCardDetailSection[] = [];
+
+    for (const section of sections) {
+        if (seen.has(section)) continue;
+        seen.add(section);
+        result.push(section);
+    }
+
+    return result;
+}
+
+function renderDetailSection(root: HTMLElement, card: WordCard, section: WordCardDetailSection, previewDensity?: WordCardPreviewDensity): void {
+    switch (section) {
+        case 'definitions':
+            renderDefinitions(root, card);
+            return;
+        case 'examples':
+            renderExamples(root, card, getPreviewExampleLimit(previewDensity, !!previewDensity));
+            return;
+        case 'collocations':
+            renderCollocations(root, card, getPreviewCollocationLimit(previewDensity, !!previewDensity));
+            return;
+        case 'phrases':
+            renderPhrases(root, card);
+            return;
+        case 'usage':
+            renderUsage(root, card);
+            return;
+        case 'forms':
+            renderForms(root, card);
+            return;
+        case 'morphology':
+            renderMorphology(root, card);
+            return;
+        case 'confusables':
+            renderConfusables(root, card);
+            return;
+        case 'relations':
+            renderRelations(root, card);
+            return;
+        case 'memory':
+            renderMemory(root, card);
+            return;
+    }
+}
+
+function getPreviewExampleLimit(density: WordCardPreviewDensity | undefined, isPreview: boolean): number | undefined {
+    if (!isPreview) return undefined;
+    return density === 'rich' ? 2 : 1;
+}
+
+function getPreviewCollocationLimit(density: WordCardPreviewDensity | undefined, isPreview: boolean): number | undefined {
+    if (!isPreview) return undefined;
+    if (density === 'simple') return 0;
+    return density === 'rich' ? 8 : 5;
+}
+
+function getLegacyPreviewSections(density: WordCardPreviewDensity): WordCardDetailSection[] {
+    return density === 'simple'
+        ? ['definitions', 'examples']
+        : DEFAULT_WORD_CARD_PREVIEW_SECTIONS;
 }
 
 function renderMeta(
@@ -41,6 +144,8 @@ function renderMeta(
     const phonetics = getPhoneticItems(card, pronunciationVariant);
     const hasMeta = phonetics.length > 0 ||
         card.level ||
+        card.difficulty !== undefined ||
+        card.priority !== undefined ||
         card.frequency !== undefined ||
         card.register ||
         card.tags?.length ||
@@ -73,6 +178,14 @@ function renderMeta(
 
     if (card.frequency !== undefined) {
         meta.createSpan({ text: `Freq ${card.frequency}`, cls: 'hi-words-structured-level' });
+    }
+
+    if (card.difficulty !== undefined) {
+        meta.createSpan({ text: `Diff ${card.difficulty}`, cls: 'hi-words-structured-level' });
+    }
+
+    if (card.priority !== undefined) {
+        meta.createSpan({ text: `P${card.priority}`, cls: 'hi-words-structured-level' });
     }
 
     if (card.register) {
@@ -178,11 +291,11 @@ function renderDefinitions(root: HTMLElement, card: WordCard): void {
     }
 }
 
-function renderExamples(root: HTMLElement, card: WordCard): void {
+function renderExamples(root: HTMLElement, card: WordCard, limit?: number): void {
     if (!card.examples?.length) return;
 
     const section = createSection(root, 'Examples');
-    for (const example of card.examples) {
+    for (const example of card.examples.slice(0, limit)) {
         if (!example.text) continue;
         const item = section.createDiv({ cls: 'hi-words-structured-example' });
         item.createDiv({ text: example.text, cls: 'hi-words-structured-example-text' });
@@ -201,6 +314,7 @@ function renderMemory(root: HTMLElement, card: WordCard): void {
     const values = [
         card.memory.root ? { label: 'Root', value: card.memory.root } : null,
         card.memory.hint ? { label: 'Hint', value: card.memory.hint } : null,
+        card.memory.mnemonic ? { label: 'Mnemonic', value: card.memory.mnemonic } : null,
         card.memory.note ? { label: 'Note', value: card.memory.note } : null,
     ].filter((item): item is { label: string; value: string } => item !== null);
 
@@ -214,14 +328,153 @@ function renderMemory(root: HTMLElement, card: WordCard): void {
     }
 }
 
-function renderCollocations(root: HTMLElement, card: WordCard): void {
+function renderForms(root: HTMLElement, card: WordCard): void {
+    if (!card.forms || Object.keys(card.forms).length === 0) return;
+
+    const section = createSection(root, 'Word forms');
+    const grid = section.createDiv({ cls: 'hi-words-structured-key-value-grid' });
+
+    for (const [key, value] of Object.entries(card.forms)) {
+        const text = formatValue(value);
+        if (!text) continue;
+
+        const row = grid.createDiv({ cls: 'hi-words-structured-key-value' });
+        row.createSpan({ text: formatLabel(key), cls: 'hi-words-structured-label' });
+        row.createSpan({ text, cls: 'hi-words-structured-memory-text' });
+    }
+
+    if (!grid.children.length) {
+        section.remove();
+    }
+}
+
+function renderMorphology(root: HTMLElement, card: WordCard): void {
+    const morphology = card.morphology;
+    if (!morphology) return;
+
+    const hasContent = morphology.type ||
+        morphology.root ||
+        morphology.breakdown ||
+        morphology.explanation ||
+        morphology.compound?.length ||
+        morphology.prefixes?.length ||
+        morphology.suffixes?.length;
+    if (!hasContent) return;
+
+    const section = createSection(root, 'Morphology');
+
+    if (morphology.breakdown) {
+        section.createDiv({ text: morphology.breakdown, cls: 'hi-words-structured-breakdown' });
+    }
+
+    const chips = section.createDiv({ cls: 'hi-words-structured-chip-list' });
+    if (morphology.type) chips.createSpan({ text: morphology.type, cls: 'hi-words-structured-chip' });
+    if (morphology.root) chips.createSpan({ text: `root: ${morphology.root}`, cls: 'hi-words-structured-chip' });
+    for (const item of morphology.compound || []) {
+        chips.createSpan({ text: item, cls: 'hi-words-structured-chip' });
+    }
+    if (!chips.children.length) chips.remove();
+
+    renderAffixes(section, 'Prefixes', morphology.prefixes);
+    renderAffixes(section, 'Suffixes', morphology.suffixes);
+
+    if (morphology.explanation) {
+        section.createDiv({ text: morphology.explanation, cls: 'hi-words-structured-memory-text' });
+    }
+}
+
+function renderCollocations(root: HTMLElement, card: WordCard, limit?: number): void {
     if (!card.collocations?.length) return;
 
     const section = createSection(root, 'Collocations');
     const list = section.createDiv({ cls: 'hi-words-structured-chip-list' });
-    for (const item of card.collocations) {
+    for (const item of card.collocations.slice(0, limit)) {
         list.createSpan({ text: item, cls: 'hi-words-structured-chip' });
     }
+}
+
+function renderPhrases(root: HTMLElement, card: WordCard): void {
+    if (!card.phrases?.length) return;
+
+    const section = createSection(root, 'Phrases');
+    for (const item of card.phrases) {
+        if (!item.phrase) continue;
+        const phrase = section.createDiv({ cls: 'hi-words-structured-phrase' });
+        const header = phrase.createDiv({ cls: 'hi-words-structured-phrase-header' });
+        header.createSpan({ text: item.phrase, cls: 'hi-words-structured-confusable-word' });
+        if (item.meaning) {
+            header.createSpan({ text: item.meaning, cls: 'hi-words-structured-muted' });
+        }
+        if (item.note) {
+            phrase.createDiv({ text: item.note, cls: 'hi-words-structured-memory-text' });
+        }
+        if (item.example) {
+            phrase.createDiv({ text: item.example, cls: 'hi-words-structured-example-text' });
+        }
+    }
+}
+
+function renderUsage(root: HTMLElement, card: WordCard): void {
+    const usage = card.usage;
+    if (!usage) return;
+
+    const hasContent = usage.register ||
+        usage.domains?.length ||
+        usage.topics?.length ||
+        usage.commonPatterns?.length ||
+        usage.mistakes?.length;
+    if (!hasContent) return;
+
+    const section = createSection(root, 'Usage');
+    const chips = section.createDiv({ cls: 'hi-words-structured-chip-list' });
+    if (usage.register) chips.createSpan({ text: usage.register, cls: 'hi-words-structured-chip' });
+    for (const topic of [...(usage.topics || []), ...(usage.domains || [])]) {
+        chips.createSpan({ text: topic, cls: 'hi-words-structured-chip' });
+    }
+    if (!chips.children.length) chips.remove();
+
+    if (usage.commonPatterns?.length) {
+        const patterns = section.createDiv({ cls: 'hi-words-structured-subsection' });
+        patterns.createDiv({ text: 'Common patterns', cls: 'hi-words-structured-subtitle' });
+        const list = patterns.createDiv({ cls: 'hi-words-structured-chip-list' });
+        for (const pattern of usage.commonPatterns) {
+            list.createSpan({ text: pattern, cls: 'hi-words-structured-chip hi-words-structured-chip-code' });
+        }
+    }
+
+    if (usage.mistakes?.length) {
+        const mistakes = section.createDiv({ cls: 'hi-words-structured-subsection' });
+        mistakes.createDiv({ text: 'Common mistakes', cls: 'hi-words-structured-subtitle' });
+        for (const item of usage.mistakes) {
+            if (!item.wrong || !item.correct) continue;
+            const row = mistakes.createDiv({ cls: 'hi-words-structured-mistake' });
+            row.createDiv({ text: item.wrong, cls: 'hi-words-structured-wrong' });
+            row.createDiv({ text: item.correct, cls: 'hi-words-structured-correct' });
+            if (item.note) row.createDiv({ text: item.note, cls: 'hi-words-structured-memory-text' });
+        }
+    }
+}
+
+function renderRelations(root: HTMLElement, card: WordCard): void {
+    if (!card.relations?.length) return;
+
+    const section = createSection(root, 'Related');
+    const list = section.createDiv({ cls: 'hi-words-structured-relation-list' });
+
+    for (const relation of card.relations) {
+        if (!relation.target) continue;
+        const item = list.createDiv({ cls: 'hi-words-structured-relation' });
+        item.createSpan({ text: relation.type || 'related', cls: 'hi-words-structured-relation-type' });
+        item.createSpan({ text: relation.target, cls: 'hi-words-structured-relation-target' });
+        if (relation.targetType) {
+            item.createSpan({ text: relation.targetType, cls: 'hi-words-structured-relation-target-type' });
+        }
+        if (relation.note) {
+            item.createDiv({ text: relation.note, cls: 'hi-words-structured-memory-text' });
+        }
+    }
+
+    if (!list.children.length) section.remove();
 }
 
 function renderConfusables(root: HTMLElement, card: WordCard): void {
@@ -233,7 +486,83 @@ function renderConfusables(root: HTMLElement, card: WordCard): void {
         const row = section.createDiv({ cls: 'hi-words-structured-confusable' });
         row.createSpan({ text: item.word, cls: 'hi-words-structured-confusable-word' });
         row.createSpan({ text: item.note, cls: 'hi-words-structured-memory-text' });
+        if (item.examples?.length) {
+            const examples = row.createDiv({ cls: 'hi-words-structured-confusable-examples' });
+            for (const example of item.examples) {
+                examples.createDiv({ text: example, cls: 'hi-words-structured-example-text' });
+            }
+        }
     }
+}
+
+function renderLearning(root: HTMLElement, card: WordCard): void {
+    if (!card.learning) return;
+
+    const values = [
+        card.learning.depth ? { label: 'Depth', value: card.learning.depth } : null,
+        card.learning.priority !== undefined ? { label: 'Priority', value: String(card.learning.priority) } : null,
+        card.learning.reason ? { label: 'Reason', value: card.learning.reason } : null,
+    ].filter((item): item is { label: string; value: string } => item !== null);
+
+    if (values.length === 0) return;
+
+    const section = createSection(root, 'Learning');
+    for (const item of values) {
+        const row = section.createDiv({ cls: 'hi-words-structured-memory-row' });
+        row.createSpan({ text: item.label, cls: 'hi-words-structured-label' });
+        row.createSpan({ text: item.value, cls: 'hi-words-structured-memory-text' });
+    }
+}
+
+function renderAffixes(root: HTMLElement, title: string, affixes?: Array<{ text: string; meaning?: string; role?: string }>): void {
+    if (!affixes?.length) return;
+
+    const group = root.createDiv({ cls: 'hi-words-structured-affix-group' });
+    group.createDiv({ text: title, cls: 'hi-words-structured-subtitle' });
+
+    for (const affix of affixes) {
+        if (!affix.text) continue;
+        const row = group.createDiv({ cls: 'hi-words-structured-affix' });
+        row.createSpan({ text: affix.text, cls: 'hi-words-structured-confusable-word' });
+        const details = [affix.meaning, affix.role].filter(Boolean).join(' · ');
+        if (details) row.createSpan({ text: details, cls: 'hi-words-structured-memory-text' });
+    }
+}
+
+function formatValue(value: string | string[] | number | boolean | null | undefined): string {
+    if (Array.isArray(value)) return value.filter(item => item !== '').join(', ');
+    if (value === null || value === undefined || value === '') return '';
+    return String(value);
+}
+
+function formatLabel(value: string): string {
+    return value
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function renderDetailAction(root: HTMLElement, onOpenDetail: () => void | Promise<void>): void {
+    const action = root.createDiv({
+        cls: 'hi-words-structured-detail-link hi-words-word-source',
+        attr: { role: 'button', tabindex: '0' },
+    });
+    action.createSpan({ text: 'DETAILS', cls: 'hi-words-source-text' });
+    const arrow = action.createSpan({ cls: 'hi-words-structured-detail-arrow' });
+    setIcon(arrow, 'chevron-right');
+
+    const open = (event: Event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void onOpenDetail();
+    };
+
+    action.addEventListener('click', open);
+    action.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            open(event);
+        }
+    });
 }
 
 function createSection(root: HTMLElement, title: string): HTMLElement {

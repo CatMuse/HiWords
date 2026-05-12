@@ -312,6 +312,11 @@ export class DefinitionPopover extends Component {
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
                 onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
+                display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
+                onOpenDetail: async () => {
+                    this.removeTooltip();
+                    await this.plugin.showWordInSidebar(wordDef, 'document');
+                },
             });
         } else {
             const contentToRender = sections && sections.length > 0 && enableSectionTabs
