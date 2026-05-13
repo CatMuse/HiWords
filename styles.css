@@ -49,8 +49,7 @@
 
 /* 波浪线样式 */
 .hi-words-highlight[data-style="wavy"] {
-    text-decoration: wavy underline var(--word-highlight-color, var(--text-muted));
-    text-decoration-thickness: 1px;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
 }
 
 .hi-words-highlight[data-style="wavy"]:hover {
@@ -220,12 +219,12 @@
 }
 
 .hi-words-tooltip-content> :first-child {
-    margin-top: 0 !important;
+    margin-top: 0;
     /* 首元素无多余顶距 */
 }
 
 .hi-words-tooltip-content> :last-child {
-    margin-bottom: 0 !important;
+    margin-bottom: 0;
     /* 尾元素无多余底距 */
 }
 
@@ -285,11 +284,11 @@
 }
 
 .hi-words-definition> :first-child {
-    margin-top: 0 !important;
+    margin-top: 0;
 }
 
 .hi-words-definition> :last-child {
-    margin-bottom: 0 !important;
+    margin-bottom: 0;
 }
 
 /* 模糊定义内容功能 */
@@ -441,7 +440,6 @@
     display: block;
     margin-bottom: 6px;
     font-weight: 400;
-    color: var(--text-normal);
     font-size: 14px;
     color: var(--text-muted);
 }
@@ -566,14 +564,14 @@
 
     /* 小屏幕下强制单栏布局 */
     .hi-words-word-list {
-        column-count: 1;
+        grid-template-columns: 1fr;
     }
 }
 
 .hi-words-word-list {
-    column-count: auto;
-    column-width: 280px;
-    column-gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -592,9 +590,8 @@
     width: 100%;
     box-sizing: border-box;
     min-width: 0;
-    break-inside: avoid;
-    margin-bottom: 8px;
-    display: inline-block;
+    margin-bottom: 0;
+    display: block;
 }
 
 .hi-words-word-card:hover {
@@ -894,7 +891,7 @@
     display: block;
     width: 100%;
     max-width: 100%;
-    margin: 0 !important;
+    margin: 0;
     padding: 0;
     aspect-ratio: 16 / 9;
     height: auto;
@@ -1090,8 +1087,10 @@
 
 .hi-words-structured-wrong {
     color: var(--text-error);
-    text-decoration: line-through;
-    text-decoration-thickness: 1px;
+    background-image: linear-gradient(var(--text-error), var(--text-error));
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: 0 55%;
 }
 
 .hi-words-structured-correct {
@@ -1470,8 +1469,10 @@
 /* 已掌握分组样式 */
 .hi-words-mastered-section {
     margin-top: 20px;
+    margin-bottom: 20px;
     padding-top: 16px;
     border-top: 1px solid var(--background-modifier-border);
+    opacity: 0.8;
 }
 
 .hi-words-mastered-section .hi-words-section-title {
@@ -1498,19 +1499,15 @@
 
 /* 已掌握单词的特殊样式 */
 .hi-words-mastered-word-card .hi-words-word-text {
-    text-decoration: line-through;
-    text-decoration-color: var(--color-green);
-    text-decoration-thickness: 1px;
+    background-image: linear-gradient(var(--color-green), var(--color-green));
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: 0 55%;
 }
 
 /* 侧边栏分组样式 */
 .hi-words-section {
     margin-bottom: 20px;
-}
-
-.hi-words-mastered-section {
-    margin-bottom: 20px;
-    opacity: 0.8;
 }
 
 .hi-words-section-title {
@@ -1535,17 +1532,8 @@
     flex: 1;
 }
 
-/* 已掌握分组特殊样式 */
-.hi-words-mastered-section .hi-words-section-title {
-    color: var(--color-green);
-}
-
 .hi-words-mastered-section .hi-words-section-icon {
     color: var(--color-green);
-}
-
-.hi-words-word-source {
-    margin-top: 8px;
 }
 
 .hi-words-word-source:hover {
@@ -1580,16 +1568,15 @@
     position: absolute;
     z-index: 1;
     pointer-events: none;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 0;
+    margin: 0;
     box-sizing: border-box;
     color: transparent;
 }
 
-/* PDF 中的下划线样式 - 使用 text-decoration 避免影响布局 */
+/* PDF 中的下划线样式 */
 .hi-words-pdf-highlight[data-style="underline"] {
-    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
-    text-decoration: none;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
     background: transparent;
 }
 
@@ -1599,7 +1586,7 @@
 }
 
 .hi-words-pdf-highlight[data-style="underline"]:hover {
-    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
 }
 
 /* PDF 中的背景高亮样式 - 使用 box-shadow 模拟 padding 效果，不影响布局 */
@@ -1629,25 +1616,24 @@
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
 }
 
-/* PDF 中的点状下划线样式 - 使用 text-decoration 避免影响布局 */
+/* PDF 中的点状下划线样式 */
 .hi-words-pdf-highlight[data-style="dotted"] {
-    border-bottom: 2px dotted var(--word-highlight-color, var(--text-muted)) !important;
-    text-decoration: none;
+    border-bottom: 2px dotted var(--word-highlight-color, var(--text-muted));
 }
 
 .hi-words-pdf-highlight[data-style="dotted"]:hover {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
-    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
 }
 
 .hi-words-pdf-highlight[data-style="dotted"].is-hovered {
     background-color: color-mix(in srgb, var(--word-highlight-color, var(--text-muted)) 20%, transparent);
-    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
 }
 
 /* PDF 中的波浪线样式 */
 .hi-words-pdf-highlight[data-style="wavy"] {
-    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted)) !important;
+    border-bottom: 2px solid var(--word-highlight-color, var(--text-muted));
 }
 
 .hi-words-pdf-highlight[data-style="wavy"]:hover {
@@ -1693,7 +1679,7 @@
     /* PDF 高亮在移动设备上的优化 */
     .hi-words-pdf-highlight {
         /* 不添加 padding，避免文本错位 */
-        padding: 0 !important;
+        padding: 0;
     }
 }
 
@@ -1854,8 +1840,8 @@
     padding: 0;
     border: 1px solid var(--background-modifier-border);
     border-radius: 50%;
-    background-color: var(--hi-words-book-color, var(--text-muted)) !important;
-    background-image: none !important;
+    background-color: var(--hi-words-book-color, var(--text-muted));
+    background-image: none;
     color: var(--text-on-accent);
     cursor: pointer;
     display: flex;
