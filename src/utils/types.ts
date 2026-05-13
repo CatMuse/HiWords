@@ -98,7 +98,7 @@ export interface WordCardUsage {
 }
 
 export interface WordCardLearning {
-    depth?: 'light' | 'medium' | 'core' | string;
+    depth?: string;
     priority?: number;
     reason?: string;
 }

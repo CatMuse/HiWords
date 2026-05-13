@@ -75,11 +75,17 @@ class BookDisplaySettingsModal extends Modal {
             this.previewSections = [...DEFAULT_WORD_CARD_PREVIEW_SECTIONS];
             this.detailSections = DEFAULT_WORD_CARD_DETAIL_SECTIONS.filter(section => !this.previewSections.includes(section));
             this.hiddenSections = [];
-            this.saveAndClose();
+            void this.saveAndClose().catch(error => {
+                console.error('HiWords 保存显示设置失败:', error);
+            });
         };
 
         const save = actions.createEl('button', { text: t('library.save_display_settings'), cls: 'mod-cta' });
-        save.onclick = () => this.saveAndClose();
+        save.onclick = () => {
+            void this.saveAndClose().catch(error => {
+                console.error('HiWords 保存显示设置失败:', error);
+            });
+        };
     }
 
     private async saveAndClose() {
@@ -243,7 +249,7 @@ export class HiWordsLibraryView extends ItemView {
 
     async onClose() {
         if (this.searchTimer !== null) {
-            activeWindow.clearTimeout(this.searchTimer);
+            window.clearTimeout(this.searchTimer);
             this.searchTimer = null;
         }
         this.clearTooltipTimers();
@@ -257,7 +263,7 @@ export class HiWordsLibraryView extends ItemView {
     private async render() {
         const token = ++this.renderToken;
         const content = this.containerEl.children[1] as HTMLElement;
-        const root = document.createElement('div');
+        const root = activeDocument.createElement('div');
         this.removeTooltip();
         root.addClass('hi-words-library');
         this.wordListEl = null;
@@ -342,12 +348,16 @@ export class HiWordsLibraryView extends ItemView {
         const refreshButton = actions.createEl('button', { cls: 'hi-words-library-button' });
         setIcon(refreshButton, 'refresh-cw');
         refreshButton.createSpan({ text: t('library.refresh') });
-        refreshButton.onclick = async () => {
-            await this.plugin.vocabularyManager.loadAllVocabularyBooks();
-            this.clearCaches();
-            this.plugin.refreshHighlighter();
-            await this.render();
-            new Notice(t('notices.vocabulary_refreshed'));
+        refreshButton.onclick = () => {
+            void (async () => {
+                await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                this.clearCaches();
+                this.plugin.refreshHighlighter();
+                await this.render();
+                new Notice(t('notices.vocabulary_refreshed'));
+            })().catch(error => {
+                console.error('HiWords 刷新词库失败:', error);
+            });
         };
 
         const statsEl = root.createDiv({ cls: 'hi-words-library-stats' });
@@ -379,11 +389,15 @@ export class HiWordsLibraryView extends ItemView {
             const row = aside.createDiv({
                 cls: `hi-words-library-book ${book.path === this.selectedBookPath ? 'is-selected' : ''} ${!book.enabled ? 'is-disabled' : ''}`,
             });
-            row.onclick = async () => {
-                if (this.selectedBookPath === book.path) return;
-                this.selectedBookPath = book.path;
-                this.resetVisibleWords();
-                await this.render();
+            row.onclick = () => {
+                void (async () => {
+                    if (this.selectedBookPath === book.path) return;
+                    this.selectedBookPath = book.path;
+                    this.resetVisibleWords();
+                    await this.render();
+                })().catch(error => {
+                    console.error('HiWords 切换词库失败:', error);
+                });
             };
 
             const main = row.createDiv({ cls: 'hi-words-library-book-main' });
@@ -420,9 +434,13 @@ export class HiWordsLibraryView extends ItemView {
         if (book.path.endsWith('.hiwords')) {
             const detailActions = header.createDiv({ cls: 'hi-words-library-actions' });
             const displayButton = this.addIconButton(detailActions, 'settings', t('library.book_display_settings'), () => {
-                new BookDisplaySettingsModal(this.app, this.plugin, book, async () => {
-                    this.clearCaches();
-                    await this.render();
+                new BookDisplaySettingsModal(this.app, this.plugin, book, () => {
+                    void (async () => {
+                        this.clearCaches();
+                        await this.render();
+                    })().catch(error => {
+                        console.error('HiWords 更新显示设置失败:', error);
+                    });
                 }).open();
             });
             displayButton.addClass('hi-words-library-book-settings-button');
@@ -447,7 +465,7 @@ export class HiWordsLibraryView extends ItemView {
             placeholder: t('library.search_placeholder'),
             value: this.query,
         });
-        search.oninput = async () => {
+        search.oninput = () => {
             this.query = search.value;
             this.resetVisibleWords();
             this.scheduleRender();
@@ -457,10 +475,12 @@ export class HiWordsLibraryView extends ItemView {
         this.addOption(statusSelect, 'all', t('library.all_statuses'), this.statusFilter);
         this.addOption(statusSelect, 'learning', t('library.learning'), this.statusFilter);
         this.addOption(statusSelect, 'mastered', t('library.mastered'), this.statusFilter);
-        statusSelect.onchange = async () => {
+        statusSelect.onchange = () => {
             this.statusFilter = statusSelect.value as StatusFilter;
             this.resetVisibleWords();
-            await this.render();
+            void this.render().catch(error => {
+                console.error('HiWords 渲染词库状态筛选失败:', error);
+            });
         };
 
         const typeSelect = filters.createEl('select');
@@ -469,10 +489,12 @@ export class HiWordsLibraryView extends ItemView {
         this.addOption(typeSelect, 'phrase', 'Phrase', this.typeFilter);
         this.addOption(typeSelect, 'concept', 'Concept', this.typeFilter);
         this.addOption(typeSelect, 'term', 'Term', this.typeFilter);
-        typeSelect.onchange = async () => {
+        typeSelect.onchange = () => {
             this.typeFilter = typeSelect.value as TypeFilter;
             this.resetVisibleWords();
-            await this.render();
+            void this.render().catch(error => {
+                console.error('HiWords 渲染词库类型筛选失败:', error);
+            });
         };
 
     }
@@ -564,15 +586,19 @@ export class HiWordsLibraryView extends ItemView {
             cls: `hi-words-library-word ${definition.mastered ? 'is-mastered' : ''}`,
             attr: { role: 'button', tabindex: '0' },
         });
-        row.onclick = async () => {
+        row.onclick = () => {
             this.removeTooltip();
-            await this.plugin.showWordInSidebar(definition, 'library');
+            void this.plugin.showWordInSidebar(definition, 'library').catch(error => {
+                console.error('HiWords 打开词卡详情失败:', error);
+            });
         };
-        row.onkeydown = async (event) => {
+        row.onkeydown = (event) => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
             this.removeTooltip();
-            await this.plugin.showWordInSidebar(definition, 'library');
+            void this.plugin.showWordInSidebar(definition, 'library').catch(error => {
+                console.error('HiWords 打开词卡详情失败:', error);
+            });
         };
         if (definition.color) {
             const accent = mapCanvasColorToCSSVar(definition.color, 'var(--color-base-60)');
@@ -587,17 +613,21 @@ export class HiWordsLibraryView extends ItemView {
             cls: 'hi-words-library-word-name',
             attr: { role: 'button', tabindex: '0' },
         });
-        word.onclick = async (event) => {
+        word.onclick = (event) => {
             event.stopPropagation();
-            await playWordTTS(this.plugin, definition.word, definition);
+            void playWordTTS(this.plugin, definition.word, definition).catch(error => {
+                console.error('HiWords 播放发音失败:', error);
+            });
         };
         word.onmouseenter = () => this.scheduleTooltip(word, definition);
         word.onmouseleave = () => this.scheduleTooltipHide();
-        word.onkeydown = async (event) => {
+        word.onkeydown = (event) => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
             event.stopPropagation();
-            await playWordTTS(this.plugin, definition.word, definition);
+            void playWordTTS(this.plugin, definition.word, definition).catch(error => {
+                console.error('HiWords 播放发音失败:', error);
+            });
         };
         if (definition.aliases?.length) {
             main.createDiv({ cls: 'hi-words-library-aliases', text: definition.aliases.join(', ') });
@@ -612,27 +642,31 @@ export class HiWordsLibraryView extends ItemView {
             });
             editButton.addClass('hi-words-library-edit-button');
         }
-        this.addIconButton(actions, definition.mastered ? 'undo' : 'check', definition.mastered ? t('library.unmark_mastered') : t('library.mark_mastered'), async () => {
-            if (definition.mastered) {
-                await this.plugin.masteredService.unmarkWordAsMastered(definition.source, definition.nodeId, definition.word);
-            } else {
-                await this.plugin.masteredService.markWordAsMastered(definition.source, definition.nodeId, definition.word);
-            }
-            this.clearCaches();
-            await this.render();
+        this.addIconButton(actions, definition.mastered ? 'undo' : 'check', definition.mastered ? t('library.unmark_mastered') : t('library.mark_mastered'), () => {
+            void (async () => {
+                if (definition.mastered) {
+                    await this.plugin.masteredService.unmarkWordAsMastered(definition.source, definition.nodeId, definition.word);
+                } else {
+                    await this.plugin.masteredService.markWordAsMastered(definition.source, definition.nodeId, definition.word);
+                }
+                this.clearCaches();
+                await this.render();
+            })().catch(error => {
+                console.error('HiWords 切换已掌握状态失败:', error);
+            });
         });
     }
 
     private scheduleTooltip(target: HTMLElement, definition: WordDefinition) {
         if (this.tooltipHideTimer !== null) {
-            activeWindow.clearTimeout(this.tooltipHideTimer);
+            window.clearTimeout(this.tooltipHideTimer);
             this.tooltipHideTimer = null;
         }
         if (this.tooltipShowTimer !== null) {
-            activeWindow.clearTimeout(this.tooltipShowTimer);
+            window.clearTimeout(this.tooltipShowTimer);
         }
 
-        this.tooltipShowTimer = activeWindow.setTimeout(() => {
+        this.tooltipShowTimer = window.setTimeout(() => {
             this.tooltipShowTimer = null;
             void this.showDefinitionTooltip(target, definition);
         }, 120);
@@ -640,14 +674,14 @@ export class HiWordsLibraryView extends ItemView {
 
     private scheduleTooltipHide() {
         if (this.tooltipShowTimer !== null) {
-            activeWindow.clearTimeout(this.tooltipShowTimer);
+            window.clearTimeout(this.tooltipShowTimer);
             this.tooltipShowTimer = null;
         }
         if (this.tooltipHideTimer !== null) {
-            activeWindow.clearTimeout(this.tooltipHideTimer);
+            window.clearTimeout(this.tooltipHideTimer);
         }
 
-        this.tooltipHideTimer = activeWindow.setTimeout(() => {
+        this.tooltipHideTimer = window.setTimeout(() => {
             this.tooltipHideTimer = null;
             this.removeTooltip();
         }, 100);
@@ -656,7 +690,7 @@ export class HiWordsLibraryView extends ItemView {
     private async showDefinitionTooltip(target: HTMLElement, definition: WordDefinition) {
         this.removeTooltip();
 
-        const tooltip = document.createElement('div');
+        const tooltip = activeDocument.createElement('div');
         tooltip.className = 'hi-words-tooltip hi-words-library-tooltip';
         if (definition.card) {
             tooltip.classList.add('hi-words-tooltip-structured');
@@ -664,7 +698,7 @@ export class HiWordsLibraryView extends ItemView {
 
         tooltip.addEventListener('mouseenter', () => {
             if (this.tooltipHideTimer !== null) {
-                activeWindow.clearTimeout(this.tooltipHideTimer);
+                window.clearTimeout(this.tooltipHideTimer);
                 this.tooltipHideTimer = null;
             }
         });
@@ -672,15 +706,17 @@ export class HiWordsLibraryView extends ItemView {
 
         const titleContainer = tooltip.createDiv({ cls: 'hi-words-tooltip-title-container' });
         const title = titleContainer.createDiv({ cls: 'hi-words-tooltip-title', text: definition.word });
-        title.onclick = async (event) => {
+        title.onclick = (event) => {
             event.stopPropagation();
-            await playWordTTS(this.plugin, definition.word, definition);
+            void playWordTTS(this.plugin, definition.word, definition).catch(error => {
+                console.error('HiWords 播放发音失败:', error);
+            });
         };
 
         const content = tooltip.createDiv({ cls: 'hi-words-tooltip-content' });
         content.addClass(this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition');
 
-        document.body.appendChild(tooltip);
+        activeDocument.body.appendChild(tooltip);
         this.activeTooltip = tooltip;
 
         if (definition.card) {
@@ -688,11 +724,17 @@ export class HiWordsLibraryView extends ItemView {
                 mode: 'popover',
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
-                onPronunciationClick: (variant) => playWordTTS(this.plugin, definition.word, definition, variant),
+                onPronunciationClick: (variant) => {
+                    void playWordTTS(this.plugin, definition.word, definition, variant).catch(error => {
+                        console.error('HiWords 播放发音失败:', error);
+                    });
+                },
                 display: this.plugin.getVocabularyBookDisplaySettings(definition.source),
-                onOpenDetail: async () => {
+                onOpenDetail: () => {
                     this.removeTooltip();
-                    await this.plugin.showWordInSidebar(definition, 'library');
+                    void this.plugin.showWordInSidebar(definition, 'library').catch(error => {
+                        console.error('HiWords 打开词卡详情失败:', error);
+                    });
                 },
             });
         } else {
@@ -727,7 +769,7 @@ export class HiWordsLibraryView extends ItemView {
     }
 
     private positionTooltip(target: HTMLElement, tooltip: HTMLElement) {
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             const rect = target.getBoundingClientRect();
             const tooltipRect = tooltip.getBoundingClientRect();
             const margin = 10;
@@ -748,11 +790,11 @@ export class HiWordsLibraryView extends ItemView {
 
     private clearTooltipTimers() {
         if (this.tooltipShowTimer !== null) {
-            activeWindow.clearTimeout(this.tooltipShowTimer);
+            window.clearTimeout(this.tooltipShowTimer);
             this.tooltipShowTimer = null;
         }
         if (this.tooltipHideTimer !== null) {
-            activeWindow.clearTimeout(this.tooltipHideTimer);
+            window.clearTimeout(this.tooltipHideTimer);
             this.tooltipHideTimer = null;
         }
     }
@@ -767,9 +809,11 @@ export class HiWordsLibraryView extends ItemView {
     private addIconButton(container: HTMLElement, icon: string, label: string, onClick: () => Promise<void> | void) {
         const button = container.createEl('button', { cls: 'clickable-icon hi-words-library-icon-button', attr: { 'aria-label': label, title: label } });
         setIcon(button, icon);
-        button.onclick = async (event) => {
+        button.onclick = (event) => {
             event.stopPropagation();
-            await onClick();
+            void Promise.resolve(onClick()).catch(error => {
+                console.error('HiWords 执行图标按钮操作失败:', error);
+            });
         };
         return button;
     }
@@ -835,10 +879,10 @@ export class HiWordsLibraryView extends ItemView {
 
     private scheduleRender() {
         if (this.searchTimer !== null) {
-            activeWindow.clearTimeout(this.searchTimer);
+            window.clearTimeout(this.searchTimer);
         }
 
-        this.searchTimer = activeWindow.setTimeout(() => {
+        this.searchTimer = window.setTimeout(() => {
             this.searchTimer = null;
             void this.refreshWordList();
         }, 160);

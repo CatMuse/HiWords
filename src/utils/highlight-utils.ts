@@ -61,8 +61,8 @@ export function shouldHighlightFile(filePath: string, settings: HiWordsSettings)
  */
 export function isElementVisible(element: HTMLElement): boolean {
     const rect = element.getBoundingClientRect();
-    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
-    const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+    const windowHeight = window.innerHeight || activeDocument.documentElement.clientHeight;
+    const windowWidth = window.innerWidth || activeDocument.documentElement.clientWidth;
     
     // 元素至少有一部分在视口内
     return (
@@ -98,7 +98,7 @@ export function clearHighlights(element: HTMLElement): void {
     const highlights = element.querySelectorAll('.hi-words-highlight');
     highlights.forEach(highlight => {
         // 将高亮元素替换为纯文本
-        const textNode = document.createTextNode(highlight.textContent || '');
+        const textNode = activeDocument.createTextNode(highlight.textContent || '');
         highlight.parentNode?.replaceChild(textNode, highlight);
     });
     

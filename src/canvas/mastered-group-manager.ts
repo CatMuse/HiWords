@@ -64,7 +64,7 @@ export class MasteredGroupManager {
             }
 
             return masteredGroup.id;
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -105,7 +105,7 @@ export class MasteredGroupManager {
                     // Layout normalization is best-effort.
                 }
             });
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -143,7 +143,7 @@ export class MasteredGroupManager {
                     // Layout normalization is best-effort.
                 }
             });
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -171,7 +171,7 @@ export class MasteredGroupManager {
 
             // 使用坐标位置判断节点是否在分组内
             return this.canvasParser.isNodeInGroup(targetNode, masteredGroup);
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -340,7 +340,7 @@ export class MasteredGroupManager {
 
             const content = await this.app.vault.cachedRead(file);
             return JSON.parse(content) as CanvasData;
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -368,7 +368,7 @@ export class MasteredGroupManager {
                 return JSON.stringify(data);
             });
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }

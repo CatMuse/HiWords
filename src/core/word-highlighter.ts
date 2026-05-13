@@ -173,10 +173,10 @@ export class WordHighlighter implements PluginValue {
      */
     private debouncedUpdate(view: EditorView) {
         if (this.debounceTimer) {
-            activeWindow.clearTimeout(this.debounceTimer);
+            window.clearTimeout(this.debounceTimer);
         }
         
-        this.debounceTimer = activeWindow.setTimeout(() => {
+        this.debounceTimer = window.setTimeout(() => {
             this.decorations = this.buildDecorations(view);
             this.debounceTimer = null;
         }, DEBOUNCE_DELAY);
@@ -372,7 +372,7 @@ export class WordHighlighter implements PluginValue {
     destroy() {
         // 清理资源
         if (this.debounceTimer) {
-            activeWindow.clearTimeout(this.debounceTimer);
+            window.clearTimeout(this.debounceTimer);
             this.debounceTimer = null;
         }
         

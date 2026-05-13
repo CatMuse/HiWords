@@ -15,6 +15,16 @@ interface PDFHighlighterPlugin {
   _refreshPDFHighlighter?: () => void;
 }
 
+interface ObsidianInstanceOf {
+  instanceOf: (type: typeof HTMLElement) => boolean;
+}
+
+function isHTMLElement(value: unknown): value is HTMLElement {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<ObsidianInstanceOf>;
+  return typeof candidate.instanceOf === 'function' && candidate.instanceOf(HTMLElement);
+}
+
 /**
  * 在 PDF 视图中注册单词高亮功能
  * 通过监听 PDF 文本层的渲染，实现对 PDF 内容的单词高亮
@@ -27,16 +37,16 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
   const observedTextLayers = new WeakSet<HTMLElement>();
 
   const clearRefreshBurstTimers = () => {
-    refreshBurstTimers.forEach(timer => activeWindow.clearTimeout(timer));
+    refreshBurstTimers.forEach(timer => window.clearTimeout(timer));
     refreshBurstTimers = [];
   };
 
   const debouncedRefreshPDF = (delay = 150) => {
     if (refreshTimer) {
-      activeWindow.clearTimeout(refreshTimer);
+      window.clearTimeout(refreshTimer);
     }
 
-    refreshTimer = activeWindow.setTimeout(() => {
+    refreshTimer = window.setTimeout(() => {
       refreshVisiblePDFPages(plugin, processedTextLayers);
       refreshTimer = null;
     }, delay);
@@ -45,7 +55,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
   const refreshPDFSoon = () => {
     clearRefreshBurstTimers();
     [0, 80, 200, 500, 1000].forEach((delay) => {
-      const timer = activeWindow.setTimeout(() => {
+      const timer = window.setTimeout(() => {
         refreshVisiblePDFPages(plugin, processedTextLayers);
         refreshBurstTimers = refreshBurstTimers.filter(activeTimer => activeTimer !== timer);
       }, delay);
@@ -95,7 +105,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
     resizeObserver.observe(textLayer);
 
     const page = textLayer.closest('.page');
-    if (page instanceof HTMLElement) {
+    if (isHTMLElement(page)) {
       resizeObserver.observe(page);
     }
   };
@@ -105,10 +115,10 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
    */
   const debouncedProcessPDF = () => {
     if (debounceTimer) {
-      activeWindow.clearTimeout(debounceTimer);
+      window.clearTimeout(debounceTimer);
     }
     
-    debounceTimer = activeWindow.setTimeout(() => {
+    debounceTimer = window.setTimeout(() => {
       if (!plugin.settings.enableAutoHighlight) return;
       
       // 获取当前活动文件
@@ -120,7 +130,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
       const trie = buildTrieFromVocabulary(plugin.vocabularyManager);
       
       // 查找所有 PDF 文本层
-      const textLayers = document.querySelectorAll('.textLayer');
+      const textLayers = activeDocument.querySelectorAll('.textLayer');
       textLayers.forEach((textLayer) => {
         // 检查是否在 PDF 视图中
         const pdfContainer = textLayer.closest('.pdf-container, .mod-pdf');
@@ -144,7 +154,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
       mutations.forEach((mutation) => {
         if (
           mutation.type === 'attributes' &&
-          mutation.target instanceof HTMLElement &&
+          isHTMLElement(mutation.target) &&
           (mutation.target.classList.contains('textLayer') || mutation.target.classList.contains('page')) &&
           mutation.target.closest('.pdf-container, .mod-pdf')
         ) {
@@ -180,7 +190,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
       }
     });
 
-    observer.observe(document.body, {
+    observer.observe(activeDocument.body, {
       childList: true,
       subtree: true,
       attributes: true,
@@ -197,7 +207,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
   plugin.registerEvent(
     plugin.app.workspace.on('layout-change', () => {
       // 延迟处理，确保 PDF 视图完全加载
-      activeWindow.setTimeout(() => {
+      window.setTimeout(() => {
         refreshPDFSoon();
       }, 500);
     })
@@ -213,7 +223,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
     plugin.app.workspace.on('active-leaf-change', (leaf: WorkspaceLeaf | null) => {
       if (leaf?.view?.getViewType() === 'pdf') {
         // 当切换到 PDF 视图时，延迟处理高亮
-        activeWindow.setTimeout(() => {
+        window.setTimeout(() => {
           debouncedProcessPDF();
         }, 1000);
       }
@@ -226,7 +236,7 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
   plugin.registerEvent(
     plugin.app.workspace.on('file-open', (file: TFile | null) => {
       if (file?.extension === 'pdf') {
-        activeWindow.setTimeout(() => {
+        window.setTimeout(() => {
           debouncedProcessPDF();
         }, 1500);
       }
@@ -237,17 +247,17 @@ export function registerPDFHighlighter(plugin: PDFHighlighterPlugin): void {
   const observer = setupPDFObserver();
 
   // 初始处理已存在的 PDF 视图
-  activeWindow.setTimeout(() => {
+  window.setTimeout(() => {
     debouncedProcessPDF();
   }, 1000);
 
   // 清理函数（如果需要的话）
   const cleanup = () => {
     if (debounceTimer) {
-      activeWindow.clearTimeout(debounceTimer);
+      window.clearTimeout(debounceTimer);
     }
     if (refreshTimer) {
-      activeWindow.clearTimeout(refreshTimer);
+      window.clearTimeout(refreshTimer);
     }
     clearRefreshBurstTimers();
     observer.disconnect();
@@ -274,7 +284,7 @@ function clearPDFHighlights(textLayer: HTMLElement): void {
 }
 
 function clearAllPDFHighlights(): void {
-  document.querySelectorAll('.pdf-container .hi-words-pdf-highlight, .mod-pdf .hi-words-pdf-highlight')
+  activeDocument.querySelectorAll('.pdf-container .hi-words-pdf-highlight, .mod-pdf .hi-words-pdf-highlight')
     .forEach(highlight => highlight.remove());
 }
 
@@ -284,7 +294,7 @@ function clearAllPDFHighlights(): void {
 function highlightPDFTextSpans(textLayer: HTMLElement, trie: Trie<WordDefinition>, highlightStyle: string): void {
   bindPDFOverlayHover(textLayer);
 
-  const overlayFragment = document.createDocumentFragment();
+  const overlayFragment = activeDocument.createDocumentFragment();
   let hasHighlights = false;
   const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
   
@@ -343,7 +353,7 @@ function createPDFHighlightOverlay(
   const textNode = Array.from(textSpan.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
   if (!textNode) return false;
 
-  const range = document.createRange();
+  const range = activeDocument.createRange();
   const textLength = textNode.textContent?.length || 0;
   range.setStart(textNode, Math.min(from, textLength));
   range.setEnd(textNode, Math.min(to, textLength));
@@ -358,7 +368,7 @@ function createPDFHighlightOverlay(
   rects.forEach(rect => {
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    const overlay = document.createElement('span');
+    const overlay = activeDocument.createElement('span');
     overlay.className = 'hi-words-highlight hi-words-pdf-highlight';
     overlay.setAttribute('data-word', data.word);
     if (data.definition) overlay.setAttribute('data-definition', data.definition);
@@ -442,7 +452,7 @@ function refreshVisiblePDFPages(
     const trie = buildTrieFromVocabulary(plugin.vocabularyManager);
     
     // 查找所有 PDF 文本层
-    const textLayers = document.querySelectorAll('.textLayer');
+    const textLayers = activeDocument.querySelectorAll('.textLayer');
     
     textLayers.forEach(textLayer => {
       const htmlTextLayer = textLayer as HTMLElement;

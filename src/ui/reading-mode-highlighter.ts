@@ -36,13 +36,15 @@ export function registerReadingModeHighlighter(plugin: {
   ].join(',');
 
   const processElement = (root: HTMLElement, trie: Trie<WordDefinition>) => {
-    const walker = document.createTreeWalker(
+    const walker = activeDocument.createTreeWalker(
       root,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: (node: Node) => {
           // 仅处理可见文本节点，跳过排除元素与已高亮区域
-          const parent = node.parentNode instanceof HTMLElement ? node.parentNode : null;
+          const parent = node.parentNode?.nodeType === Node.ELEMENT_NODE
+            ? node.parentNode as HTMLElement
+            : null;
           if (!parent) return NodeFilter.FILTER_REJECT;
           if (parent.closest(EXCLUDE_SELECTOR)) return NodeFilter.FILTER_REJECT;
           if (parent.closest('.hi-words-highlight')) return NodeFilter.FILTER_REJECT;
@@ -80,13 +82,13 @@ export function registerReadingModeHighlighter(plugin: {
       }
       if (filtered.length === 0) continue;
 
-      const frag = document.createDocumentFragment();
+      const frag = activeDocument.createDocumentFragment();
       let last = 0;
       for (const m of filtered) {
-        if (m.from > last) frag.appendChild(document.createTextNode(text.slice(last, m.from)));
+        if (m.from > last) frag.appendChild(activeDocument.createTextNode(text.slice(last, m.from)));
         const def = m.payload;
         const color = mapCanvasColorToCSSVar(def?.color, 'var(--color-base-60)');
-        const span = document.createElement('span');
+        const span = activeDocument.createElement('span');
         span.className = 'hi-words-highlight';
         span.setAttribute('data-word', m.word);
         if (def?.definition) span.setAttribute('data-definition', def.definition);
@@ -97,7 +99,7 @@ export function registerReadingModeHighlighter(plugin: {
         frag.appendChild(span);
         last = m.to;
       }
-      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      if (last < text.length) frag.appendChild(activeDocument.createTextNode(text.slice(last)));
 
       if (textNode.parentNode) textNode.parentNode.replaceChild(frag, textNode);
     }
@@ -149,7 +151,7 @@ function refreshVisibleReadingMode(
     const trie = buildTrieFromVocabulary(plugin.vocabularyManager);
     
     // 查找所有阅读模式的容器
-    const readingContainers = document.querySelectorAll('.markdown-preview-view .markdown-preview-sizer');
+    const readingContainers = activeDocument.querySelectorAll('.markdown-preview-view .markdown-preview-sizer');
     
     readingContainers.forEach(container => {
       const htmlContainer = container as HTMLElement;

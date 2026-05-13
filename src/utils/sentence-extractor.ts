@@ -209,7 +209,7 @@ function calculateTextPosition(
     selectedText: string
 ): number {
     // 使用 TreeWalker 遍历文本节点来计算精确位置
-    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+    const walker = activeDocument.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
     
     let currentOffset = 0;
     let node: Node | null;

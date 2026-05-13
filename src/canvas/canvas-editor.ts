@@ -3,6 +3,10 @@ import { CanvasData, CanvasNode, HiWordsSettings } from '../utils';
 import { CanvasParser } from './canvas-parser';
 import { normalizeLayout } from './layout';
 
+function formatError(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Canvas 文件编辑器
  * 用于处理 Canvas 文件的修改操作
@@ -145,7 +149,7 @@ export class CanvasEditor {
 
             return generatedNodeId;
         } catch (error) {
-            console.error(`添加词汇到 Canvas 失败: ${error}`);
+            console.error(`添加词汇到 Canvas 失败: ${formatError(error)}`);
             return null;
         }
     }
@@ -202,7 +206,7 @@ export class CanvasEditor {
 
             return updated;
         } catch (error) {
-            console.error(`更新 Canvas 中的词汇失败: ${error}`);
+            console.error(`更新 Canvas 中的词汇失败: ${formatError(error)}`);
             return false;
         }
     }
@@ -243,7 +247,7 @@ export class CanvasEditor {
 
             return removed;
         } catch (error) {
-            console.error(`从 Canvas 中删除词汇失败: ${error}`);
+            console.error(`从 Canvas 中删除词汇失败: ${formatError(error)}`);
             return false;
         }
     }
@@ -286,7 +290,7 @@ export class CanvasEditor {
 
             return updated;
         } catch (error) {
-            console.error(`设置节点颜色失败: ${error}`);
+            console.error(`设置节点颜色失败: ${formatError(error)}`);
             return false;
         }
     }

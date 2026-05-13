@@ -66,7 +66,7 @@ export function registerEvents(plugin: HiWordsPlugin) {
                     plugin.refreshHighlighter();
                 } else {
                     // 当切换文件时，可能需要更新高亮
-                    activeWindow.setTimeout(() => plugin.refreshHighlighter(), 100);
+                    window.setTimeout(() => plugin.refreshHighlighter(), 100);
                 }
             }
     };

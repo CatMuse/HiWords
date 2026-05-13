@@ -731,7 +731,7 @@ export class VocabularyManager {
         // 清除之前的定时器
         const existingTimeout = this.syncTimeouts.get(bookPath);
         if (existingTimeout) {
-            activeWindow.clearTimeout(existingTimeout);
+            window.clearTimeout(existingTimeout);
         }
         
         // 添加到待同步队列
@@ -743,7 +743,7 @@ export class VocabularyManager {
         pendingWords.push(wordDef);
         
         // 设置新的定时器（延迟1秒批量同步）
-        const timeout = activeWindow.setTimeout(() => {
+        const timeout = window.setTimeout(() => {
             void this.syncPendingWords(bookPath).catch(error => {
                 console.error('HiWords 同步待写入词汇失败:', error);
             });
@@ -878,7 +878,7 @@ export class VocabularyManager {
      */
     destroy(): void {
         // 清理所有定时器
-        this.syncTimeouts.forEach(timeout => activeWindow.clearTimeout(timeout));
+        this.syncTimeouts.forEach(timeout => window.clearTimeout(timeout));
         this.syncTimeouts.clear();
         
         // 清理缓存

@@ -157,7 +157,9 @@ export default class HiWordsPlugin extends Plugin {
         const libraryLeaves = this.app.workspace.getLeavesOfType(LIBRARY_VIEW_TYPE);
         libraryLeaves.forEach(leaf => {
             if (leaf.view instanceof HiWordsLibraryView) {
-                leaf.view.refresh();
+                void leaf.view.refresh().catch(error => {
+                    console.error('HiWords failed to refresh library view:', error);
+                });
             }
         });
     }

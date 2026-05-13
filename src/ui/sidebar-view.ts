@@ -119,7 +119,7 @@ export class HiWordsSidebarView extends ItemView {
 
     async focusWord(wordDef: WordDefinition, origin: 'document' | 'library' = 'document') {
         if (this.updateTimer !== null) {
-            activeWindow.clearTimeout(this.updateTimer);
+            window.clearTimeout(this.updateTimer);
             this.updateTimer = null;
         }
 
@@ -164,7 +164,7 @@ export class HiWordsSidebarView extends ItemView {
     }
 
     private scrollWordCardIntoView(wordKey: string) {
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             const cards = this.containerEl.querySelectorAll('.hi-words-word-card');
             for (const card of Array.from(cards)) {
                 if ((card as HTMLElement).getAttr('data-word-key') === wordKey) {
@@ -202,7 +202,7 @@ export class HiWordsSidebarView extends ItemView {
             this.firstLoadForFile = true;
         }
         await this.scanCurrentDocument();
-        this.renderWordList();
+        await this.renderWordList();
     }
 
     /**
@@ -216,10 +216,10 @@ export class HiWordsSidebarView extends ItemView {
         }
         
         if (this.updateTimer !== null) {
-            activeWindow.clearTimeout(this.updateTimer);
+            window.clearTimeout(this.updateTimer);
             this.updateTimer = null;
         }
-        this.updateTimer = activeWindow.setTimeout(() => {
+        this.updateTimer = window.setTimeout(() => {
             this.updateTimer = null;
             void this.updateView();
         }, Math.max(0, delay));
@@ -403,7 +403,9 @@ export class HiWordsSidebarView extends ItemView {
         if (this.activeTab === tab) return;
         
         this.activeTab = tab;
-        this.renderWordList(); // 重新渲染
+        void this.renderWordList().catch(error => {
+            console.error('HiWords 重新渲染侧边栏失败:', error);
+        });
     }
     
     /**
@@ -448,9 +450,11 @@ export class HiWordsSidebarView extends ItemView {
         });
 
         // 点击主词发音
-        wordTextEl.addEventListener('click', async (e) => {
+        wordTextEl.addEventListener('click', (e) => {
             e.stopPropagation();
-            await playWordTTS(this.plugin, wordDef.word, wordDef);
+            void playWordTTS(this.plugin, wordDef.word, wordDef).catch(error => {
+                console.error('HiWords 播放发音失败:', error);
+            });
         });
 
         wordTitle.createEl('div', {
@@ -531,7 +535,9 @@ export class HiWordsSidebarView extends ItemView {
             // 添加点击事件到来源信息：导航到源文件
             source.addEventListener('click', (e) => {
                 e.stopPropagation(); // 阻止事件冒泡
-                this.navigateToSource(wordDef);
+                void this.navigateToSource(wordDef).catch(error => {
+                    console.error('HiWords 导航到来源失败:', error);
+                });
             });
         }
         
@@ -575,7 +581,7 @@ export class HiWordsSidebarView extends ItemView {
                 this
             );
 
-            requestAnimationFrame(() => this.bindInternalLinksAndTags(container, sourcePath, container));
+            window.requestAnimationFrame(() => this.bindInternalLinksAndTags(container, sourcePath, container));
         } catch (error) {
             console.error('Markdown 渲染失败:', error);
             container.textContent = content;
@@ -610,11 +616,13 @@ export class HiWordsSidebarView extends ItemView {
         root.addEventListener(
             'mousedown',
             (e) => {
-                const target = e.target as HTMLElement | null;
+                const target = e.target instanceof Node && e.target.nodeType === Node.ELEMENT_NODE
+                    ? e.target as HTMLElement
+                    : null;
                 if (!target) return;
 
                 // Tab 切换
-                const tabEl = target.closest('.hi-words-tab') as HTMLElement | null;
+                const tabEl = target.closest<HTMLElement>('.hi-words-tab');
                 if (tabEl && root.contains(tabEl)) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -623,20 +631,20 @@ export class HiWordsSidebarView extends ItemView {
                     return;
                 }
 
-                const cardTabEl = target.closest('.hi-words-card-tab') as HTMLElement | null;
+                const cardTabEl = target.closest<HTMLElement>('.hi-words-card-tab');
                 if (cardTabEl && root.contains(cardTabEl)) {
                     e.preventDefault();
                     e.stopPropagation();
 
                     this.lastInteractionTime = Date.now();
                     if (this.updateTimer !== null) {
-                        activeWindow.clearTimeout(this.updateTimer);
+                        window.clearTimeout(this.updateTimer);
                         this.updateTimer = null;
                     }
 
                     const sectionIndex = parseInt(cardTabEl.getAttr('data-section-index') || '0', 10);
-                    const card = cardTabEl.closest('.hi-words-word-card') as HTMLElement | null;
-                    const wordText = card?.querySelector('.hi-words-word-text') as HTMLElement | null;
+                    const card = cardTabEl.closest<HTMLElement>('.hi-words-word-card');
+                    const wordText = card?.querySelector<HTMLElement>('.hi-words-word-text');
                     const word = wordText?.textContent?.trim();
                     if (!card || !word) return;
 
@@ -647,7 +655,7 @@ export class HiWordsSidebarView extends ItemView {
                     card.querySelectorAll('.hi-words-card-tab').forEach(tab => tab.removeClass('active'));
                     cardTabEl.addClass('active');
 
-                    const defContainer = card.querySelector('.hi-words-definition') as HTMLElement | null;
+                    const defContainer = card.querySelector<HTMLElement>('.hi-words-definition');
                     if (defContainer) {
                         void this.renderSectionContent(defContainer, wordDef.sections[sectionIndex].content);
                     }
@@ -655,7 +663,7 @@ export class HiWordsSidebarView extends ItemView {
                 }
 
                 // 展开/收起词卡
-                const toggleEl = target.closest('.hi-words-card-toggle-spacer') as HTMLElement | null;
+                const toggleEl = target.closest<HTMLElement>('.hi-words-card-toggle-spacer');
                 if (toggleEl && root.contains(toggleEl)) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -663,11 +671,11 @@ export class HiWordsSidebarView extends ItemView {
                     // 记录交互时间并取消所有待执行的更新
                     this.lastInteractionTime = Date.now();
                     if (this.updateTimer !== null) {
-                        activeWindow.clearTimeout(this.updateTimer);
+                        window.clearTimeout(this.updateTimer);
                         this.updateTimer = null;
                     }
 
-                    const card = toggleEl.closest('.hi-words-word-card') as HTMLElement | null;
+                    const card = toggleEl.closest<HTMLElement>('.hi-words-word-card');
                     const wordKey = toggleEl.getAttr('data-word-key') || card?.getAttr('data-word-key');
                     if (wordKey) {
                         const currentState = this.expandedWordStates.get(wordKey);
@@ -679,13 +687,13 @@ export class HiWordsSidebarView extends ItemView {
                 }
 
                 // 已掌握/取消按钮
-                const masteredBtn = target.closest('.hi-words-title-mastered-button') as HTMLElement | null;
+                const masteredBtn = target.closest<HTMLElement>('.hi-words-title-mastered-button');
                 if (masteredBtn && root.contains(masteredBtn)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    const card = masteredBtn.closest('.hi-words-word-card') as HTMLElement | null;
+                    const card = masteredBtn.closest<HTMLElement>('.hi-words-word-card');
                     const isMastered = !!card?.hasClass('hi-words-word-card-mastered');
-                    const wordText = card?.querySelector('.hi-words-word-text') as HTMLElement | null;
+                    const wordText = card?.querySelector<HTMLElement>('.hi-words-word-text');
                     const word = wordText?.textContent?.trim();
                     if (word && this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
                         const detail = this.currentWords.find((w) => w.word === word);
@@ -700,7 +708,7 @@ export class HiWordsSidebarView extends ItemView {
                                     } else {
                                         await masteredService.markWordAsMastered(detail.source, detail.nodeId, detail.word);
                                     }
-                                    activeWindow.setTimeout(() => {
+                                    window.setTimeout(() => {
                                         void this.updateView();
                                     }, 100);
                                 } catch (err) {
@@ -713,16 +721,20 @@ export class HiWordsSidebarView extends ItemView {
                 }
 
                 // 来源跳转
-                const sourceEl = target.closest('.hi-words-word-source') as HTMLElement | null;
+                const sourceEl = target.closest<HTMLElement>('.hi-words-word-source');
                 if (sourceEl && root.contains(sourceEl)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    const card = sourceEl.closest('.hi-words-word-card') as HTMLElement | null;
-                    const wordText = card?.querySelector('.hi-words-word-text') as HTMLElement | null;
+                    const card = sourceEl.closest<HTMLElement>('.hi-words-word-card');
+                    const wordText = card?.querySelector<HTMLElement>('.hi-words-word-text');
                     const word = wordText?.textContent?.trim();
                     if (word) {
                         const detail = this.currentWords.find((w) => w.word === word);
-                        if (detail) this.navigateToSource(detail);
+                        if (detail) {
+                            void this.navigateToSource(detail).catch(error => {
+                                console.error('HiWords 导航到来源失败:', error);
+                            });
+                        }
                     }
                     return;
                 }
@@ -753,10 +765,10 @@ export class HiWordsSidebarView extends ItemView {
     private async extractPDFText(): Promise<string> {
         try {
             // 等待 PDF 视图加载并获取文本层内容
-            await new Promise(resolve => activeWindow.setTimeout(resolve, 500));
+            await new Promise(resolve => window.setTimeout(resolve, 500));
             
             // 查找所有 PDF 文本层
-            const textLayers = document.querySelectorAll('.textLayer');
+            const textLayers = activeDocument.querySelectorAll('.textLayer');
             let extractedText = '';
             
             textLayers.forEach((textLayer: Element) => {
@@ -777,7 +789,7 @@ export class HiWordsSidebarView extends ItemView {
             
             // 如果没有找到文本层，尝试从 PDF 视图中提取
             if (!extractedText.trim()) {
-                const pdfViews = document.querySelectorAll('.pdf-container, .mod-pdf');
+                const pdfViews = activeDocument.querySelectorAll('.pdf-container, .mod-pdf');
                 pdfViews.forEach((pdfView: Element) => {
                     const allText = pdfView.textContent || '';
                     if (allText.trim()) {
@@ -886,7 +898,7 @@ export class HiWordsSidebarView extends ItemView {
                     // 如果是 Markdown 文件，打开并尝试定位到单词
                     await this.app.workspace.openLinkText(file.path, '');
                     // 等待一个短暂时间让文件加载
-                    activeWindow.setTimeout(() => {
+                    window.setTimeout(() => {
                         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (activeView && activeView.file?.path === file.path) {
                             // 尝试在文件中查找单词

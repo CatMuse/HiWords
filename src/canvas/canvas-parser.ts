@@ -2,6 +2,10 @@ import { App, TFile } from 'obsidian';
 import { CanvasData, CanvasNode, WordDefinition, WordSection, HiWordsSettings } from '../utils';
 import { parsePhrase } from '../utils/pattern-matcher';
 
+function formatError(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
 export class CanvasParser {
     private app: App;
     private settings?: HiWordsSettings;
@@ -262,7 +266,7 @@ export class CanvasParser {
             
             return result;
         } catch (error) {
-            console.error(`解析节点文本时出错: ${error}`);
+            console.error(`解析节点文本时出错: ${formatError(error)}`);
             return null;
         }
     }

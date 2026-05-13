@@ -529,7 +529,7 @@ function renderRelationGraph(section: HTMLElement, card: WordCard, relations: Wo
     const graphRelations = relations.slice(0, 8);
     const extraRelations = relations.slice(8);
     const graph = section.createDiv({ cls: 'hi-words-structured-relation-graph' });
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const svg = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'hi-words-structured-relation-svg');
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('preserveAspectRatio', 'none');
@@ -544,7 +544,7 @@ function renderRelationGraph(section: HTMLElement, card: WordCard, relations: Wo
 
     graphRelations.forEach((relation, index) => {
         const point = getRelationGraphPoint(index, graphRelations.length);
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        const line = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', String(center.x));
         line.setAttribute('y1', String(center.y));
         line.setAttribute('x2', String(point.x));
@@ -552,7 +552,7 @@ function renderRelationGraph(section: HTMLElement, card: WordCard, relations: Wo
         line.setAttribute('class', `hi-words-structured-relation-edge is-${sanitizeClassName(relation.type || 'related')}`);
         svg.appendChild(line);
 
-        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        const label = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('x', String((center.x + point.x) / 2));
         label.setAttribute('y', String((center.y + point.y) / 2));
         label.setAttribute('class', 'hi-words-structured-relation-edge-label');

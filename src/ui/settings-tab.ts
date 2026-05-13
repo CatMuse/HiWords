@@ -17,6 +17,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
+    private runAsync(action: () => Promise<void>, context: string): void {
+        void action().catch(error => {
+            console.error(context, error);
+        });
+    }
+
     /**
      * 添加高亮范围设置（作为高亮设置的子部分）
      */
@@ -32,10 +38,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('exclude', t('settings.mode_exclude'))
                 .addOption('include', t('settings.mode_include'))
                 .setValue(this.plugin.settings.highlightMode || 'all')
-                .onChange(async (value) => {
-                    this.plugin.settings.highlightMode = value as 'all' | 'exclude' | 'include';
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHighlighter();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.highlightMode = value as 'all' | 'exclude' | 'include';
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHighlighter();
+                    }, 'HiWords 保存高亮模式失败:');
                 }));
 
         // 文件路径输入框（上下结构）
@@ -54,10 +62,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
         textArea.rows = 3;
 
         // 使用 change 事件而不是 input 事件，避免频繁保存
-        textArea.addEventListener('blur', async () => {
-            this.plugin.settings.highlightPaths = textArea.value;
-            await this.plugin.saveSettings();
-            this.plugin.refreshHighlighter();
+        textArea.addEventListener('blur', () => {
+            void (async () => {
+                this.plugin.settings.highlightPaths = textArea.value;
+                await this.plugin.saveSettings();
+                this.plugin.refreshHighlighter();
+            })().catch(error => {
+                console.error('HiWords 保存高亮路径失败:', error);
+            });
         });
     }
 
@@ -75,11 +87,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('filename', t('settings.mode_filename'))
                 .addOption('content', t('settings.mode_content'))
                 .setValue(this.plugin.settings.fileNodeParseMode || 'filename-with-alias')
-                .onChange(async (value) => {
-                    this.plugin.settings.fileNodeParseMode = value as 'filename' | 'content' | 'filename-with-alias';
-                    await this.plugin.saveSettings();
-                    // 提示用户重新加载插件以应用新的解析模式
-                    new Notice('请重新加载插件以应用新的文件节点解析模式');
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.fileNodeParseMode = value as 'filename' | 'content' | 'filename-with-alias';
+                        await this.plugin.saveSettings();
+                        // 提示用户重新加载插件以应用新的解析模式
+                        new Notice('请重新加载插件以应用新的文件节点解析模式');
+                    }, 'HiWords 保存文件节点解析模式失败:');
                 }));
     }
 
@@ -99,9 +113,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.enable_auto_layout_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoLayoutEnabled ?? true)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoLayoutEnabled = value;
-                    await this.plugin.saveSettings();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.autoLayoutEnabled = value;
+                        await this.plugin.saveSettings();
+                    }, 'HiWords 保存自动布局设置失败:');
                 }));
 
         // 卡片尺寸设置（宽度和高度在同一行）
@@ -111,22 +127,26 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('260')
                 .setValue(String(this.plugin.settings.cardWidth ?? 260))
-                .onChange(async (value) => {
-                    const width = parseInt(value);
-                    if (!isNaN(width) && width > 0) {
-                        this.plugin.settings.cardWidth = width;
-                        await this.plugin.saveSettings();
-                    }
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        const width = parseInt(value);
+                        if (!isNaN(width) && width > 0) {
+                            this.plugin.settings.cardWidth = width;
+                            await this.plugin.saveSettings();
+                        }
+                    }, 'HiWords 保存卡片宽度失败:');
                 }))
             .addText(text => text
                 .setPlaceholder('120')
                 .setValue(String(this.plugin.settings.cardHeight ?? 120))
-                .onChange(async (value) => {
-                    const height = parseInt(value);
-                    if (!isNaN(height) && height > 0) {
-                        this.plugin.settings.cardHeight = height;
-                        await this.plugin.saveSettings();
-                    }
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        const height = parseInt(value);
+                        if (!isNaN(height) && height > 0) {
+                            this.plugin.settings.cardHeight = height;
+                            await this.plugin.saveSettings();
+                        }
+                    }, 'HiWords 保存卡片高度失败:');
                 }));
     }
 
@@ -167,11 +187,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.enable_auto_highlight_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableAutoHighlight)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableAutoHighlight = value;
-                    await this.plugin.saveSettings();
-                    // 刷新高亮器,立即应用设置
-                    this.plugin.refreshHighlighter();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.enableAutoHighlight = value;
+                        await this.plugin.saveSettings();
+                        // 刷新高亮器,立即应用设置
+                        this.plugin.refreshHighlighter();
+                    }, 'HiWords 保存自动高亮设置失败:');
                 }));
 
         // 浮动显示定义
@@ -180,9 +202,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.show_definition_on_hover_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.showDefinitionOnHover)
-                .onChange(async (value) => {
-                    this.plugin.settings.showDefinitionOnHover = value;
-                    await this.plugin.saveSettings();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.showDefinitionOnHover = value;
+                        await this.plugin.saveSettings();
+                    }, 'HiWords 保存悬停预览设置失败:');
                 }));
 
         new Setting(containerEl)
@@ -190,10 +214,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.enable_section_tabs_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableSectionTabs ?? true)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableSectionTabs = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.enableSectionTabs = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                    }, 'HiWords 保存分区标签设置失败:');
                 }));
 
         new Setting(containerEl)
@@ -203,10 +229,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('detail', t('settings.sidebar_display_detail') || 'Show full details')
                 .addOption('word', t('settings.sidebar_display_word') || 'Show words only')
                 .setValue(this.plugin.settings.sidebarDefaultDisplayMode || 'detail')
-                .onChange(async (value) => {
-                    this.plugin.settings.sidebarDefaultDisplayMode = value as 'detail' | 'word';
-                    await this.plugin.saveSettings();
-                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.sidebarDefaultDisplayMode = value as 'detail' | 'word';
+                        await this.plugin.saveSettings();
+                        this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                    }, 'HiWords 保存侧边栏默认显示设置失败:');
                 }));
 
         // 高亮样式选择
@@ -220,10 +248,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('dotted', t('settings.style_dotted'))
                 .addOption('wavy', t('settings.style_wavy'))
                 .setValue(this.plugin.settings.highlightStyle)
-                .onChange(async (value) => {
-                    this.plugin.settings.highlightStyle = value as HighlightStyle;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHighlighter();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.highlightStyle = value as HighlightStyle;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHighlighter();
+                    }, 'HiWords 保存高亮样式失败:');
                 }));
 
         // 高亮范围设置
@@ -312,8 +342,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         textArea.value = value;
         textArea.placeholder = placeholder;
 
-        textArea.addEventListener('blur', async () => {
-            await onBlur(textArea.value);
+        textArea.addEventListener('blur', () => {
+            void onBlur(textArea.value).catch(error => {
+                console.error('HiWords 保存文本设置失败:', error);
+            });
         });
 
         if (onReset) {
@@ -321,9 +353,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 text: t('settings.restore_default_prompt') || 'Restore default'
             });
             resetButton.addClass('hi-words-reset-prompt-button');
-            resetButton.addEventListener('click', async () => {
-                await onReset();
-                this.display();
+            resetButton.addEventListener('click', () => {
+                void (async () => {
+                    await onReset();
+                    this.display();
+                })().catch(error => {
+                    console.error('HiWords 重置文本设置失败:', error);
+                });
             });
         }
     }
@@ -363,17 +399,19 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('gemini', t('settings.ai_provider_gemini') || 'Google Gemini')
                 .addOption('custom', t('settings.ai_provider_custom') || 'Custom')
                 .setValue(this.plugin.settings.aiService.provider)
-                .onChange(async (value) => {
-                    const provider = value as AIProvider;
-                    this.plugin.settings.aiService.provider = provider;
-                    const defaults = this.getProviderDefaults(provider);
-                    if (defaults.apiUrl) this.plugin.settings.aiService.apiUrl = defaults.apiUrl;
-                    if (defaults.model) this.plugin.settings.aiService.model = defaults.model;
-                    await this.plugin.saveSettings();
-                    apiUrlText?.setPlaceholder(defaults.apiUrl || 'https://...');
-                    modelText?.setPlaceholder(defaults.model || 'model-id');
-                    if (defaults.apiUrl) apiUrlText?.setValue(defaults.apiUrl);
-                    if (defaults.model) modelText?.setValue(defaults.model);
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        const provider = value as AIProvider;
+                        this.plugin.settings.aiService.provider = provider;
+                        const defaults = this.getProviderDefaults(provider);
+                        if (defaults.apiUrl) this.plugin.settings.aiService.apiUrl = defaults.apiUrl;
+                        if (defaults.model) this.plugin.settings.aiService.model = defaults.model;
+                        await this.plugin.saveSettings();
+                        apiUrlText?.setPlaceholder(defaults.apiUrl || 'https://...');
+                        modelText?.setPlaceholder(defaults.model || 'model-id');
+                        if (defaults.apiUrl) apiUrlText?.setValue(defaults.apiUrl);
+                        if (defaults.model) modelText?.setValue(defaults.model);
+                    }, 'HiWords 保存 AI 服务商失败:');
                 }));
 
         new Setting(containerEl)
@@ -383,9 +421,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 apiUrlText = text;
                 text.setPlaceholder(this.getProviderDefaults(this.plugin.settings.aiService.provider).apiUrl || 'https://...')
                     .setValue(this.plugin.settings.aiService.apiUrl)
-                    .onChange(async (val) => {
-                        this.plugin.settings.aiService.apiUrl = val.trim();
-                        await this.plugin.saveSettings();
+                    .onChange((val) => {
+                        this.runAsync(async () => {
+                            this.plugin.settings.aiService.apiUrl = val.trim();
+                            await this.plugin.saveSettings();
+                        }, 'HiWords 保存 AI API URL 失败:');
                     });
             });
 
@@ -396,9 +436,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 text.inputEl.type = 'password';
                 text.setPlaceholder('sk-...')
                     .setValue(this.plugin.settings.aiService.apiKey)
-                    .onChange(async (val) => {
-                        this.plugin.settings.aiService.apiKey = val.trim();
-                        await this.plugin.saveSettings();
+                    .onChange((val) => {
+                        this.runAsync(async () => {
+                            this.plugin.settings.aiService.apiKey = val.trim();
+                            await this.plugin.saveSettings();
+                        }, 'HiWords 保存 AI API Key 失败:');
                     });
             });
 
@@ -409,9 +451,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 modelText = text;
                 text.setPlaceholder(this.getProviderDefaults(this.plugin.settings.aiService.provider).model || 'model-id')
                     .setValue(this.plugin.settings.aiService.model)
-                    .onChange(async (val) => {
-                        this.plugin.settings.aiService.model = val.trim();
-                        await this.plugin.saveSettings();
+                    .onChange((val) => {
+                        this.runAsync(async () => {
+                            this.plugin.settings.aiService.model = val.trim();
+                            await this.plugin.saveSettings();
+                        }, 'HiWords 保存 AI 模型失败:');
                     });
             });
 
@@ -421,8 +465,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .addButton(button => button
                 .setButtonText(t('settings.ai_test_connection') || 'Test AI connection')
                 .setCta()
-                .onClick(async () => {
-                    await this.testAIConnection();
+                .onClick(() => {
+                    this.runAsync(async () => {
+                        await this.testAIConnection();
+                    }, 'HiWords 测试 AI 连接失败:');
                 }));
 
         this.addAIExtraParamsSetting();
@@ -440,10 +486,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.enable_ai_definition_desc') || 'Show the auto-fill button when adding or editing words')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.aiDefinition.enabled)
-                .onChange(async (value) => {
-                    this.plugin.settings.aiDefinition.enabled = value;
-                    await this.plugin.saveSettings();
-                    this.display();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.aiDefinition.enabled = value;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }, 'HiWords 保存 AI 释义设置失败:');
                 }));
 
         if (!this.plugin.settings.aiDefinition.enabled) return;
@@ -477,10 +525,12 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.enable_selection_translate_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.selectionTranslate.enabled)
-                .onChange(async (value) => {
-                    this.plugin.settings.selectionTranslate.enabled = value;
-                    await this.plugin.saveSettings();
-                    this.display();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.selectionTranslate.enabled = value;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }, 'HiWords 保存划词翻译设置失败:');
                 }));
 
         if (!this.plugin.settings.selectionTranslate.enabled) return;
@@ -491,9 +541,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('zh-CN')
                 .setValue(this.plugin.settings.selectionTranslate.targetLang)
-                .onChange(async (value) => {
-                    this.plugin.settings.selectionTranslate.targetLang = value.trim();
-                    await this.plugin.saveSettings();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.selectionTranslate.targetLang = value.trim();
+                        await this.plugin.saveSettings();
+                    }, 'HiWords 保存翻译目标语言失败:');
                 }));
 
         this.addPromptTextArea(
@@ -530,19 +582,21 @@ export class HiWordsSettingTab extends PluginSettingTab {
         jsonTextArea.value = this.plugin.settings.aiService.extraParams || '{}';
         jsonTextArea.rows = 5;
 
-        jsonTextArea.addEventListener('blur', async () => {
-            const jsonValue = jsonTextArea.value.trim();
-            try {
-                if (jsonValue && jsonValue !== '{}') {
-                    JSON.parse(jsonValue);
+        jsonTextArea.addEventListener('blur', () => {
+            void (async () => {
+                const jsonValue = jsonTextArea.value.trim();
+                try {
+                    if (jsonValue && jsonValue !== '{}') {
+                        JSON.parse(jsonValue);
+                    }
+                    this.plugin.settings.aiService.extraParams = jsonValue || '{}';
+                    await this.plugin.saveSettings();
+                    jsonTextArea.removeClass('hi-words-json-error');
+                } catch {
+                    jsonTextArea.addClass('hi-words-json-error');
+                    new Notice(t('ai_errors.invalid_json_format') || 'Invalid JSON format, please check syntax');
                 }
-                this.plugin.settings.aiService.extraParams = jsonValue || '{}';
-                await this.plugin.saveSettings();
-                jsonTextArea.removeClass('hi-words-json-error');
-            } catch (error) {
-                jsonTextArea.addClass('hi-words-json-error');
-                new Notice(t('ai_errors.invalid_json_format') || 'Invalid JSON format, please check syntax');
-            }
+            })();
         });
     }
 
@@ -562,15 +616,17 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.enable_mastered_feature_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableMasteredFeature)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableMasteredFeature = value;
-                    // 当启用已掌握功能时，自动启用侧边栏分组显示
-                    this.plugin.settings.showMasteredInSidebar = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHighlighter();
-                    // 触发侧边栏更新
-                    this.plugin.app.workspace.trigger('hi-words:mastered-changed');
-                    this.display();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.enableMasteredFeature = value;
+                        // 当启用已掌握功能时，自动启用侧边栏分组显示
+                        this.plugin.settings.showMasteredInSidebar = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHighlighter();
+                        // 触发侧边栏更新
+                        this.plugin.app.workspace.trigger('hi-words:mastered-changed');
+                        this.display();
+                    }, 'HiWords 保存已掌握功能设置失败:');
                 }));
 
         // 已掌握判定模式（分组/颜色）
@@ -581,20 +637,22 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .addOption('group', t('settings.mode_group') || 'Group mode')
             .addOption('color', t('settings.mode_color') || 'Color mode (green = 4)')
             .setValue(this.plugin.settings.masteredDetection ?? 'group')
-            .onChange(async (value) => {
-                // 保存并同步到各子模块
-                this.plugin.settings.masteredDetection = value as 'group' | 'color';
-                await this.plugin.saveSettings();
-                // 同步给 VocabularyManager/Parser/Editor
-                if (this.plugin.vocabularyManager?.updateSettings) {
-                    this.plugin.vocabularyManager.updateSettings(this.plugin.settings);
-                }
-                // updateSettings 已经处理了缓存失效，不需要手动重新加载
-                // 只有当 masteredDetection 变化时才需要重新解析数据
-                await this.plugin.vocabularyManager.loadAllVocabularyBooks();
-                this.plugin.refreshHighlighter();
-                // 通知工作区应用
-                this.plugin.app.workspace.trigger('hi-words:settings-changed');
+            .onChange((value) => {
+                this.runAsync(async () => {
+                    // 保存并同步到各子模块
+                    this.plugin.settings.masteredDetection = value as 'group' | 'color';
+                    await this.plugin.saveSettings();
+                    // 同步给 VocabularyManager/Parser/Editor
+                    if (this.plugin.vocabularyManager?.updateSettings) {
+                        this.plugin.vocabularyManager.updateSettings(this.plugin.settings);
+                    }
+                    // updateSettings 已经处理了缓存失效，不需要手动重新加载
+                    // 只有当 masteredDetection 变化时才需要重新解析数据
+                    await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                    this.plugin.refreshHighlighter();
+                    // 通知工作区应用
+                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                }, 'HiWords 保存已掌握判定模式失败:');
             }));
         // 当功能未启用时禁用选择
         if (!this.plugin.settings.enableMasteredFeature) {
@@ -607,11 +665,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setDesc(t('settings.blur_definitions_desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.blurDefinitions)
-                .onChange(async (value) => {
-                    this.plugin.settings.blurDefinitions = value;
-                    await this.plugin.saveSettings();
-                    // 触发侧边栏更新以应用模糊效果
-                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.blurDefinitions = value;
+                        await this.plugin.saveSettings();
+                        // 触发侧边栏更新以应用模糊效果
+                        this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                    }, 'HiWords 保存模糊释义设置失败:');
                 }));
 
         // 发音地址模板（点击主词发音）
@@ -621,9 +681,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('https://...{{word}}...')
                 .setValue(this.plugin.settings.ttsTemplate || 'https://dict.youdao.com/dictvoice?audio={{word}}&type=2')
-                .onChange(async (val) => {
-                    this.plugin.settings.ttsTemplate = val.trim();
-                    await this.plugin.saveSettings();
+                .onChange((val) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.ttsTemplate = val.trim();
+                        await this.plugin.saveSettings();
+                    }, 'HiWords 保存发音模板失败:');
                 }));
 
         new Setting(containerEl)
@@ -633,12 +695,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 .addOption('us', t('settings.pronunciation_us') || 'US')
                 .addOption('uk', t('settings.pronunciation_uk') || 'UK')
                 .setValue(this.plugin.settings.pronunciationVariant || 'us')
-                .onChange(async (value) => {
-                    this.plugin.settings.pronunciationVariant = value as 'us' | 'uk';
-                    await this.plugin.saveSettings();
-                    this.plugin.app.workspace.trigger('hi-words:settings-changed');
-                    this.plugin.refreshHighlighter();
-                    this.display();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.pronunciationVariant = value as 'us' | 'uk';
+                        await this.plugin.saveSettings();
+                        this.plugin.app.workspace.trigger('hi-words:settings-changed');
+                        this.plugin.refreshHighlighter();
+                        this.display();
+                    }, 'HiWords 保存发音偏好失败:');
                 }));
 
     }
@@ -651,7 +715,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         // 添加生词本图标按钮
         const addBookContainer = containerEl.createDiv({ cls: 'hi-words-add-book-container' });
-        addBookContainer.addEventListener('click', () => this.showVocabularyBookFilePicker());
+        addBookContainer.addEventListener('click', () => {
+            void this.showVocabularyBookFilePicker().catch(error => {
+                console.error('HiWords 打开词库选择器失败:', error);
+            });
+        });
 
         addBookContainer.createSpan({
             text: t('settings.add_vocabulary_book'),
@@ -682,8 +750,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         }
 
         // 创建选择模态框
-        const modal = new VocabularyBookPickerModal(this.app, vocabularyFiles, async (file) => {
-            await this.addVocabularyBook(file);
+        const modal = new VocabularyBookPickerModal(this.app, vocabularyFiles, (file) => {
+            void this.addVocabularyBook(file).catch(error => {
+                console.error('HiWords 添加词库失败:', error);
+            });
         });
         modal.open();
     }
@@ -763,37 +833,47 @@ export class HiWordsSettingTab extends PluginSettingTab {
             const reloadIcon = iconsContainer.createDiv({ cls: 'clickable-icon' });
             setIcon(reloadIcon, 'refresh-cw');
             reloadIcon.setAttribute('aria-label', t('settings.reload_book'));
-            reloadIcon.addEventListener('click', async () => {
-                await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
-                this.plugin.refreshHighlighter();
-                new Notice(t('notices.book_reloaded').replace('{0}', book.name));
+            reloadIcon.addEventListener('click', () => {
+                void (async () => {
+                    await this.plugin.vocabularyManager.reloadVocabularyBook(book.path);
+                    this.plugin.refreshHighlighter();
+                    new Notice(t('notices.book_reloaded').replace('{0}', book.name));
+                })().catch(error => {
+                    console.error('HiWords 重新加载词库失败:', error);
+                });
             });
 
             // 删除图标
             const deleteIcon = iconsContainer.createDiv({ cls: 'clickable-icon mod-warning' });
             setIcon(deleteIcon, 'trash');
             deleteIcon.setAttribute('aria-label', t('settings.remove_vocabulary_book'));
-            deleteIcon.addEventListener('click', async () => {
-                this.plugin.settings.vocabularyBooks.splice(index, 1);
-                await this.plugin.saveSettings();
-                await this.plugin.vocabularyManager.loadAllVocabularyBooks();
-                this.plugin.refreshHighlighter();
-                new Notice(t('notices.book_removed').replace('{0}', book.name));
-                this.display(); // 刷新设置页面
+            deleteIcon.addEventListener('click', () => {
+                void (async () => {
+                    this.plugin.settings.vocabularyBooks.splice(index, 1);
+                    await this.plugin.saveSettings();
+                    await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                    this.plugin.refreshHighlighter();
+                    new Notice(t('notices.book_removed').replace('{0}', book.name));
+                    this.display(); // 刷新设置页面
+                })().catch(error => {
+                    console.error('HiWords 删除词库失败:', error);
+                });
             });
 
             // 启用/禁用开关
             setting.addToggle(toggle => toggle
                 .setValue(book.enabled)
-                .onChange(async (value) => {
-                    book.enabled = value;
-                    await this.plugin.saveSettings();
-                    if (value) {
-                        await this.plugin.vocabularyManager.loadVocabularyBook(book);
-                    } else {
-                        await this.plugin.vocabularyManager.loadAllVocabularyBooks();
-                    }
-                    this.plugin.refreshHighlighter();
+                .onChange((value) => {
+                    this.runAsync(async () => {
+                        book.enabled = value;
+                        await this.plugin.saveSettings();
+                        if (value) {
+                            await this.plugin.vocabularyManager.loadVocabularyBook(book);
+                        } else {
+                            await this.plugin.vocabularyManager.loadAllVocabularyBooks();
+                        }
+                        this.plugin.refreshHighlighter();
+                    }, 'HiWords 保存词库启用状态失败:');
                 }));
         });
     }
@@ -832,14 +912,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
         };
 
         const openPalette = (event: MouseEvent | KeyboardEvent) => {
-            document.querySelectorAll('.hi-words-book-color-palette').forEach(el => el.remove());
+            activeDocument.querySelectorAll('.hi-words-book-color-palette').forEach(el => el.remove());
 
-            const palette = document.body.createDiv({ cls: 'hi-words-book-color-palette' });
+            const palette = activeDocument.body.createDiv({ cls: 'hi-words-book-color-palette' });
 
             const closePalette = () => {
                 palette.remove();
-                document.removeEventListener('click', handleOutsideClick, true);
-                document.removeEventListener('keydown', handleEscape, true);
+                activeDocument.removeEventListener('click', handleOutsideClick, true);
+                activeDocument.removeEventListener('keydown', handleEscape, true);
             };
             const handleOutsideClick = (outsideEvent: MouseEvent) => {
                 const target = outsideEvent.target as Node | null;
@@ -879,8 +959,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
             palette.style.left = `${Math.min(rect.left, window.innerWidth - 260)}px`;
             palette.style.top = `${rect.bottom + 6}px`;
 
-            document.addEventListener('click', handleOutsideClick, true);
-            document.addEventListener('keydown', handleEscape, true);
+            activeDocument.addEventListener('click', handleOutsideClick, true);
+            activeDocument.addEventListener('keydown', handleEscape, true);
         };
 
         colorControl.addEventListener('click', (event) => {

@@ -343,7 +343,7 @@ export class DictionaryService {
                 if (attempt < this.MAX_RETRIES - 1) {
                     // 指数退避: 1s, 2s, 4s
                     const delay = 1000 * Math.pow(2, attempt);
-                    await new Promise(resolve => activeWindow.setTimeout(resolve, delay));
+                    await new Promise(resolve => window.setTimeout(resolve, delay));
                 }
             }
         }

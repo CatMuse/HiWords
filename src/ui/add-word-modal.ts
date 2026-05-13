@@ -76,7 +76,7 @@ export class AddWordModal extends Modal {
             
             // 如果没有预填充单词，自动聚焦到单词输入框
             if (!this.word) {
-                activeWindow.setTimeout(() => wordInput?.focus(), 50);
+                window.setTimeout(() => wordInput?.focus(), 50);
             }
         }
         
@@ -178,47 +178,49 @@ export class AddWordModal extends Modal {
             setIcon(iconContainer, 'sparkles');
             autoFillBtn.setAttribute('aria-label', t('modals.auto_fill_definition'));
             
-            autoFillBtn.addEventListener('click', async () => {
-                // 获取要查询的单词
-                const queryWord = this.isEditMode ? this.word : (wordInput?.value.trim() || '');
-                
-                if (!queryWord) {
-                    new Notice(t('notices.enter_word_first'));
-                    return;
-                }
+            autoFillBtn.addEventListener('click', () => {
+                void (async () => {
+                    // 获取要查询的单词
+                    const queryWord = this.isEditMode ? this.word : (wordInput?.value.trim() || '');
+                    
+                    if (!queryWord) {
+                        new Notice(t('notices.enter_word_first'));
+                        return;
+                    }
 
-                // 检查 AI 配置是否完整
-                if (!this.plugin.settings.aiService?.apiUrl || 
-                    !this.plugin.settings.aiService?.apiKey || 
-                    !this.plugin.settings.aiService?.model) {
-                    new Notice(t('ai_errors.api_key_not_configured'));
-                    return;
-                }
-                
-                // 显示加载状态
-                autoFillBtn.addClass('hiwords-loading');
-                iconContainer.empty();
-                setIcon(iconContainer, 'loader');
-                
-                try {
-                    // 重新创建服务以确保使用最新配置
-                    const dictionaryService = new DictionaryService({
-                        service: this.plugin.settings.aiService,
-                        prompt: this.plugin.settings.aiDefinition.prompt
-                    });
-                    const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
-                    definitionInput.value = definition;
-                    new Notice(t('notices.definition_fetched'));
-                } catch (error) {
-                    console.error('Failed to fetch definition:', error);
-                    const errorMessage = error instanceof Error ? error.message : t('notices.definition_fetch_failed');
-                    new Notice(errorMessage);
-                } finally {
-                    // 恢复按钮状态
-                    autoFillBtn.removeClass('hiwords-loading');
+                    // 检查 AI 配置是否完整
+                    if (!this.plugin.settings.aiService?.apiUrl || 
+                        !this.plugin.settings.aiService?.apiKey || 
+                        !this.plugin.settings.aiService?.model) {
+                        new Notice(t('ai_errors.api_key_not_configured'));
+                        return;
+                    }
+                    
+                    // 显示加载状态
+                    autoFillBtn.addClass('hiwords-loading');
                     iconContainer.empty();
-                    setIcon(iconContainer, 'sparkles');
-                }
+                    setIcon(iconContainer, 'loader');
+                    
+                    try {
+                        // 重新创建服务以确保使用最新配置
+                        const dictionaryService = new DictionaryService({
+                            service: this.plugin.settings.aiService,
+                            prompt: this.plugin.settings.aiDefinition.prompt
+                        });
+                        const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
+                        definitionInput.value = definition;
+                        new Notice(t('notices.definition_fetched'));
+                    } catch (error) {
+                        console.error('Failed to fetch definition:', error);
+                        const errorMessage = error instanceof Error ? error.message : t('notices.definition_fetch_failed');
+                        new Notice(errorMessage);
+                    } finally {
+                        // 恢复按钮状态
+                        autoFillBtn.removeClass('hiwords-loading');
+                        iconContainer.empty();
+                        setIcon(iconContainer, 'sparkles');
+                    }
+                })();
             });
         }
         
@@ -238,7 +240,7 @@ export class AddWordModal extends Modal {
         }
         
         // 智能聚焦逻辑
-        activeWindow.setTimeout(() => {
+        window.setTimeout(() => {
             if (!this.isEditMode && this.word) {
                 // 添加模式且有预填充单词时，聚焦到定义输入框
                 definitionInput.focus();
@@ -262,37 +264,39 @@ export class AddWordModal extends Modal {
             });
             // 使用 Obsidian 的 setIcon 方法
             setIcon(deleteButton, 'trash');
-            deleteButton.onclick = async () => {
-                // 确认删除
-                const confirmed = await this.showDeleteConfirmation();
-                if (!confirmed) return;
-                
-                // 显示删除中提示
-                const loadingNotice = new Notice(t('notices.deleting_word'), 0);
-                const definition = this.definition;
-                if (!definition) return;
-                
-                try {
-                    const success = await this.plugin.vocabularyManager.deleteWordFromCanvas(
-                        definition.source, 
-                        definition.nodeId
-                    );
+            deleteButton.onclick = () => {
+                void (async () => {
+                    // 确认删除
+                    const confirmed = await this.showDeleteConfirmation();
+                    if (!confirmed) return;
                     
-                    loadingNotice.hide();
+                    // 显示删除中提示
+                    const loadingNotice = new Notice(t('notices.deleting_word'), 0);
+                    const definition = this.definition;
+                    if (!definition) return;
                     
-                    if (success) {
-                        new Notice(t('notices.word_deleted'));
-                        // 刷新高亮
-                        this.plugin.refreshHighlighter();
-                        this.close();
-                    } else {
-                        new Notice(t('notices.delete_word_failed'));
+                    try {
+                        const success = await this.plugin.vocabularyManager.deleteWordFromCanvas(
+                            definition.source, 
+                            definition.nodeId
+                        );
+                        
+                        loadingNotice.hide();
+                        
+                        if (success) {
+                            new Notice(t('notices.word_deleted'));
+                            // 刷新高亮
+                            this.plugin.refreshHighlighter();
+                            this.close();
+                        } else {
+                            new Notice(t('notices.delete_word_failed'));
+                        }
+                    } catch (error) {
+                        loadingNotice.hide();
+                        console.error('删除词汇时发生错误:', error);
+                        new Notice(t('notices.error_deleting_word'));
                     }
-                } catch (error) {
-                    loadingNotice.hide();
-                    console.error('删除词汇时发生错误:', error);
-                    new Notice(t('notices.error_deleting_word'));
-                }
+                })();
             };
         }
         
@@ -305,105 +309,107 @@ export class AddWordModal extends Modal {
         // 根据模式显示不同的按钮文本
         const buttonTextKey = this.isEditMode ? 'modals.save_button' : 'modals.add_button';
         const actionButton = rightButtonGroup.createEl('button', { text: t(buttonTextKey), cls: 'mod-cta' });
-        actionButton.onclick = async () => {
-            // 在添加模式下，从输入框获取单词
-            let finalWord = this.word;
-            if (!this.isEditMode && wordInput) {
-                finalWord = wordInput.value.trim();
-                if (!finalWord) {
-                    new Notice(t('notices.word_required'));
-                    wordInput.focus();
+        actionButton.onclick = () => {
+            void (async () => {
+                // 在添加模式下，从输入框获取单词
+                let finalWord = this.word;
+                if (!this.isEditMode && wordInput) {
+                    finalWord = wordInput.value.trim();
+                    if (!finalWord) {
+                        new Notice(t('notices.word_required'));
+                        wordInput.focus();
+                        return;
+                    }
+                }
+                
+                const selectedBook = bookSelect.value;
+                const definition = definitionInput.value;
+                const colorValue = colorSelect.value ? parseInt(colorSelect.value) : undefined;
+                const aliasesText = aliasesInput.value.trim();
+                
+                // 处理别名
+                let aliases: string[] | undefined = undefined;
+                if (aliasesText) {
+                    aliases = aliasesText.split(',').map(alias => alias.trim().toLowerCase());
+                    // 去除空别名
+                    aliases = aliases.filter(alias => alias.length > 0);
+                    if (aliases.length === 0) {
+                        aliases = undefined;
+                    }
+                }
+                
+                if (!selectedBook) {
+                    new Notice(t('notices.select_book_required'));
                     return;
                 }
-            }
-            
-            const selectedBook = bookSelect.value;
-            const definition = definitionInput.value;
-            const colorValue = colorSelect.value ? parseInt(colorSelect.value) : undefined;
-            const aliasesText = aliasesInput.value.trim();
-            
-            // 处理别名
-            let aliases: string[] | undefined = undefined;
-            if (aliasesText) {
-                aliases = aliasesText.split(',').map(alias => alias.trim().toLowerCase());
-                // 去除空别名
-                aliases = aliases.filter(alias => alias.length > 0);
-                if (aliases.length === 0) {
-                    aliases = undefined;
-                }
-            }
-            
-            if (!selectedBook) {
-                new Notice(t('notices.select_book_required'));
-                return;
-            }
-            
-            // 显示加载中提示
-            const loadingNotice = this.isEditMode ? 
-                new Notice(t('notices.updating_word'), 0) : 
-                new Notice(t('notices.adding_word'), 0);
-            
-            try {
-                let success = false;
                 
-                if (this.isEditMode && this.definition) {
-                    // 编辑模式：调用更新词汇的方法
+                // 显示加载中提示
+                const loadingNotice = this.isEditMode ? 
+                    new Notice(t('notices.updating_word'), 0) : 
+                    new Notice(t('notices.adding_word'), 0);
+                
+                try {
+                    let success = false;
                     
-                    success = await this.plugin.vocabularyManager.updateWordInCanvas(
-                        this.definition.source,
-                        this.definition.nodeId,
-                        finalWord,
-                        definition,
-                        colorValue,
-                        aliases
-                    );
-                    
-                    // 关闭加载提示
-                    loadingNotice.hide();
-                    
-                    if (success) {
-                        // 使用格式化字符串替换
-                        const successMessage = t('notices.word_updated_success').replace('{0}', finalWord);
-                        new Notice(successMessage);
-                        // 刷新高亮器
-                        this.plugin.refreshHighlighter();
-                        this.close();
+                    if (this.isEditMode && this.definition) {
+                        // 编辑模式：调用更新词汇的方法
+                        
+                        success = await this.plugin.vocabularyManager.updateWordInCanvas(
+                            this.definition.source,
+                            this.definition.nodeId,
+                            finalWord,
+                            definition,
+                            colorValue,
+                            aliases
+                        );
+                        
+                        // 关闭加载提示
+                        loadingNotice.hide();
+                        
+                        if (success) {
+                            // 使用格式化字符串替换
+                            const successMessage = t('notices.word_updated_success').replace('{0}', finalWord);
+                            new Notice(successMessage);
+                            // 刷新高亮器
+                            this.plugin.refreshHighlighter();
+                            this.close();
+                        } else {
+                            new Notice(t('notices.update_word_failed'));
+                        }
                     } else {
-                        new Notice(t('notices.update_word_failed'));
+                        // 添加模式：调用添加词汇到 Canvas 的方法
+                        success = await this.plugin.vocabularyManager.addWordToCanvas(
+                            selectedBook,
+                            finalWord,
+                            definition,
+                            colorValue,
+                            aliases
+                        );
+                        
+                        // 关闭加载提示
+                        loadingNotice.hide();
+                        
+                        if (success) {
+                            // 保存用户选择的生词本到缓存
+                            AddWordModal.lastSelectedBookPath = selectedBook;
+                            // 保存用户选择的颜色到缓存（空值表示默认灰色）
+                            AddWordModal.lastSelectedColorValue = colorSelect.value || '';
+                            // 使用格式化字符串替换
+                            const successMessage = t('notices.word_added_success').replace('{0}', finalWord);
+                            new Notice(successMessage);
+                            // 刷新高亮器
+                            this.plugin.refreshHighlighter();
+                            this.close();
+                        } else {
+                            new Notice(t('notices.add_word_failed'));
+                        }
                     }
-                } else {
-                    // 添加模式：调用添加词汇到 Canvas 的方法
-                    success = await this.plugin.vocabularyManager.addWordToCanvas(
-                        selectedBook,
-                        finalWord,
-                        definition,
-                        colorValue,
-                        aliases
-                    );
-                    
-                    // 关闭加载提示
+                } catch (error) {
                     loadingNotice.hide();
-                    
-                    if (success) {
-                        // 保存用户选择的生词本到缓存
-                        AddWordModal.lastSelectedBookPath = selectedBook;
-                        // 保存用户选择的颜色到缓存（空值表示默认灰色）
-                        AddWordModal.lastSelectedColorValue = colorSelect.value || '';
-                        // 使用格式化字符串替换
-                        const successMessage = t('notices.word_added_success').replace('{0}', finalWord);
-                        new Notice(successMessage);
-                        // 刷新高亮器
-                        this.plugin.refreshHighlighter();
-                        this.close();
-                    } else {
-                        new Notice(t('notices.add_word_failed'));
-                    }
+                    console.error('Failed to add/update word:', error);
+                    new Notice(t('notices.error_processing_word'));
                 }
-            } catch (error) {
-                loadingNotice.hide();
-                console.error('Failed to add/update word:', error);
-                new Notice(t('notices.error_processing_word'));
-            }
+            })();
         };
     }
 
@@ -412,8 +418,34 @@ export class AddWordModal extends Modal {
      * @returns Promise<boolean> 用户是否确认删除
      */
     private async showDeleteConfirmation(): Promise<boolean> {
-        // 使用原生的 confirm 对话框，更简洁且符合 Obsidian 的设计原则
-        return window.confirm(t('modals.delete_confirmation').replace('{0}', this.definition?.word || this.word));
+        return new Promise((resolve) => {
+            const modal = new Modal(this.app);
+            const message = t('modals.delete_confirmation').replace('{0}', this.definition?.word || this.word);
+            const deleteLabel = t('modals.delete_button');
+            modal.titleEl.setText(message.split('\n')[0]);
+            modal.contentEl.createEl('p', {
+                text: message
+            });
+
+            const buttonContainer = modal.contentEl.createDiv({ cls: 'hiwords-button-container' });
+            const cancelButton = buttonContainer.createEl('button', { text: t('modals.cancel_button') });
+            cancelButton.onclick = () => {
+                modal.close();
+                resolve(false);
+            };
+
+            const confirmButton = buttonContainer.createEl('button', {
+                text: deleteLabel === 'modals.delete_button' ? 'Delete' : deleteLabel,
+                cls: 'mod-warning'
+            });
+            confirmButton.onclick = () => {
+                modal.close();
+                resolve(true);
+            };
+
+            modal.onClose = () => resolve(false);
+            modal.open();
+        });
     }
     
     onClose() {
