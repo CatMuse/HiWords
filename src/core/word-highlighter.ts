@@ -11,12 +11,11 @@ import {
     ViewUpdate,
     ViewPlugin,
     PluginSpec,
-    PluginValue,
-    WidgetType
+    PluginValue
 } from '@codemirror/view';
-import { editorViewField } from 'obsidian';
+import { editorInfoField } from 'obsidian';
 import { VocabularyManager } from './vocabulary-manager';
-import { WordMatch, WordDefinition, mapCanvasColorToCSSVar, Trie, TrieMatch } from '../utils';
+import { WordMatch, WordDefinition, mapCanvasColorToCSSVar, Trie } from '../utils';
 import { findPatternMatches } from '../utils/pattern-matcher';
 
 // 防抖延迟时间（毫秒）
@@ -74,7 +73,7 @@ const highlightState = StateField.define<DecorationSet>({
         // 而是依赖 ViewPlugin 重新扫描文档来更新高亮
         // map 的问题：它只是机械地调整位置，不会重新匹配单词
         
-        for (let effect of tr.effects) {
+        for (const effect of tr.effects) {
             if (effect.is(forceUpdateEffect)) {
                 // 强制重新构建装饰器
                 return Decoration.none;
@@ -174,10 +173,10 @@ export class WordHighlighter implements PluginValue {
      */
     private debouncedUpdate(view: EditorView) {
         if (this.debounceTimer) {
-            window.clearTimeout(this.debounceTimer);
+            activeWindow.clearTimeout(this.debounceTimer);
         }
         
-        this.debounceTimer = window.setTimeout(() => {
+        this.debounceTimer = activeWindow.setTimeout(() => {
             this.decorations = this.buildDecorations(view);
             this.debounceTimer = null;
         }, DEBOUNCE_DELAY);
@@ -196,7 +195,7 @@ export class WordHighlighter implements PluginValue {
         
         // 检查当前文件是否应该被高亮
         if (this.shouldHighlightFile) {
-            const file = view.state.field(editorViewField);
+            const file = view.state.field(editorInfoField);
             if (file?.file?.path && !this.shouldHighlightFile(file.file.path)) {
                 // 如果文件不应该被高亮，返回空装饰器
                 return Decoration.none;
@@ -212,8 +211,8 @@ export class WordHighlighter implements PluginValue {
         
         // 如果可见范围没有变化且有缓存，直接使用缓存的匹配结果
         const cacheKey = currentRanges.map(r => `${r.from}-${r.to}`).join(',');
-        if (!rangesChanged && this.cachedMatches.has(cacheKey)) {
-            const cachedMatches = this.cachedMatches.get(cacheKey)!;
+        const cachedMatches = this.cachedMatches.get(cacheKey);
+        if (!rangesChanged && cachedMatches) {
             this.applyDecorations(builder, cachedMatches);
             return builder.finish();
         }
@@ -222,7 +221,7 @@ export class WordHighlighter implements PluginValue {
         this.lastRanges = currentRanges.map(range => ({from: range.from, to: range.to}));
         
         // 扫描可见范围内的文本
-        for (let { from, to } of view.visibleRanges) {
+        for (const { from, to } of view.visibleRanges) {
             const text = view.state.sliceDoc(from, to);
             matches.push(...this.findWordMatches(text, from));
         }
@@ -373,7 +372,7 @@ export class WordHighlighter implements PluginValue {
     destroy() {
         // 清理资源
         if (this.debounceTimer) {
-            window.clearTimeout(this.debounceTimer);
+            activeWindow.clearTimeout(this.debounceTimer);
             this.debounceTimer = null;
         }
         

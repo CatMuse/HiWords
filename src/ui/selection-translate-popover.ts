@@ -13,8 +13,8 @@ export class SelectionTranslatePopover extends Component {
     private translationService: TranslationService;
     private activePopover: HTMLElement | null = null;
     private debounceTimer: number | null = null;
-    private currentTranslateText: string = '';
-    private isTranslating: boolean = false;
+    private currentTranslateText = '';
+    private isTranslating = false;
 
     // 防抖与交互参数
     private static readonly DEBOUNCE_MS = 300;
@@ -38,7 +38,7 @@ export class SelectionTranslatePopover extends Component {
         });
 
         // 滚动和窗口变化时关闭浮窗
-        this.registerDomEvent(window, 'scroll', () => this.removePopover(), { passive: true } as any);
+        this.registerDomEvent(window, 'scroll', () => this.removePopover(), { passive: true } as AddEventListenerOptions);
         this.registerDomEvent(window, 'resize', () => this.removePopover());
 
         // 按 Escape 关闭浮窗
@@ -72,10 +72,10 @@ export class SelectionTranslatePopover extends Component {
 
         // 防抖处理
         if (this.debounceTimer !== null) {
-            clearTimeout(this.debounceTimer);
+            activeWindow.clearTimeout(this.debounceTimer);
         }
 
-        this.debounceTimer = window.setTimeout(() => {
+        this.debounceTimer = activeWindow.setTimeout(() => {
             this.debounceTimer = null;
             this.tryShowPopover(event);
         }, SelectionTranslatePopover.DEBOUNCE_MS);
@@ -185,9 +185,11 @@ export class SelectionTranslatePopover extends Component {
             e.stopPropagation();
             const result = contentEl.querySelector('.hi-words-translate-result')?.textContent || '';
             if (result) {
-                navigator.clipboard.writeText(result);
+                void navigator.clipboard.writeText(result).catch(error => {
+                    console.error('HiWords 复制翻译结果失败:', error);
+                });
                 setIcon(copyBtn, 'check');
-                setTimeout(() => setIcon(copyBtn, 'copy'), 1500);
+                activeWindow.setTimeout(() => setIcon(copyBtn, 'copy'), 1500);
             }
         });
 
@@ -282,7 +284,7 @@ export class SelectionTranslatePopover extends Component {
         this.removePopover();
         this.translationService.abort();
         if (this.debounceTimer !== null) {
-            clearTimeout(this.debounceTimer);
+            activeWindow.clearTimeout(this.debounceTimer);
         }
     }
 }

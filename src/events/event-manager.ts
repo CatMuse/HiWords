@@ -1,4 +1,4 @@
-import { Editor, Notice, TFile } from 'obsidian';
+import { Editor, Notice, TAbstractFile, TFile } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { t } from '../i18n';
 import { extractSentenceFromEditorMultiline } from '../utils/sentence-extractor';
@@ -28,8 +28,7 @@ export function registerEvents(plugin: HiWordsPlugin) {
     );
 
     // 监听活动文件变化
-    plugin.registerEvent(
-        plugin.app.workspace.on('active-leaf-change', async (leaf) => {
+    const handleActiveLeafChange = async () => {
             // 获取当前活动文件
             const activeFile = plugin.app.workspace.getActiveFile();
             
@@ -67,15 +66,21 @@ export function registerEvents(plugin: HiWordsPlugin) {
                     plugin.refreshHighlighter();
                 } else {
                     // 当切换文件时，可能需要更新高亮
-                    setTimeout(() => plugin.refreshHighlighter(), 100);
+                    activeWindow.setTimeout(() => plugin.refreshHighlighter(), 100);
                 }
             }
+    };
+
+    plugin.registerEvent(
+        plugin.app.workspace.on('active-leaf-change', () => {
+            void handleActiveLeafChange().catch(error => {
+                console.error('HiWords 处理活动文件变化失败:', error);
+            });
         })
     );
     
     // 监听文件重命名/移动
-    plugin.registerEvent(
-        plugin.app.vault.on('rename', async (file, oldPath) => {
+    const handleRename = async (file: TAbstractFile, oldPath: string) => {
             if (file instanceof TFile && (file.extension === 'canvas' || file.extension === 'hiwords')) {
                 // 检查旧路径是否在单词本列表中
                 const bookIndex = plugin.settings.vocabularyBooks.findIndex(book => book.path === oldPath);
@@ -96,6 +101,13 @@ export function registerEvents(plugin: HiWordsPlugin) {
                     new Notice(t('notices.book_path_updated').replace('{0}', file.basename));
                 }
             }
+    };
+
+    plugin.registerEvent(
+        plugin.app.vault.on('rename', (file, oldPath) => {
+            void handleRename(file, oldPath).catch(error => {
+                console.error('HiWords 处理文件重命名失败:', error);
+            });
         })
     );
     

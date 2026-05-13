@@ -26,7 +26,7 @@ export class CanvasEditor {
     private genHex16(): string {
         // 浏览器环境可用 crypto.getRandomValues
         const bytes = new Uint8Array(8);
-        (window.crypto || (window as any).msCrypto).getRandomValues(bytes);
+        window.crypto.getRandomValues(bytes);
         return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
     }
 
@@ -60,7 +60,7 @@ export class CanvasEditor {
 
             // 使用原子更新，避免并发覆盖
             const parser = new CanvasParser(this.app, this.settings);
-            let generatedNodeId: string = '';
+            let generatedNodeId = '';
             await this.app.vault.process(file, (current) => {
                 const canvasData: CanvasData = JSON.parse(current || '{"nodes":[],"edges":[]}');
                 if (!Array.isArray(canvasData.nodes)) canvasData.nodes = [];
@@ -76,7 +76,7 @@ export class CanvasEditor {
                 const groupPadding = 24; // 与 Mastered 分组保持的水平间距
 
                 // 简易几何工具（带兜底）
-                const num = (v: any, def: number) => (typeof v === 'number' ? v : def);
+                const num = (v: unknown, def: number) => (typeof v === 'number' ? v : def);
                 const rectOf = (n: Partial<CanvasNode>) => ({
                     x: num(n.x, 0),
                     y: num(n.y, 0),
@@ -87,8 +87,8 @@ export class CanvasEditor {
 
                 // 定位 Mastered 分组（如果存在）
                 const masteredGroup = canvasData.nodes.find(
-                    (n) => n.type === 'group' && (n as any).label && ((n as any).label === 'Mastered' || (n as any).label === '已掌握')
-                ) as CanvasNode | undefined;
+                    (n) => n.type === 'group' && (n.label === 'Mastered' || n.label === '已掌握')
+                );
                 const g = masteredGroup ? rectOf(masteredGroup as Partial<CanvasNode>) : undefined;
 
                 // 计算位置：默认 (0,0)。优先选择“最后一个不在 Mastered 分组内的普通节点”作为参考
@@ -116,8 +116,8 @@ export class CanvasEditor {
                 }
 
                 // 若新位置与 Mastered 分组水平范围相交，则将其放到分组右侧留白处
-                if (g && overlaps(x, newW, g.x!, g.w!)) {
-                    x = g.x! + g.w! + groupPadding;
+                if (g && overlaps(x, newW, g.x, g.w)) {
+                    x = g.x + g.w + groupPadding;
                 }
 
                 // 构建文本
@@ -274,7 +274,7 @@ export class CanvasEditor {
                 if (color !== undefined) {
                     canvasData.nodes[index].color = color.toString();
                 } else {
-                    delete (canvasData.nodes[index] as any).color;
+                    delete canvasData.nodes[index].color;
                 }
 
                 // 为保持布局一致性，仍调用一次规范化（轻量）

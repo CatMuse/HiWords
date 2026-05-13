@@ -278,7 +278,7 @@ export class I18n {
      * 获取当前语言
      */
     private getCurrentLocale(): SupportedLocale {
-        // 使用 Obsidian 官方 API 获取语言设置 (requires minAppVersion: "1.8.0")
+        // 使用 Obsidian 官方 API 获取语言设置 (requires minAppVersion: "1.8.7")
         const obsidianLocale = getLanguage();
         
         // 将 Obsidian 语言设置映射到我们支持的语言
@@ -311,18 +311,18 @@ export class I18n {
         const locale = this.getCurrentLocale();
         const pack = languagePacks[locale];
         const keys = key.split('.');
-        let result: any = pack;
+        let result: unknown = pack;
         
         for (const k of keys) {
-            if (result && result[k] !== undefined) {
-                result = result[k];
+            if (typeof result === 'object' && result !== null && k in result) {
+                result = (result as Record<string, unknown>)[k];
             } else {
                 console.warn(`翻译键 ${key} 不存在于 ${locale} 语言包中`);
                 return key;
             }
         }
         
-        return result;
+        return typeof result === 'string' ? result : key;
     }
 }
 

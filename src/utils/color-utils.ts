@@ -10,7 +10,7 @@
  */
 export function mapCanvasColorToCSSVar(
     canvasColor: string | undefined, 
-    fallback: string = 'var(--color-accent)'
+    fallback = 'var(--color-accent)'
 ): string {
     if (!canvasColor) return fallback;
     
@@ -51,7 +51,7 @@ export function mapCanvasColorToCSSVar(
  * @param opacity 透明度 (0-1)
  * @returns 带透明度的颜色字符串
  */
-export function getColorWithOpacity(cssVar: string, opacity: number = 0.1): string {
+export function getColorWithOpacity(cssVar: string, opacity = 0.1): string {
     // 如果是CSS变量，使用color-mix函数来创建透明度效果
     if (cssVar.startsWith('var(--color-')) {
         // 使用现代CSS的color-mix函数

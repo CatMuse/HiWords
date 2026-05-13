@@ -1,4 +1,5 @@
-import type { HiWordsSettings } from '../utils';
+import type { MarkdownPostProcessorContext } from 'obsidian';
+import type { HiWordsSettings, WordDefinition } from '../utils';
 import { Trie, mapCanvasColorToCSSVar } from '../utils';
 import type { VocabularyManager } from '../core';
 import { isElementVisible, buildTrieFromVocabulary, clearHighlights, isInMainEditor } from '../utils/highlight-utils';
@@ -12,11 +13,12 @@ export function registerReadingModeHighlighter(plugin: {
   vocabularyManager: VocabularyManager;
   shouldHighlightFile: (filePath: string) => boolean;
   registerMarkdownPostProcessor: (
-    processor: (el: HTMLElement, ctx: unknown) => void
+    processor: (el: HTMLElement, ctx: MarkdownPostProcessorContext) => void
   ) => void;
+  _refreshReadingModeHighlighter?: () => void;
 }): void {
   // 存储处理函数的引用，供外部调用
-  let processorFn: ((el: HTMLElement, trie: Trie) => void) | null = null;
+  let processorFn: ((el: HTMLElement, trie: Trie<WordDefinition>) => void) | null = null;
 
   const EXCLUDE_SELECTOR = [
     'pre',
@@ -33,22 +35,21 @@ export function registerReadingModeHighlighter(plugin: {
     '.hi-words-tooltip', // 排除 tooltip 内容
   ].join(',');
 
-  const processElement = (root: HTMLElement, trie: Trie) => {
+  const processElement = (root: HTMLElement, trie: Trie<WordDefinition>) => {
     const walker = document.createTreeWalker(
       root,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: (node: Node) => {
           // 仅处理可见文本节点，跳过排除元素与已高亮区域
-          const maybeParent = (node as any).parentElement as HTMLElement | null | undefined;
-          const parent = maybeParent ?? null;
+          const parent = node.parentNode instanceof HTMLElement ? node.parentNode : null;
           if (!parent) return NodeFilter.FILTER_REJECT;
           if (parent.closest(EXCLUDE_SELECTOR)) return NodeFilter.FILTER_REJECT;
           if (parent.closest('.hi-words-highlight')) return NodeFilter.FILTER_REJECT;
           if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
-      } as any
+      }
     );
 
     const highlightStyle = plugin.settings.highlightStyle || 'underline';
@@ -64,12 +65,7 @@ export function registerReadingModeHighlighter(plugin: {
       const text = textNode.nodeValue || '';
       if (!text) continue;
 
-      const matches = trie.findAllMatches(text) as Array<{
-        from: number;
-        to: number;
-        word: string;
-        payload: any;
-      }>;
+      const matches = trie.findAllMatches(text);
       if (!matches || matches.length === 0) continue;
 
       // 左到右、优先更长的非重叠匹配
@@ -112,7 +108,7 @@ export function registerReadingModeHighlighter(plugin: {
       if (!plugin.settings.enableAutoHighlight) return;
       
       // 检查当前文件是否应该被高亮
-      const filePath = (ctx as any)?.sourcePath;
+      const filePath = ctx.sourcePath;
       if (filePath && !plugin.shouldHighlightFile(filePath)) {
         return;
       }
@@ -130,7 +126,7 @@ export function registerReadingModeHighlighter(plugin: {
   });
 
   // 导出刷新函数到插件实例
-  (plugin as any)._refreshReadingModeHighlighter = () => {
+  plugin._refreshReadingModeHighlighter = () => {
     refreshVisibleReadingMode(plugin, processorFn);
   };
 }
@@ -144,7 +140,7 @@ function refreshVisibleReadingMode(
     vocabularyManager: VocabularyManager;
     shouldHighlightFile: (filePath: string) => boolean;
   },
-  processElement: ((el: HTMLElement, trie: Trie) => void) | null
+  processElement: ((el: HTMLElement, trie: Trie<WordDefinition>) => void) | null
 ): void {
   if (!plugin.settings.enableAutoHighlight || !processElement) return;
   

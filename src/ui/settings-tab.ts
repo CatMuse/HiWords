@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, Modal, setIcon } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, Modal, setIcon, TextComponent } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle, AIProvider, mapCanvasColorToCSSVar, getColorWithOpacity } from '../utils';
 import { CanvasParser } from '../canvas';
@@ -336,8 +336,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
     private addAIServiceSection() {
         const { containerEl } = this;
-        let apiUrlText: any;
-        let modelText: any;
+        let apiUrlText: TextComponent | undefined;
+        let modelText: TextComponent | undefined;
         const currentDefaults = this.getProviderDefaults(this.plugin.settings.aiService.provider);
 
         if (!this.plugin.settings.aiService.apiUrl && currentDefaults.apiUrl) {
@@ -583,11 +583,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
             .setValue(this.plugin.settings.masteredDetection ?? 'group')
             .onChange(async (value) => {
                 // 保存并同步到各子模块
-                (this.plugin.settings as any).masteredDetection = value as 'group' | 'color';
+                this.plugin.settings.masteredDetection = value as 'group' | 'color';
                 await this.plugin.saveSettings();
                 // 同步给 VocabularyManager/Parser/Editor
                 if (this.plugin.vocabularyManager?.updateSettings) {
-                    this.plugin.vocabularyManager.updateSettings(this.plugin.settings as any);
+                    this.plugin.vocabularyManager.updateSettings(this.plugin.settings);
                 }
                 // updateSettings 已经处理了缓存失效，不需要手动重新加载
                 // 只有当 masteredDetection 变化时才需要重新解析数据
@@ -653,7 +653,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const addBookContainer = containerEl.createDiv({ cls: 'hi-words-add-book-container' });
         addBookContainer.addEventListener('click', () => this.showVocabularyBookFilePicker());
 
-        const addBookLabel = addBookContainer.createSpan({
+        addBookContainer.createSpan({
             text: t('settings.add_vocabulary_book'),
             cls: 'hi-words-add-book-label'
         });
@@ -704,7 +704,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const metadata = hiWordsParser ? await hiWordsParser.readMetadata(file) : null;
         const isValid = hiWordsParser
             ? metadata !== null && await hiWordsParser.validateFile(file)
-            : await new CanvasParser(this.app, this.plugin.settings as any).validateCanvasFile(file);
+            : await new CanvasParser(this.app, this.plugin.settings).validateCanvasFile(file);
         if (!isValid) {
             new Notice(t('notices.invalid_vocabulary_book_file'));
             return;

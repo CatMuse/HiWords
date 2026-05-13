@@ -8,15 +8,31 @@ interface AIConfig {
 }
 
 type APIType = 'openai' | 'claude' | 'gemini';
+type JsonObject = Record<string, unknown>;
+type JsonPath = Array<string | number>;
 
 /**
  * API 配置接口
  */
 interface APIAdapter {
-    buildRequest: (model: string, prompt: string) => any;
+    buildRequest: (model: string, prompt: string) => JsonObject;
     buildHeaders: (apiKey: string) => Record<string, string>;
-    extractResponse: (data: any) => string | undefined;
+    extractResponse: (data: unknown) => string | undefined;
     buildUrl?: (baseUrl: string, model: string, apiKey: string) => string;
+}
+
+function readStringPath(data: unknown, path: JsonPath): string | undefined {
+    let current = data;
+    for (const segment of path) {
+        if (typeof segment === 'number') {
+            if (!Array.isArray(current)) return undefined;
+            current = current[segment];
+            continue;
+        }
+        if (!current || typeof current !== 'object') return undefined;
+        current = (current as Record<string, unknown>)[segment];
+    }
+    return typeof current === 'string' ? current : undefined;
 }
 
 /**
@@ -50,7 +66,7 @@ export class DictionaryService {
             buildHeaders: (apiKey: string) => ({
                 'Authorization': `Bearer ${apiKey}`
             }),
-            extractResponse: (data: any) => data?.choices?.[0]?.message?.content,
+            extractResponse: (data: unknown) => readStringPath(data, ['choices', 0, 'message', 'content']),
             buildUrl: (baseUrl: string) => {
                 const normalized = baseUrl.replace(/\/$/, '');
                 if (normalized.endsWith('/chat/completions')) {
@@ -69,7 +85,7 @@ export class DictionaryService {
                 'x-api-key': apiKey,
                 'anthropic-version': '2023-06-01'
             }),
-            extractResponse: (data: any) => data?.content?.[0]?.text,
+            extractResponse: (data: unknown) => readStringPath(data, ['content', 0, 'text']),
             buildUrl: (baseUrl: string) => {
                 const normalized = baseUrl.replace(/\/$/, '');
                 if (normalized.endsWith('/messages')) {
@@ -83,7 +99,7 @@ export class DictionaryService {
                 contents: [{ parts: [{ text: prompt }] }]
             }),
             buildHeaders: () => ({}),
-            extractResponse: (data: any) => data?.candidates?.[0]?.content?.parts?.[0]?.text,
+            extractResponse: (data: unknown) => readStringPath(data, ['candidates', 0, 'content', 'parts', 0, 'text']),
             buildUrl: (baseUrl: string, model: string, apiKey: string) => {
                 let url = baseUrl;
                 if (!url.includes(':generateContent')) {
@@ -172,8 +188,8 @@ export class DictionaryService {
     /**
      * 检查值是否为对象（非数组、非 null）
      */
-    private isObject(item: any): boolean {
-        return item && typeof item === 'object' && !Array.isArray(item);
+    private isObject(item: unknown): item is JsonObject {
+        return !!item && typeof item === 'object' && !Array.isArray(item);
     }
 
     /**
@@ -181,19 +197,21 @@ export class DictionaryService {
      * @param target 目标对象
      * @param source 源对象
      */
-    private deepMerge(target: any, source: any): any {
+    private deepMerge(target: JsonObject, source: JsonObject): JsonObject {
         const output = { ...target };
 
         if (this.isObject(target) && this.isObject(source)) {
             Object.keys(source).forEach(key => {
-                if (this.isObject(source[key])) {
-                    if (!(key in target)) {
-                        Object.assign(output, { [key]: source[key] });
+                const sourceValue = source[key];
+                const targetValue = target[key];
+                if (this.isObject(sourceValue)) {
+                    if (!(key in target) || !this.isObject(targetValue)) {
+                        Object.assign(output, { [key]: sourceValue });
                     } else {
-                        output[key] = this.deepMerge(target[key], source[key]);
+                        output[key] = this.deepMerge(targetValue, sourceValue);
                     }
                 } else {
-                    Object.assign(output, { [key]: source[key] });
+                    Object.assign(output, { [key]: sourceValue });
                 }
             });
         }
@@ -204,7 +222,7 @@ export class DictionaryService {
     /**
      * 合并用户自定义的额外参数到请求体
      */
-    private mergeExtraParams(baseBody: any): any {
+    private mergeExtraParams(baseBody: JsonObject): JsonObject {
         const extraParamsJson = this.config.service.extraParams?.trim();
 
         if (!extraParamsJson || extraParamsJson === '{}' || extraParamsJson === '') {
@@ -212,7 +230,8 @@ export class DictionaryService {
         }
 
         try {
-            const extraParams = JSON.parse(extraParamsJson);
+            const extraParams = JSON.parse(extraParamsJson) as unknown;
+            if (!this.isObject(extraParams)) return baseBody;
             return this.deepMerge(baseBody, extraParams);
         } catch (error) {
             console.warn('Invalid JSON in extraParams, ignoring:', error);
@@ -235,7 +254,7 @@ export class DictionaryService {
         // 配置验证
         const validation = this.validateConfig();
         if (!validation.isValid) {
-            throw new Error(validation.error!);
+            throw new Error(validation.error ?? t('ai_errors.request_failed'));
         }
 
         const cleanWord = word.trim();
@@ -289,9 +308,9 @@ export class DictionaryService {
     private async makeRequestWithRetry(
         url: string,
         headers: Record<string, string>,
-        body: any
-    ): Promise<any> {
-        let lastError: any;
+        body: JsonObject
+    ): Promise<unknown> {
+        let lastError: unknown;
 
         for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
             try {
@@ -324,7 +343,7 @@ export class DictionaryService {
                 if (attempt < this.MAX_RETRIES - 1) {
                     // 指数退避: 1s, 2s, 4s
                     const delay = 1000 * Math.pow(2, attempt);
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    await new Promise(resolve => activeWindow.setTimeout(resolve, delay));
                 }
             }
         }
@@ -335,8 +354,8 @@ export class DictionaryService {
     /**
      * 错误处理 - 转换为用户友好的错误信息
      */
-    private handleError(error: any): Error {
-        const message = error?.message || String(error);
+    private handleError(error: unknown): Error {
+        const message = error instanceof Error ? error.message : String(error);
         
         // API Key 相关错误
         if (message.includes('401') || message.includes('403')) {

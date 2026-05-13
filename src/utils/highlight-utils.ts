@@ -1,4 +1,4 @@
-import type { HiWordsSettings } from './index';
+import type { HiWordsSettings, WordDefinition } from './index';
 import { Trie } from './trie';
 import type { VocabularyManager } from '../core';
 
@@ -111,8 +111,8 @@ export function clearHighlights(element: HTMLElement): void {
 /**
  * 构建包含所有单词的 Trie 树
  */
-export function buildTrieFromVocabulary(vocabularyManager: VocabularyManager): Trie {
-    const trie = new Trie();
+export function buildTrieFromVocabulary(vocabularyManager: VocabularyManager): Trie<WordDefinition> {
+    const trie = new Trie<WordDefinition>();
     const definitions = vocabularyManager.getStudyDefinitionsForHighlight();
     for (const def of definitions) {
         trie.addWord(def.word, def);

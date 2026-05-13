@@ -621,25 +621,6 @@ function renderConfusables(root: HTMLElement, card: WordCard): void {
     }
 }
 
-function renderLearning(root: HTMLElement, card: WordCard): void {
-    if (!card.learning) return;
-
-    const values = [
-        card.learning.depth ? { label: 'Depth', value: card.learning.depth } : null,
-        card.learning.priority !== undefined ? { label: 'Priority', value: String(card.learning.priority) } : null,
-        card.learning.reason ? { label: 'Reason', value: card.learning.reason } : null,
-    ].filter((item): item is { label: string; value: string } => item !== null);
-
-    if (values.length === 0) return;
-
-    const section = createSection(root, 'Learning');
-    for (const item of values) {
-        const row = section.createDiv({ cls: 'hi-words-structured-memory-row' });
-        row.createSpan({ text: item.label, cls: 'hi-words-structured-label' });
-        row.createSpan({ text: item.value, cls: 'hi-words-structured-memory-text' });
-    }
-}
-
 function renderAffixes(root: HTMLElement, title: string, affixes?: Array<{ text: string; meaning?: string; role?: string }>): void {
     if (!affixes?.length) return;
 
@@ -653,19 +634,6 @@ function renderAffixes(root: HTMLElement, title: string, affixes?: Array<{ text:
         const details = [affix.meaning, affix.role].filter(Boolean).join(' · ');
         if (details) row.createSpan({ text: details, cls: 'hi-words-structured-memory-text' });
     }
-}
-
-function formatValue(value: string | string[] | number | boolean | null | undefined): string {
-    if (Array.isArray(value)) return value.filter(item => item !== '').join(', ');
-    if (value === null || value === undefined || value === '') return '';
-    return String(value);
-}
-
-function formatLabel(value: string): string {
-    return value
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/[_-]+/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase());
 }
 
 function renderDetailAction(root: HTMLElement, onOpenDetail: () => void | Promise<void>): void {

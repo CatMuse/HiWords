@@ -1,9 +1,24 @@
 import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile, Component } from 'obsidian';
 import { VocabularyManager, MasteredService } from '../core';
-import { playWordTTS } from '../utils';
+import { playWordTTS, WordDefinition } from '../utils';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
 import { renderWordCard } from './word-card-renderer';
+
+interface HoverLinkWorkspace {
+    trigger(name: 'hover-link', payload: {
+        event: Event;
+        source: string;
+        hoverParent: HTMLElement;
+        target: HTMLElement;
+        linktext: string;
+        sourcePath: string;
+    }): void;
+}
+
+interface SearchViewLike {
+    setQuery?: (query: string) => void;
+}
 
 export class DefinitionPopover extends Component {
     private app: App;
@@ -44,12 +59,12 @@ export class DefinitionPopover extends Component {
         // 内部链接
         root.querySelectorAll('a.internal-link').forEach((a) => {
             const linkEl = a as HTMLAnchorElement;
-            const linktext = (linkEl.getAttribute('href') || (linkEl as any).dataset?.href || '').trim();
+            const linktext = (linkEl.getAttribute('href') || linkEl.dataset.href || '').trim();
             if (!linktext) return;
 
             linkEl.addEventListener('mouseover', (evt) => {
                 // 触发原生悬停预览
-                (this.app.workspace as any).trigger('hover-link', {
+                (this.app.workspace as unknown as HoverLinkWorkspace).trigger('hover-link', {
                     event: evt,
                     source: 'hi-words',
                     hoverParent,
@@ -62,7 +77,9 @@ export class DefinitionPopover extends Component {
             linkEl.addEventListener('click', (evt) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                this.app.workspace.openLinkText(linktext, sourcePath);
+                void this.app.workspace.openLinkText(linktext, sourcePath).catch(error => {
+                    console.error('HiWords 打开内部链接失败:', error);
+                });
                 // 关闭 tooltip（若存在）
                 this.removeTooltip();
             });
@@ -87,9 +104,11 @@ export class DefinitionPopover extends Component {
         try {
             const leaves = this.app.workspace.getLeavesOfType('search');
             if (leaves.length > 0) {
-                const view: any = leaves[0].view;
+                const view = leaves[0].view as SearchViewLike;
                 view.setQuery?.(query);
-                this.app.workspace.revealLeaf(leaves[0]);
+                void this.app.workspace.revealLeaf(leaves[0]).catch(error => {
+                    console.error('HiWords 打开搜索视图失败:', error);
+                });
                 return;
             }
 
@@ -121,9 +140,9 @@ export class DefinitionPopover extends Component {
      * 优化后的移出事件，鼠标处于高亮词或者tooltip上时不消失
      */
     private handleMouseOut(event: MouseEvent) {
-        clearTimeout(this.tooltipHideTimeout);
+        activeWindow.clearTimeout(this.tooltipHideTimeout);
         if (this.hoverIntentTimer !== null) {
-            clearTimeout(this.hoverIntentTimer);
+            activeWindow.clearTimeout(this.hoverIntentTimer);
             this.hoverIntentTimer = null;
         }
         const from = event.target as HTMLElement;
@@ -158,7 +177,7 @@ export class DefinitionPopover extends Component {
         }
 
         // 其余情况，稍延迟关闭 tooltip，防止极快移动出现闪烁
-        this.tooltipHideTimeout = window.setTimeout(() => {
+        this.tooltipHideTimeout = activeWindow.setTimeout(() => {
             this.removeTooltip();
         }, 80);
     }
@@ -213,7 +232,7 @@ export class DefinitionPopover extends Component {
             if (this.currentTargetEl === target && this.activeTooltip) return;
             // 先取消上一个 hoverIntent
             if (this.hoverIntentTimer !== null) {
-                clearTimeout(this.hoverIntentTimer);
+                activeWindow.clearTimeout(this.hoverIntentTimer);
                 this.hoverIntentTimer = null;
             }
             this.currentTargetEl = target;
@@ -222,7 +241,7 @@ export class DefinitionPopover extends Component {
             if (!word || !definition) return;
 
             // 悬停意图：延迟展示，避免快速划过时频繁创建
-            this.hoverIntentTimer = window.setTimeout(() => {
+            this.hoverIntentTimer = activeWindow.setTimeout(() => {
                 this.hoverIntentTimer = null;
                 const now = Date.now();
                 if (now - this.lastShowTs < DefinitionPopover.MIN_INTERVAL_MS) {
@@ -267,8 +286,6 @@ export class DefinitionPopover extends Component {
         const sections = wordDef?.card ? undefined : wordDef?.sections;
         const enableSectionTabs = this.plugin.settings.enableSectionTabs ?? true;
 
-        let contentEl: HTMLElement;
-
         if (sections && sections.length > 1 && enableSectionTabs) {
             const tabsContainer = document.createElement('div');
             tabsContainer.className = 'hi-words-tooltip-tabs';
@@ -292,7 +309,7 @@ export class DefinitionPopover extends Component {
         }
 
         // 内容
-        contentEl = document.createElement('div');
+        const contentEl = document.createElement('div');
         contentEl.className = 'hi-words-tooltip-content';
         
         // 如果启用了模糊效果，为内容添加模糊样式
@@ -349,10 +366,13 @@ export class DefinitionPopover extends Component {
                         
                         try {
                             // 切换已掌握状态
+                            const masteredService = this.masteredService;
+                            if (!masteredService) return;
+
                             if (detailDef.mastered) {
-                                await this.masteredService!.unmarkWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
+                                await masteredService.unmarkWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
                             } else {
-                                await this.masteredService!.markWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
+                                await masteredService.markWordAsMastered(detailDef.source, detailDef.nodeId, detailDef.word);
                             }
                             
                             // 点击已掌握按钮后清理预览框
@@ -422,7 +442,7 @@ export class DefinitionPopover extends Component {
     }
 
     private removeTooltip() {
-        clearTimeout(this.tooltipHideTimeout);
+        activeWindow.clearTimeout(this.tooltipHideTimeout);
         if (this.activeTooltip && this.activeTooltip.parentNode) {
             this.activeTooltip.parentNode.removeChild(this.activeTooltip);
             this.activeTooltip = null;
@@ -438,7 +458,7 @@ export class DefinitionPopover extends Component {
     /**
      * 导航到单词源文件
      */
-    private async navigateToSource(wordDef: any) {
+    private async navigateToSource(wordDef: WordDefinition) {
         try {
             const file = this.app.vault.getAbstractFileByPath(wordDef.source);
             if (file instanceof TFile) {
@@ -449,7 +469,7 @@ export class DefinitionPopover extends Component {
                     // 如果是 Markdown 文件，打开并尝试定位到单词
                     await this.app.workspace.openLinkText(file.path, '');
                     // 等待一个短暂时间让文件加载
-                    setTimeout(() => {
+                    activeWindow.setTimeout(() => {
                         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (activeView && activeView.file?.path === file.path) {
                             // 尝试在文件中查找单词

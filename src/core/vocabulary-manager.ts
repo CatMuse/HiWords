@@ -1,5 +1,5 @@
-import { App, TFile, Notice } from 'obsidian';
-import { StudyItem, WordDefinition, VocabularyBook, HiWordsSettings } from '../utils';
+import { App, TFile } from 'obsidian';
+import { CanvasData, StudyItem, WordDefinition, VocabularyBook, HiWordsSettings } from '../utils';
 import { CanvasParser, CanvasEditor } from '../canvas';
 import { HiWordsParser } from '../card';
 
@@ -16,13 +16,13 @@ export class VocabularyManager {
     private allWordsCache: string[] = []; // 所有单词的缓存
     private bookWordsCache: Map<string, string[]> = new Map(); // 书本路径 -> 单词列表映射
     private studyItemCache: Map<string, StudyItem> = new Map(); // 全局学习对象映射
-    private cacheValid: boolean = false; // 缓存是否有效
+    private cacheValid = false; // 缓存是否有效
     
     // 增量更新优化
     private memoryOnlyWords: Map<string, WordDefinition[]> = new Map(); // 仅内存中的新词汇
     private pendingSyncWords: Map<string, WordDefinition[]> = new Map(); // 待同步的词汇
     private syncTimeouts: Map<string, number> = new Map(); // 同步定时器
-    private tempNodeIdCounter: number = 0; // 临时节点ID计数器
+    private tempNodeIdCounter = 0; // 临时节点ID计数器
 
     constructor(app: App, settings: HiWordsSettings) {
         this.app = app;
@@ -191,8 +191,9 @@ export class VocabularyManager {
      */
     getWordsFromBook(bookPath: string): string[] {
         // 如果缓存有效且包含该书本的单词列表，直接返回
-        if (this.cacheValid && this.bookWordsCache.has(bookPath)) {
-            return [...this.bookWordsCache.get(bookPath)!]; // 返回副本以防修改
+        const cachedBookWords = this.bookWordsCache.get(bookPath);
+        if (this.cacheValid && cachedBookWords) {
+            return [...cachedBookWords]; // 返回副本以防修改
         }
         
         const definitions = this.definitions.get(bookPath);
@@ -730,18 +731,22 @@ export class VocabularyManager {
         // 清除之前的定时器
         const existingTimeout = this.syncTimeouts.get(bookPath);
         if (existingTimeout) {
-            window.clearTimeout(existingTimeout);
+            activeWindow.clearTimeout(existingTimeout);
         }
         
         // 添加到待同步队列
         if (!this.pendingSyncWords.has(bookPath)) {
             this.pendingSyncWords.set(bookPath, []);
         }
-        this.pendingSyncWords.get(bookPath)!.push(wordDef);
+        const pendingWords = this.pendingSyncWords.get(bookPath);
+        if (!pendingWords) return;
+        pendingWords.push(wordDef);
         
         // 设置新的定时器（延迟1秒批量同步）
-        const timeout = window.setTimeout(() => {
-            this.syncPendingWords(bookPath);
+        const timeout = activeWindow.setTimeout(() => {
+            void this.syncPendingWords(bookPath).catch(error => {
+                console.error('HiWords 同步待写入词汇失败:', error);
+            });
         }, 1000);
         
         this.syncTimeouts.set(bookPath, timeout);
@@ -873,7 +878,7 @@ export class VocabularyManager {
      */
     destroy(): void {
         // 清理所有定时器
-        this.syncTimeouts.forEach(timeout => window.clearTimeout(timeout));
+        this.syncTimeouts.forEach(timeout => activeWindow.clearTimeout(timeout));
         this.syncTimeouts.clear();
         
         // 清理缓存
@@ -981,10 +986,10 @@ export class VocabularyManager {
         try {
             // 使用 Vault.process 修改文件
             await this.app.vault.process(file, (content) => {
-                const canvasData = JSON.parse(content);
+                const canvasData = JSON.parse(content) as CanvasData;
                 
                 // 找到要更新的节点
-                const node = canvasData.nodes.find((n: any) => n.id === wordDef.nodeId);
+                const node = canvasData.nodes.find((n) => n.id === wordDef.nodeId);
                 if (!node) {
                     throw new Error(`找不到节点 ID: ${wordDef.nodeId}`);
                 }

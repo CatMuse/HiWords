@@ -1,5 +1,5 @@
 import { App, Modal, Notice, setIcon } from 'obsidian';
-import type { VocabularyBook, WordDefinition } from '../utils';
+import type { WordDefinition } from '../utils';
 import HiWordsPlugin from '../../main';
 import { t } from '../i18n';
 import { DictionaryService } from '../services/dictionary-service';
@@ -28,7 +28,7 @@ export class AddWordModal extends Modal {
      * @param sentence 单词所在的句子（可选）
      * @param isEditMode 是否为编辑模式
      */
-    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence: string = '', isEditMode: boolean = false, prefilledDefinition: string = '', definition?: WordDefinition) {
+    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence = '', isEditMode = false, prefilledDefinition = '', definition?: WordDefinition) {
         super(app);
         this.plugin = plugin;
         this.word = word;
@@ -76,7 +76,7 @@ export class AddWordModal extends Modal {
             
             // 如果没有预填充单词，自动聚焦到单词输入框
             if (!this.word) {
-                setTimeout(() => wordInput?.focus(), 50);
+                activeWindow.setTimeout(() => wordInput?.focus(), 50);
             }
         }
         
@@ -238,7 +238,7 @@ export class AddWordModal extends Modal {
         }
         
         // 智能聚焦逻辑
-        setTimeout(() => {
+        activeWindow.setTimeout(() => {
             if (!this.isEditMode && this.word) {
                 // 添加模式且有预填充单词时，聚焦到定义输入框
                 definitionInput.focus();
@@ -269,11 +269,13 @@ export class AddWordModal extends Modal {
                 
                 // 显示删除中提示
                 const loadingNotice = new Notice(t('notices.deleting_word'), 0);
+                const definition = this.definition;
+                if (!definition) return;
                 
                 try {
                     const success = await this.plugin.vocabularyManager.deleteWordFromCanvas(
-                        this.definition!.source, 
-                        this.definition!.nodeId
+                        definition.source, 
+                        definition.nodeId
                     );
                     
                     loadingNotice.hide();

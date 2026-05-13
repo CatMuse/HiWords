@@ -137,7 +137,7 @@ export class CanvasParser {
                     }
                 }
                 // 文件节点（Markdown）
-                else if (node.type === 'file' && (node as any).file) {
+                else if (node.type === 'file' && node.file) {
                     const wordDef = await this.parseFileNode(node, file.path);
                     if (wordDef) {
                         if (detectionMode === 'group') {
@@ -170,7 +170,7 @@ export class CanvasParser {
         // 先移除 Frontmatter，再整体修剪
         text = this.removeFrontmatter(text).trim();
         let word = '';
-        let aliases: string[] = [];
+        const aliases: string[] = [];
         let definition = '';
 
         try {
@@ -281,7 +281,7 @@ export class CanvasParser {
      */
     private async parseFileNode(node: CanvasNode, sourcePath: string): Promise<WordDefinition | null> {
         try {
-            const filePath = (node as any).file as string | undefined;
+            const filePath = node.type === 'file' ? node.file : undefined;
             if (!filePath) return null;
 
             const abs = this.app.vault.getAbstractFileByPath(filePath);

@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon, Notice } from 'obsidian';
+import { EventRef, ItemView, WorkspaceLeaf, TFile, MarkdownView, MarkdownRenderer, setIcon, Notice } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS, Trie } from '../utils';
 import { t } from '../i18n';
@@ -7,12 +7,33 @@ import { renderWordCard } from './word-card-renderer';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
+type HiWordsWorkspaceEventName = 'hi-words:mastered-changed' | 'hi-words:settings-changed';
+
+interface HiWordsWorkspaceEvents {
+    on(name: HiWordsWorkspaceEventName, callback: () => void): EventRef;
+}
+
+interface HoverLinkWorkspace {
+    trigger(name: 'hover-link', payload: {
+        event: Event;
+        source: string;
+        hoverParent: HTMLElement;
+        target: HTMLElement;
+        linktext: string;
+        sourcePath: string;
+    }): void;
+}
+
+interface SearchViewLike {
+    setQuery?: (query: string) => void;
+}
+
 export class HiWordsSidebarView extends ItemView {
     private plugin: HiWordsPlugin;
     private currentWords: WordDefinition[] = [];
     private activeTab: 'learning' | 'mastered' = 'learning';
     private currentFile: TFile | null = null;
-    private firstLoadForFile: boolean = false; // 仅在切换到新文件后的首次渲染生效
+    private firstLoadForFile = false; // 仅在切换到新文件后的首次渲染生效
     private updateTimer: number | null = null; // 合并/防抖更新
     private delegatedBound = false; // 是否已绑定根级事件委托
     private lastInteractionTime = 0; // 最后一次交互的时间戳
@@ -79,14 +100,14 @@ export class HiWordsSidebarView extends ItemView {
         
         // 监听已掌握功能状态变化
         this.registerEvent(
-            this.app.workspace.on('hi-words:mastered-changed' as any, () => {
+            (this.app.workspace as unknown as HiWordsWorkspaceEvents).on('hi-words:mastered-changed', () => {
                 this.scheduleUpdate(100);
             })
         );
         
         // 监听设置变化（如模糊效果开关）
         this.registerEvent(
-            this.app.workspace.on('hi-words:settings-changed' as any, () => {
+            (this.app.workspace as unknown as HiWordsWorkspaceEvents).on('hi-words:settings-changed', () => {
                 this.scheduleUpdate(100);
             })
         );
@@ -98,7 +119,7 @@ export class HiWordsSidebarView extends ItemView {
 
     async focusWord(wordDef: WordDefinition, origin: 'document' | 'library' = 'document') {
         if (this.updateTimer !== null) {
-            clearTimeout(this.updateTimer);
+            activeWindow.clearTimeout(this.updateTimer);
             this.updateTimer = null;
         }
 
@@ -195,10 +216,10 @@ export class HiWordsSidebarView extends ItemView {
         }
         
         if (this.updateTimer !== null) {
-            clearTimeout(this.updateTimer);
+            activeWindow.clearTimeout(this.updateTimer);
             this.updateTimer = null;
         }
-        this.updateTimer = window.setTimeout(() => {
+        this.updateTimer = activeWindow.setTimeout(() => {
             this.updateTimer = null;
             void this.updateView();
         }, Math.max(0, delay));
@@ -402,7 +423,7 @@ export class HiWordsSidebarView extends ItemView {
      * @param wordDef 单词定义
      * @param isMastered 是否为已掌握单词
      */
-    private async createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered: boolean = false) {
+    private async createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered = false) {
         const wordKey = this.getWordStateKey(wordDef);
         const isExpanded = this.getWordExpandedState(wordDef);
         const card = container.createEl('div', {
@@ -609,7 +630,7 @@ export class HiWordsSidebarView extends ItemView {
 
                     this.lastInteractionTime = Date.now();
                     if (this.updateTimer !== null) {
-                        clearTimeout(this.updateTimer);
+                        activeWindow.clearTimeout(this.updateTimer);
                         this.updateTimer = null;
                     }
 
@@ -642,7 +663,7 @@ export class HiWordsSidebarView extends ItemView {
                     // 记录交互时间并取消所有待执行的更新
                     this.lastInteractionTime = Date.now();
                     if (this.updateTimer !== null) {
-                        clearTimeout(this.updateTimer);
+                        activeWindow.clearTimeout(this.updateTimer);
                         this.updateTimer = null;
                     }
 
@@ -669,14 +690,19 @@ export class HiWordsSidebarView extends ItemView {
                     if (word && this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
                         const detail = this.currentWords.find((w) => w.word === word);
                         if (detail) {
-                            (async () => {
+                            void (async () => {
                                 try {
+                                    const masteredService = this.plugin.masteredService;
+                                    if (!masteredService) return;
+
                                     if (isMastered) {
-                                        await this.plugin.masteredService!.unmarkWordAsMastered(detail.source, detail.nodeId, detail.word);
+                                        await masteredService.unmarkWordAsMastered(detail.source, detail.nodeId, detail.word);
                                     } else {
-                                        await this.plugin.masteredService!.markWordAsMastered(detail.source, detail.nodeId, detail.word);
+                                        await masteredService.markWordAsMastered(detail.source, detail.nodeId, detail.word);
                                     }
-                                    setTimeout(() => this.updateView(), 100);
+                                    activeWindow.setTimeout(() => {
+                                        void this.updateView();
+                                    }, 100);
                                 } catch (err) {
                                     console.error('切换已掌握状态失败:', err);
                                 }
@@ -727,7 +753,7 @@ export class HiWordsSidebarView extends ItemView {
     private async extractPDFText(): Promise<string> {
         try {
             // 等待 PDF 视图加载并获取文本层内容
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => activeWindow.setTimeout(resolve, 500));
             
             // 查找所有 PDF 文本层
             const textLayers = document.querySelectorAll('.textLayer');
@@ -790,11 +816,11 @@ export class HiWordsSidebarView extends ItemView {
         // 内部链接
         root.querySelectorAll('a.internal-link').forEach((a) => {
             const linkEl = a as HTMLAnchorElement;
-            const linktext = (linkEl.getAttribute('href') || (linkEl as any).dataset?.href || '').trim();
+            const linktext = (linkEl.getAttribute('href') || linkEl.dataset.href || '').trim();
             if (!linktext) return;
 
             linkEl.addEventListener('mouseover', (evt) => {
-                (this.app.workspace as any).trigger('hover-link', {
+                (this.app.workspace as unknown as HoverLinkWorkspace).trigger('hover-link', {
                     event: evt,
                     source: 'hi-words',
                     hoverParent,
@@ -807,7 +833,9 @@ export class HiWordsSidebarView extends ItemView {
             linkEl.addEventListener('click', (evt) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                this.app.workspace.openLinkText(linktext, sourcePath);
+                void this.app.workspace.openLinkText(linktext, sourcePath).catch(error => {
+                    console.error('HiWords 打开内部链接失败:', error);
+                });
             });
         });
 
@@ -829,9 +857,11 @@ export class HiWordsSidebarView extends ItemView {
         try {
             const leaves = this.app.workspace.getLeavesOfType('search');
             if (leaves.length > 0) {
-                const view: any = leaves[0].view;
+                const view = leaves[0].view as SearchViewLike;
                 view.setQuery?.(query);
-                this.app.workspace.revealLeaf(leaves[0]);
+                void this.app.workspace.revealLeaf(leaves[0]).catch(error => {
+                    console.error('HiWords 打开搜索视图失败:', error);
+                });
                 return;
             }
 
@@ -856,7 +886,7 @@ export class HiWordsSidebarView extends ItemView {
                     // 如果是 Markdown 文件，打开并尝试定位到单词
                     await this.app.workspace.openLinkText(file.path, '');
                     // 等待一个短暂时间让文件加载
-                    setTimeout(() => {
+                    activeWindow.setTimeout(() => {
                         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                         if (activeView && activeView.file?.path === file.path) {
                             // 尝试在文件中查找单词

@@ -1,6 +1,6 @@
 import { App, ItemView, MarkdownRenderer, Modal, Notice, setIcon, WorkspaceLeaf } from 'obsidian';
 import type HiWordsPlugin from '../../main';
-import type { StudyItem, VocabularyBook, VocabularyBookDisplaySettings, WordCardDetailSection, WordDefinition } from '../utils';
+import type { VocabularyBook, VocabularyBookDisplaySettings, WordCardDetailSection, WordDefinition } from '../utils';
 import { mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
 import { DEFAULT_WORD_CARD_DETAIL_SECTIONS, DEFAULT_WORD_CARD_PREVIEW_SECTIONS, renderWordCard } from './word-card-renderer';
@@ -243,7 +243,7 @@ export class HiWordsLibraryView extends ItemView {
 
     async onClose() {
         if (this.searchTimer !== null) {
-            window.clearTimeout(this.searchTimer);
+            activeWindow.clearTimeout(this.searchTimer);
             this.searchTimer = null;
         }
         this.clearTooltipTimers();
@@ -625,14 +625,14 @@ export class HiWordsLibraryView extends ItemView {
 
     private scheduleTooltip(target: HTMLElement, definition: WordDefinition) {
         if (this.tooltipHideTimer !== null) {
-            window.clearTimeout(this.tooltipHideTimer);
+            activeWindow.clearTimeout(this.tooltipHideTimer);
             this.tooltipHideTimer = null;
         }
         if (this.tooltipShowTimer !== null) {
-            window.clearTimeout(this.tooltipShowTimer);
+            activeWindow.clearTimeout(this.tooltipShowTimer);
         }
 
-        this.tooltipShowTimer = window.setTimeout(() => {
+        this.tooltipShowTimer = activeWindow.setTimeout(() => {
             this.tooltipShowTimer = null;
             void this.showDefinitionTooltip(target, definition);
         }, 120);
@@ -640,14 +640,14 @@ export class HiWordsLibraryView extends ItemView {
 
     private scheduleTooltipHide() {
         if (this.tooltipShowTimer !== null) {
-            window.clearTimeout(this.tooltipShowTimer);
+            activeWindow.clearTimeout(this.tooltipShowTimer);
             this.tooltipShowTimer = null;
         }
         if (this.tooltipHideTimer !== null) {
-            window.clearTimeout(this.tooltipHideTimer);
+            activeWindow.clearTimeout(this.tooltipHideTimer);
         }
 
-        this.tooltipHideTimer = window.setTimeout(() => {
+        this.tooltipHideTimer = activeWindow.setTimeout(() => {
             this.tooltipHideTimer = null;
             this.removeTooltip();
         }, 100);
@@ -664,7 +664,7 @@ export class HiWordsLibraryView extends ItemView {
 
         tooltip.addEventListener('mouseenter', () => {
             if (this.tooltipHideTimer !== null) {
-                window.clearTimeout(this.tooltipHideTimer);
+                activeWindow.clearTimeout(this.tooltipHideTimer);
                 this.tooltipHideTimer = null;
             }
         });
@@ -748,11 +748,11 @@ export class HiWordsLibraryView extends ItemView {
 
     private clearTooltipTimers() {
         if (this.tooltipShowTimer !== null) {
-            window.clearTimeout(this.tooltipShowTimer);
+            activeWindow.clearTimeout(this.tooltipShowTimer);
             this.tooltipShowTimer = null;
         }
         if (this.tooltipHideTimer !== null) {
-            window.clearTimeout(this.tooltipHideTimer);
+            activeWindow.clearTimeout(this.tooltipHideTimer);
             this.tooltipHideTimer = null;
         }
     }
@@ -835,10 +835,10 @@ export class HiWordsLibraryView extends ItemView {
 
     private scheduleRender() {
         if (this.searchTimer !== null) {
-            window.clearTimeout(this.searchTimer);
+            activeWindow.clearTimeout(this.searchTimer);
         }
 
-        this.searchTimer = window.setTimeout(() => {
+        this.searchTimer = activeWindow.setTimeout(() => {
             this.searchTimer = null;
             void this.refreshWordList();
         }, 160);

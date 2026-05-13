@@ -1,4 +1,4 @@
-import { App, Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings, VocabularyBookDisplaySettings, WordDefinition } from './src/utils';
@@ -11,6 +11,11 @@ import { i18n } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
 import { shouldHighlightFile } from './src/utils/highlight-utils';
+
+interface HiWordsRefreshHooks {
+    _refreshReadingModeHighlighter?: () => void;
+    _refreshPDFHighlighter?: () => void;
+}
 
 export default class HiWordsPlugin extends Plugin {
     settings!: HiWordsSettings;
@@ -78,9 +83,13 @@ export default class HiWordsPlugin extends Plugin {
         
         // 延迟加载生词本（在布局准备好后）
         // 这样可以加快插件启动速度，避免阻塞 Obsidian 启动
-        this.app.workspace.onLayoutReady(async () => {
-            await this.vocabularyManager.loadAllVocabularyBooks();
-            this.refreshHighlighter();
+        this.app.workspace.onLayoutReady(() => {
+            void (async () => {
+                await this.vocabularyManager.loadAllVocabularyBooks();
+                this.refreshHighlighter();
+            })().catch(error => {
+                console.error('HiWords failed to load vocabulary books:', error);
+            });
         });
     }
 
@@ -127,13 +136,14 @@ export default class HiWordsPlugin extends Plugin {
         highlighterManager.refreshAll();
         
         // 刷新阅读模式（只更新可见区域）
-        if ((this as any)._refreshReadingModeHighlighter) {
-            (this as any)._refreshReadingModeHighlighter();
+        const hooks = this as HiWordsPlugin & HiWordsRefreshHooks;
+        if (hooks._refreshReadingModeHighlighter) {
+            hooks._refreshReadingModeHighlighter();
         }
         
         // 刷新 PDF 模式（只更新可见区域）
-        if ((this as any)._refreshPDFHighlighter) {
-            (this as any)._refreshPDFHighlighter();
+        if (hooks._refreshPDFHighlighter) {
+            hooks._refreshPDFHighlighter();
         }
         
         // 刷新侧边栏视图（通过 API 获取）
@@ -155,7 +165,7 @@ export default class HiWordsPlugin extends Plugin {
     /**
      * 初始化侧边栏
      */
-    private async initializeSidebar() {
+    private initializeSidebar() {
         if (this.isSidebarInitialized) return;
         
         // 只注册视图，不自动打开
@@ -185,7 +195,7 @@ export default class HiWordsPlugin extends Plugin {
         }
         
         if (leaf) {
-            workspace.revealLeaf(leaf);
+            await workspace.revealLeaf(leaf);
         }
     }
 
@@ -218,7 +228,7 @@ export default class HiWordsPlugin extends Plugin {
         }
 
         if (leaf) {
-            workspace.revealLeaf(leaf);
+            await workspace.revealLeaf(leaf);
         }
     }
 
@@ -246,7 +256,7 @@ export default class HiWordsPlugin extends Plugin {
      * @param sentence 单词所在的句子（可选）
      * @param prefilledDefinition 预填充的释义（可选，来自划词翻译）
      */
-    addOrEditWord(word: string, sentence: string = '', prefilledDefinition: string = '') {
+    addOrEditWord(word: string, sentence = '', prefilledDefinition = '') {
         // 检查单词是否已存在
         const exists = this.vocabularyManager.hasWord(word);
         

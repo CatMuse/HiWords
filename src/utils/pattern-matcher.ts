@@ -71,7 +71,7 @@ export function buildPatternRegex(parts: string[]): RegExp {
 export function findPatternMatches(
     text: string,
     parts: string[],
-    offset: number = 0
+    offset = 0
 ): Array<{
     from: number;
     to: number;

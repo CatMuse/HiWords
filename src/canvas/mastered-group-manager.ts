@@ -30,7 +30,7 @@ export class MasteredGroupManager {
      */
     private genHex16(): string {
         const bytes = new Uint8Array(8);
-        (window.crypto || (window as any).msCrypto).getRandomValues(bytes);
+        window.crypto.getRandomValues(bytes);
         return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
     }
 
@@ -45,7 +45,7 @@ export class MasteredGroupManager {
             if (!canvasData) return null;
 
             // 查找现有的 Mastered 分组
-            let masteredGroup = canvasData.nodes.find(
+            const masteredGroup = canvasData.nodes.find(
                 node => node.type === 'group' && node.label === this.MASTERED_GROUP_LABEL
             );
 
@@ -101,7 +101,9 @@ export class MasteredGroupManager {
                         layoutGroupInner(data, masteredGroup, this.settings, this.canvasParser);
                         normalizeLayout(data, this.settings, this.canvasParser);
                     }
-                } catch {}
+                } catch {
+                    // Layout normalization is best-effort.
+                }
             });
         } catch (error) {
             return false;
@@ -137,7 +139,9 @@ export class MasteredGroupManager {
                     if (this.settings) {
                         normalizeLayout(data, this.settings, this.canvasParser);
                     }
-                } catch {}
+                } catch {
+                    // Layout normalization is best-effort.
+                }
             });
         } catch (error) {
             return false;
@@ -221,7 +225,6 @@ export class MasteredGroupManager {
 
         // 尝试在右侧放置分组，如果空间不够则放在下方
         const groupWidth = 800;
-        const groupHeight = 600;
         const padding = 50;
         
         // 先尝试右侧放置
@@ -283,7 +286,6 @@ export class MasteredGroupManager {
         
         const paddingX = 50;
         const paddingY = 20;
-        const nodeWidth = node.width || 260;
         const nodeHeight = node.height || 120;
         
         if (freeTextNodes.length === 0) {

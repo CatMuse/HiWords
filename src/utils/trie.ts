@@ -2,11 +2,11 @@
  * 前缀树(Trie)数据结构实现
  * 用于高效地匹配多个单词
  */
-export class Trie {
-    private root: TrieNode;
+export class Trie<TPayload = unknown> {
+    private root: TrieNode<TPayload>;
 
     constructor() {
-        this.root = new TrieNode();
+        this.root = new TrieNode<TPayload>();
     }
 
     /**
@@ -14,15 +14,17 @@ export class Trie {
      * @param word 要添加的单词
      * @param payload 与单词关联的数据
      */
-    addWord(word: string, payload: any): void {
+    addWord(word: string, payload: TPayload): void {
         let node = this.root;
         const lowerWord = word.toLowerCase();
         
         for (const char of lowerWord) {
             if (!node.children.has(char)) {
-                node.children.set(char, new TrieNode());
+                node.children.set(char, new TrieNode<TPayload>());
             }
-            node = node.children.get(char)!;
+            const child = node.children.get(char);
+            if (!child) return;
+            node = child;
         }
         
         node.isEndOfWord = true;
@@ -35,8 +37,8 @@ export class Trie {
      * @param text 要搜索的文本
      * @returns 匹配结果数组，每个结果包含单词、位置和关联数据
      */
-    findAllMatches(text: string): TrieMatch[] {
-        const matches: TrieMatch[] = [];
+    findAllMatches(text: string): Array<TrieMatch<TPayload>> {
+        const matches: Array<TrieMatch<TPayload>> = [];
         const lowerText = text.toLowerCase();
         
         // 对文本中的每个位置尝试匹配
@@ -46,7 +48,9 @@ export class Trie {
             
             // 尝试从当前位置匹配单词
             while (j < lowerText.length && node.children.has(lowerText[j])) {
-                node = node.children.get(lowerText[j])!;
+                const child = node.children.get(lowerText[j]);
+                if (!child) break;
+                node = child;
                 j++;
                 
                 // 如果到达单词结尾，添加匹配
@@ -77,17 +81,17 @@ export class Trie {
      * 清空前缀树
      */
     clear(): void {
-        this.root = new TrieNode();
+        this.root = new TrieNode<TPayload>();
     }
 }
 
 /**
  * 前缀树节点
  */
-class TrieNode {
-    children: Map<string, TrieNode>;
+class TrieNode<TPayload = unknown> {
+    children: Map<string, TrieNode<TPayload>>;
     isEndOfWord: boolean;
-    payload: any;
+    payload: TPayload | null;
     word: string | null;
     
     constructor() {
@@ -101,11 +105,11 @@ class TrieNode {
 /**
  * 前缀树匹配结果
  */
-export interface TrieMatch {
+export interface TrieMatch<TPayload = unknown> {
     word: string;
     from: number;
     to: number;
-    payload: any;
+    payload: TPayload | null;
 }
 
 /**

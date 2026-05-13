@@ -2,6 +2,23 @@ import { requestUrl } from 'obsidian';
 import { t } from '../i18n';
 import type { AIProvider, HiWordsSettings } from '../utils';
 
+type JsonObject = Record<string, unknown>;
+type JsonPath = Array<string | number>;
+
+function readStringPath(data: unknown, path: JsonPath): string | undefined {
+    let current = data;
+    for (const segment of path) {
+        if (typeof segment === 'number') {
+            if (!Array.isArray(current)) return undefined;
+            current = current[segment];
+            continue;
+        }
+        if (!current || typeof current !== 'object') return undefined;
+        current = (current as Record<string, unknown>)[segment];
+    }
+    return typeof current === 'string' ? current : undefined;
+}
+
 /**
  * 缓存条目
  */
@@ -49,9 +66,7 @@ export class TranslationService {
             return cached.content;
         }
 
-        let result: string;
-
-        result = await this.translateWithAI(cleanText);
+        const result = await this.translateWithAI(cleanText);
 
         // 存入缓存
         this.cache.set(cacheKey, { content: result, timestamp: Date.now() });
@@ -90,8 +105,8 @@ export class TranslationService {
         const url = aiConfig.apiUrl;
         const apiType = this.detectAPIType(url, aiConfig.provider);
 
-        let requestBody: any;
-        let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        let requestBody: JsonObject;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         let finalUrl = url;
 
         switch (apiType) {
@@ -134,18 +149,18 @@ export class TranslationService {
             throw new Error(`HTTP ${response.status}: ${response.text}`);
         }
 
-        const data = response.json;
+        const data = response.json as unknown;
         let content: string | undefined;
 
         switch (apiType) {
             case 'claude':
-                content = data?.content?.[0]?.text;
+                content = readStringPath(data, ['content', 0, 'text']);
                 break;
             case 'gemini':
-                content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                content = readStringPath(data, ['candidates', 0, 'content', 'parts', 0, 'text']);
                 break;
             default:
-                content = data?.choices?.[0]?.message?.content;
+                content = readStringPath(data, ['choices', 0, 'message', 'content']);
                 break;
         }
 
@@ -199,19 +214,23 @@ export class TranslationService {
         }
     }
 
-    private isObject(item: any): boolean {
-        return item && typeof item === 'object' && !Array.isArray(item);
+    private isObject(item: unknown): item is JsonObject {
+        return !!item && typeof item === 'object' && !Array.isArray(item);
     }
 
-    private deepMerge(target: any, source: any): any {
+    private deepMerge(target: JsonObject, source: JsonObject): JsonObject {
         const output = { ...target };
 
         if (this.isObject(target) && this.isObject(source)) {
             Object.keys(source).forEach(key => {
-                if (this.isObject(source[key])) {
-                    output[key] = key in target ? this.deepMerge(target[key], source[key]) : source[key];
+                const sourceValue = source[key];
+                const targetValue = target[key];
+                if (this.isObject(sourceValue)) {
+                    output[key] = key in target && this.isObject(targetValue)
+                        ? this.deepMerge(targetValue, sourceValue)
+                        : sourceValue;
                 } else {
-                    output[key] = source[key];
+                    output[key] = sourceValue;
                 }
             });
         }
@@ -219,12 +238,14 @@ export class TranslationService {
         return output;
     }
 
-    private mergeExtraParams(baseBody: any, extraParamsJson?: string): any {
+    private mergeExtraParams(baseBody: JsonObject, extraParamsJson?: string): JsonObject {
         const json = extraParamsJson?.trim();
         if (!json || json === '{}') return baseBody;
 
         try {
-            return this.deepMerge(baseBody, JSON.parse(json));
+            const extraParams = JSON.parse(json) as unknown;
+            if (!this.isObject(extraParams)) return baseBody;
+            return this.deepMerge(baseBody, extraParams);
         } catch (error) {
             console.warn('Invalid JSON in extraParams, ignoring:', error);
             return baseBody;

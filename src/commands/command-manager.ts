@@ -1,4 +1,4 @@
-import { Editor, Notice, MarkdownView } from 'obsidian';
+import { Notice, MarkdownView } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { t } from '../i18n';
 import { extractSentenceFromEditorMultiline, extractSentenceFromSelection } from '../utils/sentence-extractor';
@@ -24,7 +24,9 @@ export function registerCommands(plugin: HiWordsPlugin) {
         id: 'open-vocabulary-sidebar',
         name: t('commands.show_sidebar'),
         callback: () => {
-            plugin.activateSidebarView();
+            void plugin.activateSidebarView().catch(error => {
+                console.error('打开 HiWords 侧边栏失败:', error);
+            });
         }
     });
 
@@ -32,7 +34,9 @@ export function registerCommands(plugin: HiWordsPlugin) {
         id: 'open-vocabulary-library',
         name: t('commands.open_library'),
         callback: () => {
-            plugin.activateLibraryView();
+            void plugin.activateLibraryView().catch(error => {
+                console.error('打开 HiWords 单词管理失败:', error);
+            });
         }
     });
 
