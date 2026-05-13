@@ -26,12 +26,12 @@ export class SelectionTranslatePopover extends Component {
     }
 
     onload() {
-        this.registerDomEvent(document, 'mouseup', (event: MouseEvent) => {
+        this.registerDomEvent(activeDocument, 'mouseup', (event: MouseEvent) => {
             this.handleMouseUp(event);
         });
 
         // 点击空白区域关闭浮窗
-        this.registerDomEvent(document, 'mousedown', (event: MouseEvent) => {
+        this.registerDomEvent(activeDocument, 'mousedown', (event: MouseEvent) => {
             if (this.activePopover && !this.activePopover.contains(event.target as Node)) {
                 this.removePopover();
             }
@@ -42,7 +42,7 @@ export class SelectionTranslatePopover extends Component {
         this.registerDomEvent(window, 'resize', () => this.removePopover());
 
         // 按 Escape 关闭浮窗
-        this.registerDomEvent(document, 'keydown', (event: KeyboardEvent) => {
+        this.registerDomEvent(activeDocument, 'keydown', (event: KeyboardEvent) => {
             if (event.key === 'Escape' && this.activePopover) {
                 this.removePopover();
             }

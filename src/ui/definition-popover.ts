@@ -129,8 +129,8 @@ export class DefinitionPopover extends Component {
 
     private registerEvents() {
         // 使用 registerDomEvent 注册事件，确保在组件卸载时自动清理
-        this.registerDomEvent(document, 'mouseover', this.eventHandlers.mouseover);
-        this.registerDomEvent(document, 'mouseout', this.eventHandlers.mouseout);
+        this.registerDomEvent(activeDocument, 'mouseover', this.eventHandlers.mouseover);
+        this.registerDomEvent(activeDocument, 'mouseout', this.eventHandlers.mouseout);
         // 滚动或窗口尺寸变化时，直接关闭 tooltip，避免频繁重定位
         this.registerDomEvent(window, 'scroll', this.eventHandlers.scroll as EventListener, { passive: true });
         this.registerDomEvent(window, 'resize', this.eventHandlers.resize as EventListener);
