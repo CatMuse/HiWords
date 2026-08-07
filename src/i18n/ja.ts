@@ -51,7 +51,7 @@ export default {
         ai_api_url: "API URL",
         ai_api_url_desc: "APIエンドポイント（自動検出：OpenAI、Claude、Gemini）",
         ai_api_key: "APIキー",
-        ai_api_key_desc: "あなたのAI APIキー",
+        ai_api_key_desc: "ObsidianのシークレットストレージからAPIキーを選択",
         ai_model: "モデル",
         ai_model_desc: "AIモデル名（例：gpt-4o-mini、deepseek-chat）",
         ai_prompt: "カスタムプロンプト",
@@ -138,6 +138,7 @@ export default {
 
     // Notices
     notices: {
+        ai_api_key_reset: "APIキーの保存方法が更新されました。HiWordsの設定でAPIキーを再設定してください。",
         vocabulary_refreshed: "単語帳を更新しました",
         word_added: "単語を単語帳に追加しました",
         word_exists: "単語はすでに単語帳に存在します",

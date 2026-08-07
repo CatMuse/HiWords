@@ -212,7 +212,7 @@ export type AIProvider = 'openai-compatible' | 'anthropic' | 'gemini' | 'custom'
 export interface AIServiceSettings {
     provider: AIProvider;
     apiUrl: string;
-    apiKey: string;
+    apiKeySecretId: string;
     model: string;
     extraParams: string;
 }

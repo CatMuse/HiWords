@@ -4,6 +4,7 @@ import type { AIProvider, AIServiceSettings } from '../utils';
 
 interface AIConfig {
     service: AIServiceSettings;
+    apiKey: string;
     prompt: string;
 }
 
@@ -149,7 +150,7 @@ export class DictionaryService {
             return { isValid: false, error: t('ai_errors.api_url_required') };
         }
         
-        if (!this.config.service.apiKey?.trim()) {
+        if (!this.config.apiKey.trim()) {
             return { isValid: false, error: t('ai_errors.api_key_not_configured') };
         }
         
@@ -274,9 +275,9 @@ export class DictionaryService {
 
             // 构建请求参数
             const url = adapter.buildUrl
-                ? adapter.buildUrl(this.config.service.apiUrl, this.config.service.model, this.config.service.apiKey)
+                ? adapter.buildUrl(this.config.service.apiUrl, this.config.service.model, this.config.apiKey)
                 : this.config.service.apiUrl;
-            const headers = adapter.buildHeaders(this.config.service.apiKey);
+            const headers = adapter.buildHeaders(this.config.apiKey);
             let body = adapter.buildRequest(this.config.service.model, prompt);
 
             // 合并额外参数

@@ -190,7 +190,7 @@ export class AddWordModal extends Modal {
 
                     // 检查 AI 配置是否完整
                     if (!this.plugin.settings.aiService?.apiUrl ||
-                        !this.plugin.settings.aiService?.apiKey ||
+                        !this.plugin.getAIAPIKey() ||
                         !this.plugin.settings.aiService?.model) {
                         new Notice(t('ai_errors.api_key_not_configured'));
                         return;
@@ -205,6 +205,7 @@ export class AddWordModal extends Modal {
                         // 重新创建服务以确保使用最新配置
                         const dictionaryService = new DictionaryService({
                             service: this.plugin.settings.aiService,
+                            apiKey: this.plugin.getAIAPIKey(),
                             prompt: this.plugin.settings.aiDefinition.prompt
                         });
                         const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);

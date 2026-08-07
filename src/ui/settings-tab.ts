@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, Modal, setIcon, TextComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, Modal, SecretComponent, setIcon, TextComponent } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle, AIProvider, mapCanvasColorToCSSVar, getColorWithOpacity } from '../utils';
 import { CanvasParser } from '../canvas';
@@ -276,6 +276,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         try {
             const service = new DictionaryService({
                 service: this.plugin.settings.aiService,
+                apiKey: this.plugin.getAIAPIKey(),
                 prompt: 'Reply with "OK" for the word "{{word}}".'
             });
             const result = await service.fetchDefinition(
@@ -431,18 +432,15 @@ export class HiWordsSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName(t('settings.ai_api_key') || 'API Key')
-            .setDesc(t('settings.ai_api_key_desc') || 'Your AI API key')
-            .addText(text => {
-                text.inputEl.type = 'password';
-                text.setPlaceholder('sk-...')
-                    .setValue(this.plugin.settings.aiService.apiKey)
-                    .onChange((val) => {
-                        this.runAsync(async () => {
-                            this.plugin.settings.aiService.apiKey = val.trim();
-                            await this.plugin.saveSettings();
-                        }, 'HiWords 保存 AI API Key 失败:');
-                    });
-            });
+            .setDesc(t('settings.ai_api_key_desc') || 'Select an API key from Obsidian secret storage')
+            .addComponent(container => new SecretComponent(this.app, container)
+                .setValue(this.plugin.settings.aiService.apiKeySecretId)
+                .onChange((secretId) => {
+                    this.runAsync(async () => {
+                        this.plugin.settings.aiService.apiKeySecretId = secretId;
+                        await this.plugin.saveSettings();
+                    }, 'HiWords 保存 AI API Key 引用失败:');
+                }));
 
         new Setting(containerEl)
             .setName(t('settings.ai_model') || 'Model ID')

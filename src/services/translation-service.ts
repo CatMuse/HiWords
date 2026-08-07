@@ -32,12 +32,14 @@ interface CacheEntry {
  */
 export class TranslationService {
     private settings: HiWordsSettings;
+    private readonly getAPIKey: () => string;
     private cache = new Map<string, CacheEntry>();
     private readonly CACHE_TTL = 30 * 60 * 1000; // 30 分钟缓存
     private abortController: AbortController | null = null;
 
-    constructor(settings: HiWordsSettings) {
+    constructor(settings: HiWordsSettings, getAPIKey: () => string) {
         this.settings = settings;
+        this.getAPIKey = getAPIKey;
     }
 
     /**
@@ -89,7 +91,8 @@ export class TranslationService {
      */
     private async translateWithAI(text: string): Promise<string> {
         const aiConfig = this.settings.aiService;
-        if (!aiConfig?.apiUrl || !aiConfig?.apiKey || !aiConfig?.model) {
+        const apiKey = this.getAPIKey();
+        if (!aiConfig?.apiUrl || !apiKey || !aiConfig?.model) {
             throw new Error(t('translate.ai_not_configured'));
         }
 
@@ -116,7 +119,7 @@ export class TranslationService {
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 1024
                 };
-                headers['x-api-key'] = aiConfig.apiKey;
+                headers['x-api-key'] = apiKey;
                 headers['anthropic-version'] = '2023-06-01';
                 break;
             case 'gemini':
@@ -131,11 +134,11 @@ export class TranslationService {
                     temperature: 0.3,
                     max_tokens: 500
                 };
-                headers['Authorization'] = `Bearer ${aiConfig.apiKey}`;
+                headers['Authorization'] = `Bearer ${apiKey}`;
                 break;
         }
 
-        finalUrl = this.buildRequestUrl(finalUrl, aiConfig.model, aiConfig.apiKey, apiType);
+        finalUrl = this.buildRequestUrl(finalUrl, aiConfig.model, apiKey, apiType);
         requestBody = this.mergeExtraParams(requestBody, aiConfig.extraParams);
 
         const response = await requestUrl({

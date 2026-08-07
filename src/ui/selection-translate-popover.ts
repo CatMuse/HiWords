@@ -22,7 +22,7 @@ export class SelectionTranslatePopover extends Component {
     constructor(plugin: HiWordsPlugin) {
         super();
         this.plugin = plugin;
-        this.translationService = new TranslationService(plugin.settings);
+        this.translationService = new TranslationService(plugin.settings, () => plugin.getAIAPIKey());
     }
 
     onload() {

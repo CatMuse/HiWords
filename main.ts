@@ -1,13 +1,13 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings, VocabularyBookDisplaySettings, WordDefinition } from './src/utils';
-import { DEFAULT_SETTINGS } from './src/settings';
+import { normalizeStoredSettings } from './src/settings-storage';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
 import { DefinitionPopover, HiWordsLibraryView, HiWordsSettingTab, HiWordsSidebarView, LIBRARY_VIEW_TYPE, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionTranslatePopover } from './src/ui';
-import { i18n } from './src/i18n';
+import { i18n, t } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
 import { shouldHighlightFile } from './src/utils/highlight-utils';
@@ -25,6 +25,7 @@ export default class HiWordsPlugin extends Plugin {
     selectionTranslatePopover!: SelectionTranslatePopover;
     editorExtensions: Extension[] = [];
     private isSidebarInitialized = false;
+    private discardedLegacyAPIKey = false;
 
     async onload() {
         // 加载设置（快速完成）
@@ -32,6 +33,10 @@ export default class HiWordsPlugin extends Plugin {
         
         // 初始化国际化模块
         i18n.setApp(this.app);
+
+        if (this.discardedLegacyAPIKey) {
+            new Notice(t('notices.ai_api_key_reset'), 10000);
+        }
         
         // 初始化管理器（不加载数据）
         this.vocabularyManager = new VocabularyManager(this.app, this.settings);
@@ -243,7 +248,19 @@ export default class HiWordsPlugin extends Plugin {
      * 加载设置
      */
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const normalized = normalizeStoredSettings(await this.loadData());
+        this.settings = normalized.settings;
+        this.discardedLegacyAPIKey = normalized.discardedLegacyAPIKey;
+
+        if (normalized.hadLegacyAPIKeyField) {
+            await this.saveData(this.settings);
+        }
+    }
+
+    getAIAPIKey(): string {
+        const secretId = this.settings.aiService.apiKeySecretId.trim();
+        if (!secretId) return '';
+        return this.app.secretStorage.getSecret(secretId)?.trim() ?? '';
     }
 
     /**

@@ -148,6 +148,7 @@ export interface LanguagePack {
         testing_ai_connection?: string;
         ai_connection_success?: string;
         ai_connection_failed?: string;
+        ai_api_key_reset?: string;
     };
     modals: {
         auto_fill_definition?: string;

@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     aiService: {
         provider: 'openai-compatible',
         apiUrl: 'https://api.openai.com/v1',
-        apiKey: '',
+        apiKeySecretId: '',
         model: 'gpt-4o-mini',
         extraParams: '{}'
     },

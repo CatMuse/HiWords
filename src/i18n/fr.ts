@@ -53,7 +53,7 @@ export default {
         ai_api_url: "URL de l'API",
         ai_api_url_desc: "Point de terminaison de l'API (détecte automatiquement : OpenAI, Claude, Gemini)",
         ai_api_key: "Clé API",
-        ai_api_key_desc: "Votre clé API IA",
+        ai_api_key_desc: "Sélectionnez une clé API dans le stockage sécurisé d’Obsidian",
         ai_model: "Modèle",
         ai_model_desc: "Nom du modèle IA (ex., gpt-4o-mini, deepseek-chat)",
         ai_prompt: "Prompt personnalisé",
@@ -140,6 +140,7 @@ export default {
 
     // Notices
     notices: {
+        ai_api_key_reset: "Le stockage des clés API a été mis à niveau. Sélectionnez ou ajoutez à nouveau votre clé dans les réglages de HiWords.",
         vocabulary_refreshed: "Livres actualisés",
         word_added: "Mot ajouté au livre",
         word_exists: "Le mot existe déjà dans le livre",
