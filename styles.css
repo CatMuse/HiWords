@@ -1253,34 +1253,6 @@
     margin-top: 2px;
 }
 
-.hi-words-structured-detail-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 0;
-    flex: 0 0 auto;
-    width: 100%;
-    background-color: var(--background-modifier-hover);
-}
-
-.hi-words-structured-detail-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-faint);
-    width: 18px;
-    height: 18px;
-    flex: 0 0 18px;
-    padding-right: 1px;
-}
-
-.hi-words-structured-detail-arrow svg {
-    width: 16px;
-    height: 16px;
-    stroke-width: 2;
-}
-
 .hi-words-structured-confusable {
     display: grid;
     grid-template-columns: minmax(52px, auto) minmax(0, 1fr);
@@ -2165,11 +2137,6 @@
     stroke-width: 2;
 }
 
-.hi-words-library-edit-button svg {
-    width: 14px;
-    height: 14px;
-}
-
 .hi-words-library-book-settings-button svg {
     width: 15px;
     height: 15px;
@@ -2661,5 +2628,588 @@
 
     .hi-words-library-word-list {
         grid-template-columns: 1fr;
+    }
+}
+
+/* 悬浮词卡：内容区 + 固定操作栏 */
+.hi-words-visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.hi-words-tooltip {
+    width: min(380px, calc(100vw - 24px));
+    min-width: min(300px, calc(100vw - 24px));
+    max-width: min(380px, calc(100vw - 24px));
+    padding: 0;
+    overflow: hidden;
+    border-color: var(--background-modifier-border-hover);
+    border-radius: 14px;
+    background: var(--background-primary);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.hi-words-tooltip-title-container {
+    min-height: 52px;
+    margin: 0;
+    padding: 12px 16px 8px;
+}
+
+.hi-words-tooltip-title {
+    color: var(--text-normal);
+    font-size: 20px;
+    font-weight: 750;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+}
+
+.hi-words-tooltip-title-mastered-button {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--interactive-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+    box-shadow: none;
+}
+
+.hi-words-card-action {
+    display: inline-flex;
+    flex: 0 0 28px;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    min-height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    user-select: none;
+    -webkit-user-select: none;
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--background-primary) 72%, transparent);
+    box-shadow: none;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.hi-words-card-action svg {
+    width: 16px;
+    height: 16px;
+    color: inherit;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.hi-words-mastered-toggle[data-mastered="true"] {
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--background-primary) 86%, transparent);
+}
+
+.hi-words-card-action:hover {
+    color: var(--text-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
+}
+
+/* 悬浮卡片背景单一，需要比彩色词卡更明确的操作按钮表面。 */
+.hi-words-tooltip-title-mastered-button.hi-words-card-action {
+    border: 0;
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+}
+
+.hi-words-tooltip-title-mastered-button.hi-words-card-action[data-mastered="true"] {
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--interactive-accent) 18%, var(--background-primary));
+}
+
+.hi-words-tooltip-title-mastered-button.hi-words-card-action:hover {
+    color: var(--text-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary));
+}
+
+.hi-words-card-action:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+.hi-words-mastered-toggle[aria-disabled="true"] {
+    pointer-events: none;
+    opacity: 0.65;
+}
+
+.hi-words-tooltip-tabs {
+    margin: 0 16px 8px;
+}
+
+.hi-words-tooltip-content {
+    max-height: min(340px, calc(100vh - 175px));
+    margin: 0;
+    padding: 0 16px 12px;
+    overflow: auto;
+    color: var(--text-normal);
+    scrollbar-width: thin;
+}
+
+.hi-words-tooltip-structured .hi-words-tooltip-content {
+    max-height: min(340px, calc(100vh - 175px));
+    overflow: auto;
+}
+
+.hi-words-tooltip-content > .hi-words-structured-card-popover {
+    min-width: 0;
+}
+
+.hi-words-structured-card-popover .hi-words-structured-section-title {
+    color: var(--text-faint);
+    font-size: 11px;
+}
+
+.hi-words-structured-card-popover > .hi-words-structured-meta {
+    margin-right: -16px;
+    margin-left: -16px;
+    padding-right: 16px;
+    padding-bottom: 8px;
+    padding-left: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--interactive-accent) 58%, var(--background-modifier-border));
+}
+
+.hi-words-structured-card-popover .hi-words-structured-section {
+    border-left: 0;
+    padding-left: 0;
+}
+
+.hi-words-structured-card-popover .hi-words-structured-definition-item {
+    gap: 10px;
+}
+
+.hi-words-structured-card-popover .hi-words-structured-definition-body,
+.hi-words-structured-card-popover .hi-words-structured-definition-text {
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.hi-words-tooltip-source {
+    margin: 0 16px 8px;
+    padding: 4px 0;
+}
+
+.hi-words-tooltip-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    min-height: 36px;
+    margin: 0 12px 10px;
+    padding: 2px;
+    border: 1px solid color-mix(in srgb, var(--background-modifier-border) 52%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--background-secondary) 48%, var(--background-primary));
+}
+
+.hi-words-tooltip-action {
+    appearance: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    height: 32px;
+    margin: 0;
+    padding: 0 6px;
+    border: 0 !important;
+    border-radius: 7px;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--text-faint) !important;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.hi-words-tooltip-action:hover {
+    background: var(--background-modifier-hover) !important;
+    color: var(--text-accent) !important;
+}
+
+.hi-words-tooltip-action.is-active {
+    background: color-mix(in srgb, var(--text-accent) 12%, var(--background-primary)) !important;
+    color: var(--text-accent) !important;
+}
+
+.hi-words-tooltip-action:active {
+    transform: translateY(1px);
+}
+
+.hi-words-tooltip-action:focus-visible {
+    outline: 2px solid var(--text-accent);
+    outline-offset: -3px;
+}
+
+.hi-words-tooltip-action-icon,
+.hi-words-tooltip-action-icon svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+}
+
+.hi-words-tooltip-action-icon,
+.hi-words-tooltip-action-label {
+    color: inherit !important;
+}
+
+.hi-words-tooltip-action-icon svg {
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+.hi-words-tooltip-action-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-tooltip-subview {
+    min-height: 180px;
+    padding-top: 0;
+}
+
+.hi-words-tooltip.is-subview > .hi-words-tooltip-title-container,
+.hi-words-tooltip.is-subview > .hi-words-tooltip-tabs,
+.hi-words-tooltip.is-subview > .hi-words-tooltip-source,
+.hi-words-tooltip.is-subview > .hi-words-tooltip-actions {
+    display: none;
+}
+
+.hi-words-tooltip.is-subview > .hi-words-tooltip-content {
+    max-height: min(430px, calc(100vh - 110px));
+    padding: 14px 16px 16px;
+}
+
+.hi-words-tooltip-subview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-tooltip-subview-title {
+    color: var(--text-normal);
+    font-size: 16px;
+    font-weight: 680;
+    letter-spacing: -0.01em;
+}
+
+.hi-words-tooltip-subview-back {
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+
+.hi-words-tooltip-note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hi-words-tooltip-note-input {
+    width: 100%;
+    min-height: 132px;
+    padding: 11px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background: var(--background-primary-alt);
+    color: var(--text-normal);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.55;
+    resize: vertical;
+}
+
+.hi-words-tooltip-note-input:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+}
+
+.hi-words-tooltip-note-book {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.hi-words-tooltip-note-book select {
+    width: 100%;
+}
+
+.hi-words-tooltip-note-book.is-select-only {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.hi-words-tooltip-note-book.is-select-only select {
+    width: 100%;
+}
+
+.hi-words-tooltip-note-hint {
+    color: var(--text-faint);
+}
+
+.hi-words-tooltip-note-status {
+    min-height: 18px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.hi-words-tooltip-note-status:empty {
+    display: none;
+}
+
+.hi-words-tooltip-note-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.hi-words-tooltip-note-actions button {
+    min-height: 34px;
+    border-radius: 9px;
+}
+
+.hi-words-tooltip-note-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: auto;
+    color: var(--text-error);
+}
+
+.hi-words-tooltip-note-delete svg {
+    width: 15px;
+    height: 15px;
+}
+
+.hi-words-tooltip-note-save {
+    min-width: 82px;
+}
+
+.hi-words-tooltip-note-cancel {
+    min-width: 72px;
+}
+
+.hi-words-tooltip-context-summary {
+    margin: -3px 1px 10px;
+    color: var(--text-faint);
+    font-size: 11px;
+}
+
+.hi-words-tooltip-context-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hi-words-tooltip-context-controls {
+    padding-top: 10px;
+}
+
+.hi-words-tooltip-context-more {
+    width: 100%;
+    min-height: 34px;
+    margin: 0;
+    border: 1px solid var(--background-modifier-border) !important;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--background-secondary) 62%, var(--background-primary)) !important;
+    box-shadow: none !important;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.hi-words-tooltip-context-more:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--interactive-accent) 42%, var(--background-modifier-border)) !important;
+    background: var(--background-modifier-hover) !important;
+    color: var(--text-accent);
+}
+
+.hi-words-tooltip-context-group {
+    overflow: hidden;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--background-secondary) 78%, var(--background-primary));
+}
+
+.hi-words-tooltip-context-group-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 32px;
+    padding: 7px 11px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.hi-words-tooltip-context-group-count {
+    flex: 0 0 auto;
+    margin-left: auto;
+    color: var(--text-faint);
+}
+
+.hi-words-tooltip-context-item {
+    display: block;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    margin: 0;
+    padding: 9px 11px 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 9px;
+    background: var(--background-secondary);
+    box-shadow: none;
+    color: var(--text-normal);
+    text-align: left;
+}
+
+button.hi-words-tooltip-context-item {
+    appearance: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.hi-words-tooltip-context-group .hi-words-tooltip-context-item {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary)) !important;
+}
+
+button.hi-words-tooltip-context-item:hover {
+    border: 0 !important;
+    background: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary)) !important;
+    box-shadow: none !important;
+    color: var(--text-normal);
+    transform: none !important;
+}
+
+button.hi-words-tooltip-context-item:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: -3px;
+}
+
+.hi-words-tooltip-context-item.is-static {
+    cursor: default;
+}
+
+.hi-words-tooltip-context-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.hi-words-tooltip-context-file-icon,
+.hi-words-tooltip-context-file-icon svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+}
+
+.hi-words-tooltip-context-file {
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-tooltip-context-heading {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-tooltip-context-line {
+    margin-left: auto;
+    color: var(--text-faint);
+}
+
+.hi-words-tooltip-context-sentence {
+    color: var(--text-normal);
+    font-size: 12.5px;
+    font-weight: 450;
+    line-height: 1.5;
+    white-space: normal;
+}
+
+.hi-words-tooltip-context-sentence mark {
+    padding: 0 1px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--color-orange) 20%, transparent);
+    color: var(--color-orange);
+    font-weight: 700;
+}
+
+.hi-words-tooltip-context-source {
+    margin-top: 6px;
+    color: var(--text-faint);
+    font-size: 11px;
+}
+
+.hi-words-tooltip-loading,
+.hi-words-tooltip-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 120px;
+    padding: 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.hi-words-tooltip-loading-icon {
+    display: inline-flex;
+    animation: hi-words-context-spin 0.9s linear infinite;
+}
+
+@keyframes hi-words-context-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+    .hi-words-tooltip-action {
+        gap: 3px;
+        height: 34px;
+        font-size: 10.5px;
+    }
+
+    .hi-words-tooltip-actions {
+        min-height: 38px;
+        margin: 0 8px 8px;
     }
 }

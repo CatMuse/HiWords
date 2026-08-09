@@ -9,9 +9,6 @@ interface RenderOptions {
     app?: App;
     pronunciationVariant?: 'uk' | 'us';
     onPronunciationClick?: (variant: 'uk' | 'us') => void | Promise<void>;
-    onOpenDetail?: () => void | Promise<void>;
-    onNoteClick?: () => void | Promise<void>;
-    noteActionLabel?: string;
     display?: VocabularyBookDisplaySettings;
 }
 
@@ -57,7 +54,7 @@ export function renderWordCard(container: HTMLElement, wordDef: WordDefinition, 
     const detailSections = uniqueSections(options.display?.detailSections || detailDefaults)
         .filter(section => !hiddenSections.includes(section) && !previewSections.includes(section));
 
-    renderMeta(root, card, options.pronunciationVariant || 'us', options.onPronunciationClick);
+    renderMeta(root, card, options.mode, options.pronunciationVariant || 'us', options.onPronunciationClick);
     if (!isPreview) {
         renderImages(root, card, options.app);
     }
@@ -67,25 +64,15 @@ export function renderWordCard(container: HTMLElement, wordDef: WordDefinition, 
         renderDetailSection(root, wordDef, section, isPreview ? previewDensity : undefined, options);
     }
 
-    if (isPreview && options.onOpenDetail) {
-        renderDetailAction(root, options.onOpenDetail);
-    }
-
     return true;
 }
 
-function renderUserNote(root: HTMLElement, wordDef: WordDefinition, options: RenderOptions): void {
+function renderUserNote(root: HTMLElement, wordDef: WordDefinition): void {
     const note = wordDef.userNote?.trim();
-    if (!note && !options.onNoteClick) return;
+    if (!note) return;
 
-    const section = createSection(root, 'Note', options.onNoteClick ? {
-        label: options.noteActionLabel || 'Note',
-        icon: note ? 'pencil' : 'plus',
-        onClick: options.onNoteClick,
-    } : undefined);
-    if (note) {
-        section.createDiv({ text: note, cls: 'hi-words-structured-memory-value' });
-    }
+    const section = createSection(root, 'Note');
+    section.createDiv({ text: note, cls: 'hi-words-structured-memory-value' });
 }
 
 function uniqueSections(sections: WordCardDetailSection[]): WordCardDetailSection[] {
@@ -137,7 +124,7 @@ function renderDetailSection(root: HTMLElement, wordDef: WordDefinition, section
             renderMemory(root, card);
             return;
         case 'note':
-            renderUserNote(root, wordDef, options);
+            renderUserNote(root, wordDef);
             return;
     }
 }
@@ -162,28 +149,30 @@ function getLegacyPreviewSections(density: WordCardPreviewDensity): WordCardDeta
 function renderMeta(
     root: HTMLElement,
     card: WordCard,
+    mode: WordCardRenderMode,
     pronunciationVariant: 'uk' | 'us',
     onPronunciationClick?: (variant: 'uk' | 'us') => void | Promise<void>
 ): void {
     const phonetics = getPhoneticItems(card, pronunciationVariant);
+    const showTaxonomy = mode !== 'popover';
     const hasMeta = phonetics.length > 0 ||
         card.level ||
         card.difficulty !== undefined ||
         card.priority !== undefined ||
         card.frequency !== undefined ||
-        card.register ||
-        card.tags?.length ||
-        card.domains?.length ||
-        card.examTags?.length ||
-        card.aliases?.length;
-    if (!hasMeta) return;
+        (showTaxonomy && !!(
+            card.register ||
+            card.tags?.length ||
+            card.domains?.length ||
+            card.examTags?.length
+        ));
 
-    const meta = root.createDiv({ cls: 'hi-words-structured-meta' });
+    const meta = hasMeta ? root.createDiv({ cls: 'hi-words-structured-meta' }) : null;
 
     for (const item of phonetics) {
+        if (!meta) break;
         const phonetic = meta.createSpan({ cls: 'hi-words-structured-phonetic' });
         if (onPronunciationClick) {
-            phonetic.setAttribute('aria-label', `Play ${item.variant.toUpperCase()} pronunciation`);
             phonetic.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -196,29 +185,29 @@ function renderMeta(
         phonetic.createSpan({ text: item.value });
     }
 
-    if (card.level) {
+    if (meta && card.level) {
         meta.createSpan({ text: card.level, cls: 'hi-words-structured-level' });
     }
 
-    if (card.frequency !== undefined) {
+    if (meta && card.frequency !== undefined) {
         meta.createSpan({ text: `Freq ${card.frequency}`, cls: 'hi-words-structured-level' });
     }
 
-    if (card.difficulty !== undefined) {
+    if (meta && card.difficulty !== undefined) {
         meta.createSpan({ text: `Diff ${card.difficulty}`, cls: 'hi-words-structured-level' });
     }
 
-    if (card.priority !== undefined) {
+    if (meta && card.priority !== undefined) {
         meta.createSpan({ text: `P${card.priority}`, cls: 'hi-words-structured-level' });
     }
 
-    if (card.register) {
+    if (meta && showTaxonomy && card.register) {
         meta.createSpan({ text: card.register, cls: 'hi-words-structured-tag' });
     }
 
-    const allTags = getDisplayTags(card);
+    const allTags = showTaxonomy ? getDisplayTags(card) : [];
 
-    if (allTags.length) {
+    if (meta && allTags.length) {
         const tags = meta.createSpan({ cls: 'hi-words-structured-tags' });
         for (const tag of allTags) {
             tags.createSpan({ text: tag, cls: 'hi-words-structured-tag' });
@@ -660,29 +649,6 @@ function renderAffixes(root: HTMLElement, title: string, affixes?: Array<{ text:
     }
 }
 
-function renderDetailAction(root: HTMLElement, onOpenDetail: () => void | Promise<void>): void {
-    const action = root.createDiv({
-        cls: 'hi-words-structured-detail-link hi-words-word-source',
-        attr: { role: 'button', tabindex: '0' },
-    });
-    action.createSpan({ text: 'DETAILS', cls: 'hi-words-source-text' });
-    const arrow = action.createSpan({ cls: 'hi-words-structured-detail-arrow' });
-    setIcon(arrow, 'chevron-right');
-
-    const open = (event: Event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        void onOpenDetail();
-    };
-
-    action.addEventListener('click', open);
-    action.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            open(event);
-        }
-    });
-}
-
 function createSection(root: HTMLElement, title: string, action?: { label: string; icon: string; onClick: () => void | Promise<void> }): HTMLElement {
     const section = root.createDiv({ cls: 'hi-words-structured-section' });
     const header = section.createDiv({ cls: 'hi-words-structured-section-header' });
@@ -690,9 +656,10 @@ function createSection(root: HTMLElement, title: string, action?: { label: strin
     if (action) {
         const button = header.createEl('button', {
             cls: 'clickable-icon hi-words-structured-section-action',
-            attr: { title: action.label, 'aria-label': action.label },
+            attr: { type: 'button' },
         });
         setIcon(button, action.icon);
+        button.createSpan({ text: action.label, cls: 'hi-words-visually-hidden' });
         button.addEventListener('click', (event) => {
             event.preventDefault();
             event.stopPropagation();

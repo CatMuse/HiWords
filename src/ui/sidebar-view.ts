@@ -4,7 +4,6 @@ import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTT
 import { t } from '../i18n';
 import { findPatternMatches } from '../utils/pattern-matcher';
 import { renderWordCard } from './word-card-renderer';
-import { WordNoteModal } from './word-note-modal';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -506,14 +505,24 @@ export class HiWordsSidebarView extends ItemView {
         // 已掌握按钮（如果启用了功能）
         if (this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
             const buttonContainer = wordTitle.createEl('div', { 
-                cls: 'hi-words-title-mastered-button',
+                cls: 'hi-words-card-action hi-words-title-mastered-button hi-words-mastered-toggle',
                 attr: {
-                    'aria-label': isMastered ? t('actions.unmark_mastered') : t('actions.mark_mastered')
+                    role: 'button',
+                    tabindex: '0',
+                    'data-mastered': String(isMastered),
                 }
             });
-            
-            // 设置图标（未掌握显示smile供用户点击标记为已掌握，已掌握显示frown供用户点击取消）
-            setIcon(buttonContainer, isMastered ? 'frown' : 'smile');
+            setIcon(buttonContainer, isMastered ? 'undo-2' : 'check-check');
+            buttonContainer.createSpan({
+                cls: 'hi-words-visually-hidden',
+                text: isMastered ? t('actions.unmark_mastered') : t('actions.mark_mastered'),
+            });
+            buttonContainer.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                event.stopPropagation();
+                buttonContainer.click();
+            });
             
             // 注意：点击事件由事件委托统一处理（bindDelegatedHandlers），无需在此添加监听器
         }
@@ -551,10 +560,6 @@ export class HiWordsSidebarView extends ItemView {
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
                 onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
                 display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
-                onNoteClick: wordDef.source.endsWith('.hiwords') || wordDef.userNoteSource
-                    ? () => this.openNoteModal(wordDef)
-                    : undefined,
-                noteActionLabel: wordDef.userNote ? t('sidebar.edit_note') : t('sidebar.add_note'),
             });
         } else if (isExpanded && contentToRender && contentToRender.trim()) {
             const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
@@ -587,12 +592,6 @@ export class HiWordsSidebarView extends ItemView {
         if (isMastered) {
             card.addClass('hi-words-word-card-mastered');
         }
-    }
-
-    private openNoteModal(wordDef: WordDefinition): void {
-        new WordNoteModal(this.plugin, wordDef, async () => {
-            await this.updateView();
-        }).open();
     }
 
     private getDefaultExpandedState(): boolean {

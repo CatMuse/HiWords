@@ -235,6 +235,29 @@ export interface LanguagePack {
         mark_mastered: string; // 已掌握
         unmark_mastered: string; // 忘记了（取消已掌握）
     };
+    popover?: {
+        detail: string;
+        note: string;
+        examples: string;
+        context: string;
+        examples_title: string;
+        context_title: string;
+        note_title?: string;
+        saving_note?: string;
+        deleting_note?: string;
+        current_note: string;
+        no_examples: string;
+        searching_context: string;
+        no_context: string;
+        context_found: string;
+        context_count: string;
+        context_count_one?: string;
+        load_more_context?: string;
+        loading_more_context?: string;
+        search_whole_vault?: string;
+        no_quick_context?: string;
+        back: string;
+    };
     // AI dictionary error messages
     ai_errors?: {
         word_empty: string;

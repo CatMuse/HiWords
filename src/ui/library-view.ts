@@ -5,7 +5,7 @@ import { mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../uti
 import { t } from '../i18n';
 import { DEFAULT_WORD_CARD_DETAIL_SECTIONS, DEFAULT_WORD_CARD_PREVIEW_SECTIONS, renderWordCard } from './word-card-renderer';
 import { AddWordModal } from './add-word-modal';
-import { WordNoteModal } from './word-note-modal';
+import { WordPopoverActions } from './word-popover-actions';
 
 export const LIBRARY_VIEW_TYPE = 'hi-words-library';
 
@@ -230,10 +230,12 @@ export class HiWordsLibraryView extends ItemView {
     private renderToken = 0;
     private resizeObserver: ResizeObserver | null = null;
     private loadMoreObserver: IntersectionObserver | null = null;
+    private readonly popoverActions: WordPopoverActions;
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
         super(leaf);
         this.plugin = plugin;
+        this.popoverActions = new WordPopoverActions(plugin);
     }
 
     getViewType(): string {
@@ -267,6 +269,7 @@ export class HiWordsLibraryView extends ItemView {
         }
         this.clearTooltipTimers();
         this.removeTooltip();
+        this.popoverActions.destroy();
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
         this.loadMoreObserver?.disconnect();
@@ -680,25 +683,12 @@ export class HiWordsLibraryView extends ItemView {
 
         const actions = row.createDiv({ cls: 'hi-words-library-actions' });
         if (!definition.source.endsWith('.hiwords')) {
-            const editButton = this.addIconButton(actions, 'pencil', t('library.edit_word'), () => {
+            this.addCardAction(actions, 'lucide-pen', t('library.edit_word'), () => {
                 this.removeTooltip();
                 new AddWordModal(this.app, this.plugin, definition.word, '', true, '', definition).open();
             });
-            editButton.addClass('hi-words-library-edit-button');
         }
-        this.addIconButton(actions, definition.mastered ? 'undo' : 'check', definition.mastered ? t('library.unmark_mastered') : t('library.mark_mastered'), () => {
-            void (async () => {
-                if (definition.mastered) {
-                    await this.plugin.masteredService.unmarkWordAsMastered(definition.source, definition.nodeId, definition.word);
-                } else {
-                    await this.plugin.masteredService.markWordAsMastered(definition.source, definition.nodeId, definition.word);
-                }
-                this.clearCaches();
-                await this.render();
-            })().catch(error => {
-                console.error('HiWords 切换已掌握状态失败:', error);
-            });
-        });
+        this.addMasteredToggle(actions, definition);
     }
 
     private scheduleTooltip(target: HTMLElement, definition: WordDefinition) {
@@ -746,7 +736,10 @@ export class HiWordsLibraryView extends ItemView {
                 this.tooltipHideTimer = null;
             }
         });
-        tooltip.addEventListener('mouseleave', () => this.scheduleTooltipHide());
+        tooltip.addEventListener('mouseleave', () => {
+            if (tooltip.hasClass('is-subview')) return;
+            this.scheduleTooltipHide();
+        });
 
         const titleContainer = tooltip.createDiv({ cls: 'hi-words-tooltip-title-container' });
         const title = titleContainer.createDiv({ cls: 'hi-words-tooltip-title', text: definition.word });
@@ -756,6 +749,67 @@ export class HiWordsLibraryView extends ItemView {
                 console.error('HiWords 播放发音失败:', error);
             });
         };
+
+        if (this.plugin.masteredService.isEnabled) {
+            const masteredButton = titleContainer.createDiv({
+                cls: 'hi-words-card-action hi-words-tooltip-title-mastered-button hi-words-mastered-toggle',
+                attr: { role: 'button', tabindex: '0' },
+            });
+            let mastered = !!definition.mastered;
+            let busy = false;
+            const renderMasteredState = () => {
+                masteredButton.empty();
+                masteredButton.dataset.mastered = String(mastered);
+                setIcon(masteredButton, mastered ? 'undo-2' : 'check-check');
+                masteredButton.createSpan({
+                    cls: 'hi-words-visually-hidden',
+                    text: mastered ? t('library.unmark_mastered') : t('library.mark_mastered'),
+                });
+            };
+            const toggleMastered = async () => {
+                if (busy) return;
+                busy = true;
+                masteredButton.setAttribute('aria-disabled', 'true');
+                try {
+                    if (mastered) {
+                        await this.plugin.masteredService.unmarkWordAsMastered(definition.source, definition.nodeId, definition.word);
+                    } else {
+                        await this.plugin.masteredService.markWordAsMastered(definition.source, definition.nodeId, definition.word);
+                    }
+                    mastered = !mastered;
+                    definition.mastered = mastered;
+                    renderMasteredState();
+                    const row = target.closest<HTMLElement>('.hi-words-library-word');
+                    row?.toggleClass('is-mastered', mastered);
+                    const rowAction = row?.querySelector<HTMLElement>('.hi-words-library-mastered-toggle');
+                    if (rowAction) {
+                        const label = mastered ? t('library.unmark_mastered') : t('library.mark_mastered');
+                        rowAction.empty();
+                        rowAction.dataset.mastered = String(mastered);
+                        setIcon(rowAction, mastered ? 'undo-2' : 'check-check');
+                        rowAction.createSpan({ cls: 'hi-words-visually-hidden', text: label });
+                    }
+                    this.clearCaches();
+                } catch (error) {
+                    console.error('HiWords 切换已掌握状态失败:', error);
+                } finally {
+                    busy = false;
+                    masteredButton.removeAttribute('aria-disabled');
+                }
+            };
+            masteredButton.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                void toggleMastered();
+            });
+            masteredButton.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                event.stopPropagation();
+                void toggleMastered();
+            });
+            renderMasteredState();
+        }
 
         const content = tooltip.createDiv({ cls: 'hi-words-tooltip-content' });
         content.addClass(this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition');
@@ -774,26 +828,25 @@ export class HiWordsLibraryView extends ItemView {
                     });
                 },
                 display: this.plugin.getVocabularyBookDisplaySettings(definition.source),
-                onNoteClick: definition.source.endsWith('.hiwords') || definition.userNoteSource
-                    ? () => {
-                        this.removeTooltip();
-                        new WordNoteModal(this.plugin, definition, async () => {
-                            this.clearCaches();
-                            await this.refresh();
-                        }).open();
-                    }
-                    : undefined,
-                noteActionLabel: definition.userNote ? t('sidebar.edit_note') : t('sidebar.add_note'),
-                onOpenDetail: () => {
-                    this.removeTooltip();
-                    void this.plugin.showWordInSidebar(definition, 'library').catch(error => {
-                        console.error('HiWords 打开词卡详情失败:', error);
-                    });
-                },
             });
         } else {
             await this.renderTooltipMarkdown(content, definition);
         }
+
+        this.popoverActions.render({
+            tooltip,
+            contentEl: content,
+            wordDef: definition,
+            currentSentence: '',
+            onOpenDetail: () => {
+                this.removeTooltip();
+                void this.plugin.showWordInSidebar(definition, 'library').catch(error => {
+                    console.error('HiWords 打开词卡详情失败:', error);
+                });
+            },
+            onBack: () => void this.showDefinitionTooltip(target, definition),
+            onClose: () => this.removeTooltip(),
+        });
 
         this.positionTooltip(target, tooltip);
     }
@@ -854,6 +907,7 @@ export class HiWordsLibraryView extends ItemView {
     }
 
     private removeTooltip() {
+        this.popoverActions.cancel();
         if (this.activeTooltip?.parentNode) {
             this.activeTooltip.parentNode.removeChild(this.activeTooltip);
         }
@@ -870,6 +924,81 @@ export class HiWordsLibraryView extends ItemView {
             });
         };
         return button;
+    }
+
+    private addCardAction(container: HTMLElement, icon: string, label: string, onClick: () => Promise<void> | void): HTMLElement {
+        const action = container.createDiv({
+            cls: 'hi-words-card-action hi-words-library-edit-action',
+            attr: { role: 'button', tabindex: '0' },
+        });
+        setIcon(action, icon);
+        action.createSpan({ cls: 'hi-words-visually-hidden', text: label });
+        const activate = (event: Event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void Promise.resolve(onClick()).catch(error => {
+                console.error('HiWords 执行词卡操作失败:', error);
+            });
+        };
+        action.addEventListener('click', activate);
+        action.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            activate(event);
+        });
+        return action;
+    }
+
+    private addMasteredToggle(container: HTMLElement, definition: WordDefinition): HTMLElement {
+        const toggle = container.createDiv({
+            cls: 'hi-words-card-action hi-words-mastered-toggle hi-words-library-mastered-toggle',
+            attr: { role: 'button', tabindex: '0' },
+        });
+        let mastered = !!definition.mastered;
+        let busy = false;
+        const renderState = () => {
+            toggle.empty();
+            toggle.dataset.mastered = String(mastered);
+            setIcon(toggle, mastered ? 'undo-2' : 'check-check');
+            toggle.createSpan({
+                cls: 'hi-words-visually-hidden',
+                text: mastered ? t('library.unmark_mastered') : t('library.mark_mastered'),
+            });
+        };
+        const activate = async () => {
+            if (busy) return;
+            busy = true;
+            toggle.setAttribute('aria-disabled', 'true');
+            try {
+                if (mastered) {
+                    await this.plugin.masteredService.unmarkWordAsMastered(definition.source, definition.nodeId, definition.word);
+                } else {
+                    await this.plugin.masteredService.markWordAsMastered(definition.source, definition.nodeId, definition.word);
+                }
+                mastered = !mastered;
+                definition.mastered = mastered;
+                renderState();
+                this.clearCaches();
+                await this.render();
+            } catch (error) {
+                console.error('HiWords 切换已掌握状态失败:', error);
+            } finally {
+                busy = false;
+                toggle.removeAttribute('aria-disabled');
+            }
+        };
+        toggle.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            void activate();
+        });
+        toggle.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            event.stopPropagation();
+            void activate();
+        });
+        renderState();
+        return toggle;
     }
 
     private matchesFilters(definition: WordDefinition): boolean {
