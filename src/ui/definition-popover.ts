@@ -452,12 +452,16 @@ export class DefinitionPopover extends Component {
         }
 
         if (wordDef) {
-            const currentSentence = getPopoverTargetSentence(target, word);
+            const occurrenceWord = target.textContent?.trim() || word;
+            const currentSentence = getPopoverTargetSentence(target, occurrenceWord);
+            const sourcePath = this.getTargetMarkdownPath(target);
             this.popoverActions.render({
                 tooltip,
                 contentEl,
                 wordDef,
                 currentSentence,
+                contextQuery: occurrenceWord,
+                sourcePath,
                 onOpenDetail: () => {
                     this.removeTooltip();
                     void this.plugin.showWordInSidebar(wordDef, 'document').catch(error => {
@@ -516,6 +520,18 @@ export class DefinitionPopover extends Component {
             this.currentTooltipComponent = null;
         }
         this.currentTargetEl = null;
+    }
+
+    private getTargetMarkdownPath(target: HTMLElement): string {
+        for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
+            const view = leaf.view;
+            if (view instanceof MarkdownView && view.containerEl.contains(target)) {
+                return view.file?.path || '';
+            }
+        }
+
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        return activeView?.file?.path || '';
     }
 
     onunload() {

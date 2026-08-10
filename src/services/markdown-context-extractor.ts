@@ -1,4 +1,4 @@
-import type { CachedMetadata, SectionCache } from 'obsidian';
+import type { CachedMetadata } from 'obsidian';
 
 export type SearchableMarkdownBlockType = 'paragraph' | 'blockquote' | 'callout' | 'list' | 'text';
 
@@ -14,6 +14,14 @@ export interface ExtractedMarkdownContext {
 interface TextRange {
     start: number;
     end: number;
+}
+
+interface SearchableSection {
+    type: SearchableMarkdownBlockType;
+    position: {
+        start: { offset: number };
+        end: { offset: number };
+    };
 }
 
 interface SegmentLike {
@@ -101,13 +109,116 @@ export function extractMarkdownContexts(
     return results;
 }
 
-function getSearchableSections(_text: string, cache: CachedMetadata | null): SectionCache[] {
+function getSearchableSections(text: string, cache: CachedMetadata | null): SearchableSection[] {
     const sections = cache?.sections?.filter(section => SEARCHABLE_BLOCK_TYPES.has(section.type as SearchableMarkdownBlockType));
-    if (sections?.length) return sections;
+    if (sections?.length) {
+        return sections.map(section => ({
+            type: section.type as SearchableMarkdownBlockType,
+            position: {
+                start: { offset: section.position.start.offset },
+                end: { offset: section.position.end.offset },
+            },
+        }));
+    }
 
-    // Prefer an omitted result while Obsidian is still indexing a file over a
-    // noisy match from YAML, code, tables, or other non-prose Markdown.
-    return [];
+    // Obsidian's metadata cache can temporarily be missing while a note is
+    // opening, being edited, or re-indexed. Fall back to a conservative prose
+    // scanner instead of reporting that a visibly present word was not found.
+    return getFallbackSections(text);
+}
+
+function getFallbackSections(text: string): SearchableSection[] {
+    const sections: SearchableSection[] = [];
+    const lines = text.split('\n');
+    let offset = 0;
+    let paragraphStart: number | null = null;
+    let paragraphEnd = 0;
+    let paragraphType: SearchableMarkdownBlockType = 'paragraph';
+    let inFrontmatter = lines[0]?.trim() === '---';
+    let inFence = false;
+    let fenceCharacter = '';
+
+    const flushParagraph = () => {
+        if (paragraphStart === null || paragraphEnd <= paragraphStart) return;
+        sections.push({
+            type: paragraphType,
+            position: {
+                start: { offset: paragraphStart },
+                end: { offset: paragraphEnd },
+            },
+        });
+        paragraphStart = null;
+        paragraphEnd = 0;
+        paragraphType = 'paragraph';
+    };
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        const trimmed = line.trim();
+        const lineStart = offset;
+        const lineEnd = lineStart + line.length;
+        offset = lineEnd + (index < lines.length - 1 ? 1 : 0);
+
+        if (inFrontmatter) {
+            if (index > 0 && (trimmed === '---' || trimmed === '...')) inFrontmatter = false;
+            continue;
+        }
+
+        const fence = trimmed.match(/^(`{3,}|~{3,})/);
+        if (fence) {
+            flushParagraph();
+            const character = fence[1][0];
+            if (!inFence) {
+                inFence = true;
+                fenceCharacter = character;
+            } else if (character === fenceCharacter) {
+                inFence = false;
+                fenceCharacter = '';
+            }
+            continue;
+        }
+        if (inFence) continue;
+
+        if (!trimmed || isFallbackExcludedLine(lines, index)) {
+            flushParagraph();
+            continue;
+        }
+
+        const type = getFallbackBlockType(trimmed);
+        if (paragraphStart !== null && type !== paragraphType) flushParagraph();
+        if (paragraphStart === null) {
+            paragraphStart = lineStart;
+            paragraphType = type;
+        }
+        paragraphEnd = lineEnd;
+
+        // Treat list items and quoted blocks as self-contained contexts. This
+        // prevents adjacent bullets or callouts from being merged together.
+        if (type !== 'paragraph') flushParagraph();
+    }
+
+    flushParagraph();
+    return sections;
+}
+
+function isFallbackExcludedLine(lines: string[], index: number): boolean {
+    const trimmed = lines[index].trim();
+    if (/^#{1,6}\s+/.test(trimmed)) return true;
+    if (/^(?:-{3,}|_{3,}|\*{3,})$/.test(trimmed)) return true;
+    if (/^<\/?(?:script|style|pre|code|table|iframe|canvas|svg)\b/i.test(trimmed)) return true;
+
+    const looksLikeTableRow = trimmed.includes('|');
+    const previous = index > 0 ? lines[index - 1].trim() : '';
+    const next = index + 1 < lines.length ? lines[index + 1].trim() : '';
+    const isDivider = (value: string) => /^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/.test(value);
+    return looksLikeTableRow && (isDivider(trimmed) || isDivider(previous) || isDivider(next));
+}
+
+function getFallbackBlockType(trimmed: string): SearchableMarkdownBlockType {
+    if (/^>\s*\[![^\]]+\]/i.test(trimmed)) return 'callout';
+    if (/^>/.test(trimmed)) return 'blockquote';
+    if (/^(?:[-*+]\s+|\d+[.)]\s+)/.test(trimmed)) return 'list';
+    return 'paragraph';
 }
 
 function getHiddenRanges(source: string): TextRange[] {

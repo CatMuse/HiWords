@@ -15,6 +15,7 @@ export interface VaultContextPageOptions {
     pageSize?: number;
     searchWholeVault?: boolean;
     reset?: boolean;
+    sourcePath?: string;
     isCancelled?: () => boolean;
 }
 
@@ -41,7 +42,7 @@ interface SearchSession {
 }
 
 const DEFAULT_PAGE_SIZE = 20;
-const MAX_CONTEXTS_PER_FILE = 2;
+const MAX_CONTEXTS_PER_FILE = 5;
 const RECENT_FILE_LIMIT = 200;
 const RELATED_FILE_LIMIT = 160;
 const SAME_FOLDER_FILE_LIMIT = 160;
@@ -60,8 +61,13 @@ export class VaultContextService {
         const scope = options.searchWholeVault ? 'vault' : 'quick';
         if (!normalizedWord) return { results: [], hasMore: false, canSearchWholeVault: false, scope };
 
-        const currentFile = this.app.workspace.getActiveFile();
-        const currentPath = currentFile?.extension === 'md' ? currentFile.path : '';
+        const sourceFile = options.sourcePath
+            ? this.app.vault.getAbstractFileByPath(options.sourcePath)
+            : null;
+        const activeFile = this.app.workspace.getActiveFile();
+        const currentPath = sourceFile instanceof TFile && sourceFile.extension === 'md'
+            ? sourceFile.path
+            : activeFile?.extension === 'md' ? activeFile.path : '';
         const key = `${normalizedWord}\u0000${currentPath}`;
         if (options.reset || !this.session || this.session.key !== key) {
             this.session = this.createSession(key, normalizedWord, currentPath);
@@ -128,10 +134,13 @@ export class VaultContextService {
         relationships: Set<string>
     ): Promise<VaultWordContext[]> {
         try {
-            const text = await this.app.vault.cachedRead(file);
+            const liveText = file.path === currentPath ? this.getOpenEditorText(file.path) : null;
+            const text = liveText ?? await this.app.vault.cachedRead(file);
             if (!text.toLocaleLowerCase().includes(word.toLocaleLowerCase())) return [];
 
-            const cache = this.app.metadataCache.getFileCache(file);
+            // Metadata offsets can lag behind unsaved editor changes. The
+            // extractor's safe fallback scanner is more reliable for live text.
+            const cache = liveText === null ? this.app.metadataCache.getFileCache(file) : null;
             const contexts = extractMarkdownContexts(text, word, cache, 8);
             return contexts.map(context => ({
                 file,
@@ -214,6 +223,16 @@ export class VaultContextService {
 
     private async yieldToMainThread(): Promise<void> {
         await new Promise<void>(resolve => window.setTimeout(resolve, 0));
+    }
+
+    private getOpenEditorText(path: string): string | null {
+        for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
+            const view = leaf.view;
+            if (view instanceof MarkdownView && view.file?.path === path) {
+                return view.editor.getValue();
+            }
+        }
+        return null;
     }
 
     private getFileScore(file: TFile, currentPath: string, relationships: Set<string>): number {

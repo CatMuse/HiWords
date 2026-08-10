@@ -11,6 +11,8 @@ interface WordPopoverActionOptions {
     contentEl: HTMLElement;
     wordDef: WordDefinition;
     currentSentence: string;
+    contextQuery: string;
+    sourcePath: string;
     onOpenDetail: () => void;
     onClose: () => void;
 }
@@ -77,7 +79,13 @@ export class WordPopoverActions {
                 run: button => {
                     this.setActiveAction(actions, button);
                     openSubview(() => {
-                        void this.renderVaultContexts(options.contentEl, options.wordDef.word, restoreMainView, options.onClose);
+                        void this.renderVaultContexts(
+                            options.contentEl,
+                            options.contextQuery || options.wordDef.word,
+                            options.sourcePath,
+                            restoreMainView,
+                            options.onClose
+                        );
                     });
                 },
             },
@@ -274,6 +282,7 @@ export class WordPopoverActions {
     private async renderVaultContexts(
         contentEl: HTMLElement,
         word: string,
+        sourcePath: string,
         onBack: () => void,
         onClose: () => void
     ): Promise<void> {
@@ -353,6 +362,7 @@ export class WordPopoverActions {
                 pageSize: 20,
                 searchWholeVault,
                 reset,
+                sourcePath,
                 isCancelled: () => queryId !== this.contextQueryId || !contentEl.isConnected,
             });
             if (queryId !== this.contextQueryId || !contentEl.isConnected) return;

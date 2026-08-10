@@ -838,6 +838,8 @@ export class HiWordsLibraryView extends ItemView {
             contentEl: content,
             wordDef: definition,
             currentSentence: '',
+            contextQuery: definition.word,
+            sourcePath: '',
             onOpenDetail: () => {
                 this.removeTooltip();
                 void this.plugin.showWordInSidebar(definition, 'library').catch(error => {
