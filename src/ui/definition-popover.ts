@@ -1,4 +1,4 @@
-import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, TFile, Component } from 'obsidian';
+import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, Component } from 'obsidian';
 import { VocabularyManager, MasteredService } from '../core';
 import { playWordTTS, WordDefinition } from '../utils';
 import { t } from '../i18n';
@@ -296,11 +296,15 @@ export class DefinitionPopover extends Component {
         const titleContainer = activeDocument.createElement('div');
         titleContainer.className = 'hi-words-tooltip-title-container';
 
+        const headingEl = activeDocument.createElement('div');
+        headingEl.className = 'hi-words-tooltip-heading';
+
         // 标题文本
         const titleEl = activeDocument.createElement('div');
         titleEl.className = 'hi-words-tooltip-title';
         titleEl.textContent = word;
-        titleContainer.appendChild(titleEl);
+        headingEl.appendChild(titleEl);
+        titleContainer.appendChild(headingEl);
         // 点击标题发音
         titleEl.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -360,6 +364,17 @@ export class DefinitionPopover extends Component {
                 onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
                 display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
             });
+
+            // The hover card header only needs the word and pronunciation. Move
+            // the preferred pronunciation beside the title and discard learning
+            // metadata badges (level, difficulty, priority, and frequency).
+            const metaEl = contentEl.querySelector<HTMLElement>('.hi-words-structured-meta');
+            const phoneticEl = metaEl?.querySelector<HTMLElement>('.hi-words-structured-phonetic');
+            if (phoneticEl) {
+                phoneticEl.addClass('hi-words-tooltip-title-phonetic');
+                headingEl.appendChild(phoneticEl);
+            }
+            metaEl?.remove();
         } else {
             const contentToRender = sections && sections.length > 0 && enableSectionTabs
                 ? sections[0].content
@@ -433,26 +448,6 @@ export class DefinitionPopover extends Component {
                     titleContainer.appendChild(buttonContainer);
                 }
 
-                if (!detailDef.source.endsWith('.hiwords')) {
-                    // 源信息
-                    const sourceEl = activeDocument.createElement('div');
-                    sourceEl.className = 'hi-words-tooltip-source';
-                    const fileName = detailDef.source.split('/').pop() || '';
-                    const displayName = fileName.endsWith('.canvas') ? fileName.slice(0, -7) : fileName;
-                    sourceEl.textContent = `${t('sidebar.source_prefix')}${displayName}`;
-
-                    // 添加点击事件到来源信息：导航到源文件
-                    sourceEl.addEventListener('click', (e) => {
-                        e.stopPropagation(); // 阻止事件冒泡
-                        void this.navigateToSource(detailDef).catch(error => {
-                            console.error('HiWords 导航到来源失败:', error);
-                        });
-                        // 点击跳转后清理预览框
-                        this.removeTooltip();
-                    });
-
-                    tooltip.appendChild(sourceEl);
-                }
             }
         }
 
@@ -469,7 +464,6 @@ export class DefinitionPopover extends Component {
                         console.error('HiWords failed to open word details:', error);
                     });
                 },
-                onBack: () => void this.createTooltip(target, word, definition),
                 onClose: () => this.removeTooltip(),
             });
         }
@@ -522,41 +516,6 @@ export class DefinitionPopover extends Component {
             this.currentTooltipComponent = null;
         }
         this.currentTargetEl = null;
-    }
-
-    /**
-     * 导航到单词源文件
-     */
-    private async navigateToSource(wordDef: WordDefinition) {
-        try {
-            const file = this.app.vault.getAbstractFileByPath(wordDef.source);
-            if (file instanceof TFile) {
-                // 如果是 Canvas 文件，直接打开
-                if (file.extension === 'canvas') {
-                    await this.app.workspace.openLinkText(file.path, '');
-                } else {
-                    // 如果是 Markdown 文件，打开并尝试定位到单词
-                    await this.app.workspace.openLinkText(file.path, '');
-                    // 等待一个短暂时间让文件加载
-                    window.setTimeout(() => {
-                        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-                        if (activeView && activeView.file?.path === file.path) {
-                            // 尝试在文件中查找单词
-                            const editor = activeView.editor;
-                            const content = editor.getValue();
-                            const wordIndex = content.toLowerCase().indexOf(wordDef.word.toLowerCase());
-                            if (wordIndex !== -1) {
-                                const pos = editor.offsetToPos(wordIndex);
-                                editor.setCursor(pos);
-                                editor.scrollIntoView({ from: pos, to: pos }, true);
-                            }
-                        }
-                    }, 100);
-                }
-            }
-        } catch (error) {
-            console.error('导航到源文件失败:', error);
-        }
     }
 
     onunload() {

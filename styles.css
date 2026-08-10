@@ -145,22 +145,6 @@
     overflow: visible;
 }
 
-.hi-words-tooltip-source {
-    font-size: 12px;
-    color: var(--text-faint);
-    margin-top: 6px;
-    padding-top: 4px;
-    text-transform: uppercase;
-    border-radius: 4px;
-    padding: 2px 4px;
-    transition: background-color 0.2s ease;
-    cursor: pointer;
-}
-
-.hi-words-tooltip-source:hover {
-    background-color: var(--background-modifier-hover);
-}
-
 /* Markdown 内容样式 - Tooltip */
 .hi-words-tooltip-content p {
     margin: 0 0 8px 0;
@@ -1971,7 +1955,7 @@
 
 .hi-words-translate-content {
     padding: 20px 16px;
-    min-height: 32px;
+    min-height: 34px;
     max-height: 200px;
     overflow-y: auto;
 }
@@ -2657,17 +2641,43 @@
 }
 
 .hi-words-tooltip-title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     min-height: 52px;
     margin: 0;
     padding: 12px 16px 8px;
 }
 
+.hi-words-tooltip-heading {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+    row-gap: 2px;
+    min-width: 0;
+}
+
 .hi-words-tooltip-title {
+    flex: 0 1 auto;
+    min-width: 0;
     color: var(--text-normal);
     font-size: 20px;
     font-weight: 750;
     line-height: 1.2;
     letter-spacing: -0.015em;
+    overflow-wrap: anywhere;
+}
+
+.hi-words-tooltip-title-phonetic {
+    flex: 0 1 auto;
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: nowrap;
 }
 
 .hi-words-tooltip-title-mastered-button {
@@ -2776,15 +2786,6 @@
     font-size: 11px;
 }
 
-.hi-words-structured-card-popover > .hi-words-structured-meta {
-    margin-right: -16px;
-    margin-left: -16px;
-    padding-right: 16px;
-    padding-bottom: 8px;
-    padding-left: 16px;
-    border-bottom: 1px solid color-mix(in srgb, var(--interactive-accent) 58%, var(--background-modifier-border));
-}
-
 .hi-words-structured-card-popover .hi-words-structured-section {
     border-left: 0;
     padding-left: 0;
@@ -2800,16 +2801,11 @@
     line-height: 1.55;
 }
 
-.hi-words-tooltip-source {
-    margin: 0 16px 8px;
-    padding: 4px 0;
-}
-
 .hi-words-tooltip-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 2px;
-    min-height: 36px;
+    min-height: 32px;
     margin: 0 12px 10px;
     padding: 2px;
     border: 1px solid color-mix(in srgb, var(--background-modifier-border) 52%, transparent);
@@ -2824,7 +2820,7 @@
     justify-content: center;
     gap: 4px;
     min-width: 0;
-    height: 32px;
+    height: 30px;
     margin: 0;
     padding: 0 6px;
     border: 0 !important;
@@ -2887,7 +2883,6 @@
 
 .hi-words-tooltip.is-subview > .hi-words-tooltip-title-container,
 .hi-words-tooltip.is-subview > .hi-words-tooltip-tabs,
-.hi-words-tooltip.is-subview > .hi-words-tooltip-source,
 .hi-words-tooltip.is-subview > .hi-words-tooltip-actions {
     display: none;
 }
@@ -3119,15 +3114,6 @@ button.hi-words-tooltip-context-item:focus-visible {
     cursor: default;
 }
 
-.hi-words-tooltip-context-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-    color: var(--text-muted);
-    font-size: 11px;
-}
-
 .hi-words-tooltip-context-file-icon,
 .hi-words-tooltip-context-file-icon svg {
     width: 14px;
@@ -3141,20 +3127,6 @@ button.hi-words-tooltip-context-item:focus-visible {
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.hi-words-tooltip-context-heading {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.hi-words-tooltip-context-line {
-    margin-left: auto;
-    color: var(--text-faint);
 }
 
 .hi-words-tooltip-context-sentence {

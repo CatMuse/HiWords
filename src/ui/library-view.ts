@@ -844,7 +844,6 @@ export class HiWordsLibraryView extends ItemView {
                     console.error('HiWords 打开词卡详情失败:', error);
                 });
             },
-            onBack: () => void this.showDefinitionTooltip(target, definition),
             onClose: () => this.removeTooltip(),
         });
 

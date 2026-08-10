@@ -616,15 +616,17 @@ export class VocabularyManager {
     private selectPrimaryDefinition(definitions: WordDefinition[]): WordDefinition {
         const sorted = [...definitions].sort((a, b) => this.getBookOrder(a.source) - this.getBookOrder(b.source));
         const fullCanvas = sorted.find(definition => !definition.source.endsWith('.hiwords') && !this.isNoteOnlyDefinition(definition));
-        if (fullCanvas) return fullCanvas;
-
         const hiWords = sorted.find(definition => definition.source.endsWith('.hiwords'));
         const noteOnly = sorted.find(definition => !definition.source.endsWith('.hiwords') && this.isNoteOnlyDefinition(definition));
-        if (hiWords && noteOnly) {
-            return this.mergeDefinitionWithNote(hiWords, noteOnly);
+        const base = fullCanvas || hiWords;
+
+        if (base && noteOnly && base !== noteOnly) {
+            return this.mergeDefinitionWithNote(base, noteOnly);
         }
 
-        return hiWords || noteOnly || sorted[0];
+        if (base) return base;
+        if (noteOnly) return this.decorateNoteDefinition(noteOnly);
+        return sorted[0];
     }
 
     private isNoteOnlyDefinition(definition: WordDefinition): boolean {
@@ -670,6 +672,17 @@ export class VocabularyManager {
             sections: sections.length > 0 ? sections : base.sections,
             rawDefinition,
             userNote: noteContent,
+            userNoteSource: {
+                source: noteDefinition.source,
+                nodeId: noteDefinition.nodeId,
+            },
+        };
+    }
+
+    private decorateNoteDefinition(noteDefinition: WordDefinition): WordDefinition {
+        return {
+            ...noteDefinition,
+            userNote: this.getNoteContent(noteDefinition),
             userNoteSource: {
                 source: noteDefinition.source,
                 nodeId: noteDefinition.nodeId,

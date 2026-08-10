@@ -12,7 +12,12 @@ export class WordNoteService {
     getExistingNote(wordDef: WordDefinition): string {
         if (wordDef.userNote) return wordDef.userNote;
         const noteSection = wordDef.sections?.find(section => this.isNoteTitle(section.title));
-        return noteSection?.content || '';
+        if (noteSection?.content) return noteSection.content;
+
+        const raw = (wordDef.rawDefinition || wordDef.definition || '').trim();
+        return /^\*\*(note|notes|备注|我的备注)\*\*/i.test(raw)
+            ? raw.replace(/^\*\*(note|notes|备注|我的备注)\*\*/i, '').trim()
+            : '';
     }
 
     getAvailableBooks(): WordNoteBookOption[] {
@@ -41,7 +46,10 @@ export class WordNoteService {
                 )
                 : false;
 
-        if (success) await this.refreshVocabulary();
+        if (success) {
+            await this.refreshVocabulary();
+            this.syncDefinition(wordDef);
+        }
         return success;
     }
 
@@ -50,8 +58,16 @@ export class WordNoteService {
         if (!noteSource) return false;
 
         const success = await this.plugin.vocabularyManager.deleteWordFromCanvas(noteSource.source, noteSource.nodeId);
-        if (success) await this.refreshVocabulary();
+        if (success) {
+            await this.refreshVocabulary();
+            this.syncDefinition(wordDef);
+        }
         return success;
+    }
+
+    private syncDefinition(wordDef: WordDefinition): void {
+        const refreshed = this.plugin.vocabularyManager.getDefinition(wordDef.word);
+        if (refreshed) Object.assign(wordDef, refreshed);
     }
 
     private async refreshVocabulary(): Promise<void> {

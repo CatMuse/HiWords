@@ -12,7 +12,6 @@ interface WordPopoverActionOptions {
     wordDef: WordDefinition;
     currentSentence: string;
     onOpenDetail: () => void;
-    onBack: () => void;
     onClose: () => void;
 }
 
@@ -28,6 +27,24 @@ export class WordPopoverActions {
 
     render(options: WordPopoverActionOptions): void {
         const actions = options.tooltip.createDiv({ cls: 'hi-words-tooltip-actions' });
+        const mainContentNodes = Array.from(options.contentEl.childNodes);
+        const mainContentClassName = options.contentEl.className;
+        let mainScrollTop = 0;
+        const openSubview = (render: () => void): void => {
+            mainScrollTop = options.contentEl.scrollTop;
+            render();
+        };
+        const restoreMainView = (): void => {
+            this.cancel();
+            options.contentEl.empty();
+            options.contentEl.className = mainContentClassName;
+            options.contentEl.append(...mainContentNodes);
+            options.tooltip.removeClass('is-subview');
+            actions.querySelectorAll('.hi-words-tooltip-action').forEach(button => {
+                button.removeClass('is-active');
+            });
+            options.contentEl.scrollTop = mainScrollTop;
+        };
         const items: Array<{
             key: string;
             label: string;
@@ -41,7 +58,7 @@ export class WordPopoverActions {
                 icon: 'notebook-pen',
                 run: button => {
                     this.setActiveAction(actions, button);
-                    this.renderNote(options.contentEl, options.wordDef, options.onBack);
+                    openSubview(() => this.renderNote(options.contentEl, options.wordDef, restoreMainView));
                 },
             },
             {
@@ -50,7 +67,7 @@ export class WordPopoverActions {
                 icon: 'bookmark',
                 run: button => {
                     this.setActiveAction(actions, button);
-                    this.renderExamples(options.contentEl, options.wordDef, options.currentSentence, options.onBack);
+                    openSubview(() => this.renderExamples(options.contentEl, options.wordDef, options.currentSentence, restoreMainView));
                 },
             },
             {
@@ -59,7 +76,9 @@ export class WordPopoverActions {
                 icon: 'files',
                 run: button => {
                     this.setActiveAction(actions, button);
-                    void this.renderVaultContexts(options.contentEl, options.wordDef.word, options.onBack, options.onClose);
+                    openSubview(() => {
+                        void this.renderVaultContexts(options.contentEl, options.wordDef.word, restoreMainView, options.onClose);
+                    });
                 },
             },
         ];
@@ -388,9 +407,6 @@ export class WordPopoverActions {
 
     private renderContextItem(container: HTMLElement, context: VaultWordContext, word: string, onClose: () => void): void {
         const item = container.createEl('button', { cls: 'hi-words-tooltip-context-item', attr: { type: 'button' } });
-        const meta = item.createDiv({ cls: 'hi-words-tooltip-context-meta' });
-        if (context.heading) meta.createSpan({ text: context.heading, cls: 'hi-words-tooltip-context-heading' });
-        meta.createSpan({ text: `L${context.line}`, cls: 'hi-words-tooltip-context-line' });
         this.renderHighlightedSentence(item, context.sentence, word);
         item.addEventListener('click', event => {
             event.preventDefault();
