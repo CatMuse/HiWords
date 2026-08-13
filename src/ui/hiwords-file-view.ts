@@ -9,7 +9,6 @@ import {
     validateHiWordsPack,
 } from '../editor/hiwords-document';
 import type { HiWordsCard, HiWordsPack } from '../schema/hiwords';
-import { getColorWithOpacity, mapCanvasColorToCSSVar } from '../utils';
 import type { WordCardDetailSection, WordDefinition } from '../utils';
 import {
     HIWORDS_EDITOR_MODULES,
@@ -37,7 +36,6 @@ export class HiWordsFileView extends TextFileView {
     private selectedCardId: string | null = null;
     private query = '';
     private documentDirty = false;
-    private dirtyCardIds = new Set<string>();
     private refreshTimer: number | null = null;
     private validationEl: HTMLElement | null = null;
     private listEl: HTMLElement | null = null;
@@ -100,10 +98,6 @@ export class HiWordsFileView extends TextFileView {
     getViewData(): string {
         if (this.document.kind !== 'hiwords') return this.document.original;
         if (!this.documentDirty) return this.document.original;
-        for (const card of this.document.pack.cards) {
-            if (this.dirtyCardIds.has(card.id)) card.revision = Math.max(1, card.revision || 1) + 1;
-        }
-        this.dirtyCardIds.clear();
         const serialized = serializeHiWordsPack(this.document.pack);
         this.document.original = serialized;
         this.documentDirty = false;
@@ -115,7 +109,6 @@ export class HiWordsFileView extends TextFileView {
         this.data = data;
         this.document = parseHiWordsEditorDocument(data);
         this.documentDirty = false;
-        this.dirtyCardIds.clear();
         this.documentDirty = false;
         if (this.document.kind === 'hiwords') {
             const selectedStillExists = previousSelection && this.document.pack.cards.some(card => card.id === previousSelection);
@@ -133,7 +126,6 @@ export class HiWordsFileView extends TextFileView {
         this.refreshTimer = null;
         this.contentEl.empty();
         this.selectedCardId = null;
-        this.dirtyCardIds.clear();
         this.validationEl = null;
         this.listEl = null;
         this.previewEl = null;
@@ -409,7 +401,7 @@ export class HiWordsFileView extends TextFileView {
         const wordDefinition: WordDefinition = {
             word: card.word || 'New word',
             type: card.type,
-            language: card.language,
+            language: card.language || this.document.pack.language,
             aliases: card.aliases,
             definition: card.meanings[0]?.translation || card.meanings[0]?.definition || '',
             source: this.file?.path || '',
@@ -420,11 +412,6 @@ export class HiWordsFileView extends TextFileView {
         const sidebar = previewScroll.createDiv({ cls: 'hi-words-sidebar hi-words-file-live-sidebar' });
         const wordList = sidebar.createDiv({ cls: 'hi-words-word-list' });
         const wordCard = wordList.createDiv({ cls: 'hi-words-word-card is-expanded' });
-        if (wordDefinition.color) {
-            const accent = mapCanvasColorToCSSVar(wordDefinition.color, 'var(--color-base-60)');
-            wordCard.style.setProperty('--word-card-accent-color', accent);
-            wordCard.style.setProperty('--word-card-bg-color', getColorWithOpacity(accent, 0.1));
-        }
         const title = wordCard.createDiv({ cls: 'hi-words-word-title' });
         title.createSpan({ text: wordDefinition.word, cls: 'hi-words-word-text' });
         const phoneticTarget = title.createSpan({ cls: 'hi-words-word-title-phonetic-slot' });
@@ -600,7 +587,7 @@ export class HiWordsFileView extends TextFileView {
     private isEditorModuleEmpty(card: HiWordsCard, module: HiWordsEditorModule): boolean {
         if (module === 'word' || module === 'meanings') return false;
         if (module === 'morphology') {
-            return !card.morphology?.breakdown && !card.morphology?.note && !(card.morphology?.components?.length);
+            return !card.morphology?.explanation && !(card.morphology?.components?.length);
         }
         if (module === 'usage') {
             const usage = card.usage;
@@ -643,7 +630,7 @@ export class HiWordsFileView extends TextFileView {
 
     private getEditorModuleOrder(): HiWordsEditorModule[] {
         if (this.document.kind !== 'hiwords') return HIWORDS_EDITOR_MODULES.map(item => item.id);
-        const stored = this.document.pack.metadata?.editorModuleOrder;
+        const stored = this.document.pack.display?.moduleOrder;
         const valid = Array.isArray(stored)
             ? stored.filter((value): value is HiWordsEditorModule =>
                 typeof value === 'string' && HIWORDS_EDITOR_MODULES.some(item => item.id === value))
@@ -674,7 +661,7 @@ export class HiWordsFileView extends TextFileView {
 
     private saveEditorModuleOrder(order: HiWordsEditorModule[], card: HiWordsCard): void {
         if (this.document.kind !== 'hiwords') return;
-        this.document.pack.metadata = { ...(this.document.pack.metadata || {}), editorModuleOrder: order };
+        this.document.pack.display = { ...(this.document.pack.display || {}), moduleOrder: order };
         this.markChanged(card);
     }
 
@@ -738,7 +725,7 @@ export class HiWordsFileView extends TextFileView {
 
     private addCard(): void {
         if (this.document.kind !== 'hiwords') return;
-        const card = createEmptyHiWordsCard(this.document.pack.language || 'en');
+        const card = createEmptyHiWordsCard();
         this.document.pack.cards.push(card);
         this.selectedCardId = card.id;
         this.selectedModule = 'word';
@@ -752,7 +739,6 @@ export class HiWordsFileView extends TextFileView {
         const index = this.document.pack.cards.findIndex(item => item.id === card.id);
         if (index < 0) return;
         this.document.pack.cards.splice(index, 1);
-        this.dirtyCardIds.delete(card.id);
         this.selectedCardId = this.document.pack.cards[Math.min(index, this.document.pack.cards.length - 1)]?.id || null;
         this.markChanged();
         this.render();
@@ -760,7 +746,6 @@ export class HiWordsFileView extends TextFileView {
 
     private markChanged(card?: HiWordsCard): void {
         this.documentDirty = true;
-        if (card) this.dirtyCardIds.add(card.id);
         this.requestSave();
         if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
         this.refreshTimer = window.setTimeout(() => {

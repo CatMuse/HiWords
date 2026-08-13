@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { HiWordsCard, HiWordsPack, isHiWordsPack } from '../schema/hiwords';
+import { HiWordsCard, HiWordsPack, isHiWordsPack, normalizeHiWordsPack } from '../schema/hiwords';
 import type { WordDefinition, WordSection } from '../utils';
 import { buildStudyKey } from '../utils';
 import { parsePhrase } from '../utils/pattern-matcher';
@@ -65,7 +65,7 @@ export class HiWordsParser {
     private async readPack(file: TFile): Promise<HiWordsPack | null> {
         const content = await this.app.vault.cachedRead(file);
         if (!content.trim()) return null;
-        const parsed = JSON.parse(content) as unknown;
+        const parsed = normalizeHiWordsPack(JSON.parse(content) as unknown);
         return isHiWordsPack(parsed) ? parsed : null;
     }
 

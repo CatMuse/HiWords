@@ -60,9 +60,12 @@ export function renderHiWordsMorphology(root: HTMLElement, card: HiWordsCard): v
     const morphology = card.morphology;
     if (!morphology) return;
     const components = (morphology.components || []).filter(item => item.form.trim());
-    if (!morphology.breakdown?.trim() && !morphology.note?.trim() && !components.length) return;
+    if (!morphology.explanation?.trim() && !components.length) return;
     const section = createSection(root, 'Morphology');
-    if (morphology.breakdown) section.createDiv({ text: morphology.breakdown, cls: 'hi-words-structured-breakdown' });
+    if (components.length) section.createDiv({
+        text: components.map(item => item.form).join(' + '),
+        cls: 'hi-words-structured-breakdown',
+    });
     const roots = components.filter(item => item.type === 'root' || item.type === 'base');
     const prefixes = components.filter(item => item.type === 'prefix');
     const suffixes = components.filter(item => item.type === 'suffix');
@@ -71,7 +74,7 @@ export function renderHiWordsMorphology(root: HTMLElement, card: HiWordsCard): v
     renderMorphologyGroup(section, 'Prefixes', prefixes);
     renderMorphologyGroup(section, 'Suffixes', suffixes);
     renderMorphologyGroup(section, 'Components', others);
-    if (morphology.note) section.createDiv({ text: morphology.note, cls: 'hi-words-structured-memory-text' });
+    if (morphology.explanation) section.createDiv({ text: morphology.explanation, cls: 'hi-words-structured-memory-text' });
 }
 
 export function renderHiWordsPhrases(root: HTMLElement, card: HiWordsCard): void {
@@ -83,7 +86,6 @@ export function renderHiWordsPhrases(root: HTMLElement, card: HiWordsCard): void
         const head = row.createDiv({ cls: 'hi-words-card-derived-header' });
         head.createSpan({ text: item.text, cls: 'hi-words-structured-confusable-word' });
         if (item.translation) head.createSpan({ text: item.translation, cls: 'hi-words-structured-zh' });
-        if (item.meaning) row.createDiv({ text: item.meaning, cls: 'hi-words-structured-memory-text' });
         if (item.sentence) row.createDiv({ text: item.sentence, cls: 'hi-words-structured-example-text' });
     }
 }
@@ -133,21 +135,26 @@ export function renderHiWordsMemory(root: HTMLElement, card: HiWordsCard): void 
         row.createSpan({ text: humanizeKey(item.type), cls: 'hi-words-structured-label' });
         const body = row.createDiv({ cls: 'hi-words-card-memory-body' });
         body.createDiv({ text: item.text, cls: 'hi-words-structured-memory-text' });
-        if (item.source) body.createDiv({ text: item.source, cls: 'hi-words-card-memory-source' });
     }
 }
 
 export function renderHiWordsImages(root: HTMLElement, card: HiWordsCard, app?: App): void {
-    const image = (card.images || []).find(item => item.path.trim());
-    if (!image) return;
+    const images = (card.images || []).filter(item => item.path.trim());
+    if (!images.length) return;
     const section = createSection(root, 'Images');
-    const figure = section.createEl('figure', { cls: 'hi-words-structured-image' });
-    const src = /^(?:https?:|data:|app:)/i.test(image.path)
-        ? image.path
-        : app?.vault.adapter.getResourcePath(normalizePath(image.path)) || image.path;
-    const img = figure.createEl('img', { attr: { src, alt: image.alt || card.word, loading: 'lazy' } });
-    img.addEventListener('error', () => section.remove());
-    if (image.caption || image.source) figure.createEl('figcaption', { text: [image.caption, image.source].filter(Boolean).join(' · ') });
+    const gallery = section.createDiv({ cls: 'hi-words-structured-image-gallery' });
+    for (const image of images) {
+        const figure = gallery.createEl('figure', { cls: 'hi-words-structured-image' });
+        const src = /^(?:https?:|data:|app:)/i.test(image.path)
+            ? image.path
+            : app?.vault.adapter.getResourcePath(normalizePath(image.path)) || image.path;
+        const img = figure.createEl('img', { attr: { src, alt: image.alt || card.word, loading: 'lazy' } });
+        img.addEventListener('error', () => {
+            figure.remove();
+            if (!gallery.querySelector('.hi-words-structured-image')) section.remove();
+        });
+        if (image.caption || image.source) figure.createEl('figcaption', { text: [image.caption, image.source].filter(Boolean).join(' · ') });
+    }
 }
 
 export function renderHiWordsCustom(root: HTMLElement, card: HiWordsCard): void {

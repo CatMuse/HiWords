@@ -7,6 +7,7 @@ import type {
     HiWordsForm,
     HiWordsImage,
     HiWordsMemoryItem,
+    HiWordsMorphologyComponent,
     HiWordsPack,
     HiWordsPhrase,
     HiWordsRelation,
@@ -75,7 +76,10 @@ function renderWord(container: HTMLElement, pack: HiWordsPack, card: HiWordsCard
         card.type = normalizeLearningItemType(value);
         callbacks.onChange();
     });
-    textField(grid, 'Language', card.language || pack.language, value => { card.language = value; callbacks.onChange(); });
+    textField(grid, 'Language override', card.language || '', value => {
+        card.language = value.trim() || undefined;
+        callbacks.onChange();
+    }, `Inherits ${pack.language}`);
     textField(grid, 'Aliases', (card.aliases || []).join(', '), value => { card.aliases = splitCommaValues(value); callbacks.onChange(); }, 'Spelling variants only');
     textField(grid, 'US pronunciation', card.phonetics?.us || '', value => {
         card.phonetics = { ...(card.phonetics || {}), us: value };
@@ -137,11 +141,11 @@ function renderMeanings(container: HTMLElement, card: HiWordsCard, callbacks: Ca
             updateSummary();
             callbacks.onChange();
         });
-        textField(grid, 'Translation', meaning.translation, value => {
+        translationField(grid, meaning.translation, value => {
             meaning.translation = value;
             updateSummary();
             callbacks.onChange();
-        }, '', 'Add a translation.');
+        }, 'Add a translation.');
         textareaField(content, 'Definition', meaning.definition, value => { meaning.definition = value; callbacks.onChange(); }, '', 'Add a definition.');
     });
 }
@@ -152,7 +156,6 @@ function renderSentences(container: HTMLElement, card: HiWordsCard, callbacks: C
         id: createStableId('sentence'),
         text: '',
         translation: '',
-        createdAt: new Date().toISOString(),
     }), (row, item) => {
         row.addClass('hi-words-file-sentence-fields');
         textareaField(row, 'Sentence', item.text, value => item.text = value);
@@ -180,18 +183,34 @@ function renderDerivedWords(container: HTMLElement, card: HiWordsCard, callbacks
 
 function renderMorphology(container: HTMLElement, card: HiWordsCard, callbacks: CardEditorCallbacks): void {
     const section = createSection(container, 'Morphology');
-    textField(section, 'Breakdown', card.morphology?.breakdown || '', value => { card.morphology = { ...(card.morphology || {}), breakdown: value }; callbacks.onChange(); }, 'Example: un + help + ful');
-    textareaField(section, 'Explanation', card.morphology?.note || '', value => { card.morphology = { ...(card.morphology || {}), note: value }; callbacks.onChange(); });
+    const components = card.morphology?.components || [];
+    const componentsSection = renderCollection(section, 'Components', 'Add component', components, callbacks,
+        (): HiWordsMorphologyComponent => ({ type: 'root', form: '' }),
+        (row, item) => {
+            selectField(row, 'Type', item.type, morphologyComponentTypes(item.type), value => item.type = value);
+            textField(row, 'Form', item.form, value => item.form = value, 'Example: access or -ible');
+            textField(row, 'Meaning', item.meaning || '', value => item.meaning = value);
+        },
+        item => joinSummary(humanize(item.type), item.form, item.meaning),
+        () => {
+            card.morphology = { ...(card.morphology || {}), components };
+        },
+    );
+    componentsSection.addClass('hi-words-file-editor-subsection');
+    textareaField(section, 'Explanation', card.morphology?.explanation || '', value => {
+        card.morphology = { ...(card.morphology || {}), explanation: value };
+        callbacks.onChange();
+    });
 }
 
 function renderPhrases(container: HTMLElement, card: HiWordsCard, callbacks: CardEditorCallbacks): void {
     const items = card.phrases || [];
     renderCollection(container, 'Phrases', 'Add phrase', items, callbacks, (): HiWordsPhrase => ({ id: createStableId('phrase'), text: '' }), (row, item) => {
+        row.addClass('hi-words-file-phrase-fields');
         textField(row, 'Phrase', item.text, value => item.text = value);
-        textField(row, 'Meaning', item.meaning || '', value => item.meaning = value);
-        textField(row, 'Translation', item.translation || '', value => item.translation = value);
-        textField(row, 'Sentence', item.sentence || '', value => item.sentence = value);
-    }, item => joinSummary(item.text, item.meaning || item.translation), () => card.phrases = items);
+        translationField(row, item.translation || '', value => item.translation = value);
+        textareaField(row, 'Sentence', item.sentence || '', value => item.sentence = value);
+    }, item => joinSummary(item.text, item.translation), () => card.phrases = items);
 }
 
 function renderUsage(container: HTMLElement, card: HiWordsCard, callbacks: CardEditorCallbacks): void {
@@ -237,7 +256,7 @@ function renderNote(container: HTMLElement, card: HiWordsCard, callbacks: CardEd
         card.note?.text || '',
         value => {
             card.note = value
-                ? { text: value, updatedAt: new Date().toISOString() }
+                ? { text: value }
                 : undefined;
             callbacks.onChange();
         },
@@ -251,6 +270,7 @@ function renderImages(container: HTMLElement, card: HiWordsCard, callbacks: Card
         textField(row, 'Vault path', item.path, value => item.path = value);
         textField(row, 'Alternative text', item.alt || '', value => item.alt = value);
         textField(row, 'Caption', item.caption || '', value => item.caption = value);
+        textField(row, 'Source', item.source || '', value => item.source = value, 'Optional source or attribution');
     }, item => joinSummary(item.caption || item.alt, item.path), () => card.images = items);
 }
 
@@ -424,6 +444,12 @@ function textField(container: HTMLElement, label: string, value: string, onInput
     return input;
 }
 
+function translationField(container: HTMLElement, value: string, onInput: (value: string) => void, requiredMessage = ''): HTMLInputElement {
+    const input = textField(container, 'Translation', value, onInput, '', requiredMessage);
+    input.addClass('hi-words-file-translation-input');
+    return input;
+}
+
 function textareaField(container: HTMLElement, label: string, value: string, onInput: (value: string) => void, placeholder = '', requiredMessage = ''): HTMLTextAreaElement {
     const field = container.createEl('label', { cls: 'hi-words-file-field hi-words-file-field-wide' });
     field.createSpan({ text: label });
@@ -500,4 +526,8 @@ function partOfSpeechOptions(current?: string): string[] {
         'noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition',
         'conjunction', 'determiner', 'interjection', 'auxiliary', 'modal', 'phrase',
     ].filter(Boolean)));
+}
+
+function morphologyComponentTypes(current?: string): string[] {
+    return Array.from(new Set([current || '', 'root', 'prefix', 'suffix', 'base', 'other'].filter(Boolean)));
 }

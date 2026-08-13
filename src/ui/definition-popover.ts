@@ -308,7 +308,7 @@ export class DefinitionPopover extends Component {
         // 点击标题发音
         titleEl.addEventListener('click', (e) => {
             e.stopPropagation();
-            void playWordTTS(this.plugin, word, wordDef || undefined).catch(error => {
+            void playWordTTS(this.plugin, word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);
             });
         });
@@ -361,7 +361,7 @@ export class DefinitionPopover extends Component {
                 mode: 'popover',
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
-                onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
+                onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, variant),
                 display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
             });
 

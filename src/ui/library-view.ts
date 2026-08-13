@@ -673,7 +673,7 @@ export class HiWordsLibraryView extends ItemView {
         });
         word.onclick = (event) => {
             event.stopPropagation();
-            void playWordTTS(this.plugin, definition.word, definition).catch(error => {
+            void playWordTTS(this.plugin, definition.word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);
             });
         };
@@ -683,7 +683,7 @@ export class HiWordsLibraryView extends ItemView {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
             event.stopPropagation();
-            void playWordTTS(this.plugin, definition.word, definition).catch(error => {
+            void playWordTTS(this.plugin, definition.word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);
             });
         };
@@ -763,7 +763,7 @@ export class HiWordsLibraryView extends ItemView {
         const title = titleContainer.createDiv({ cls: 'hi-words-tooltip-title', text: definition.word });
         title.onclick = (event) => {
             event.stopPropagation();
-            void playWordTTS(this.plugin, definition.word, definition).catch(error => {
+            void playWordTTS(this.plugin, definition.word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);
             });
         };
@@ -841,7 +841,7 @@ export class HiWordsLibraryView extends ItemView {
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
                 onPronunciationClick: (variant) => {
-                    void playWordTTS(this.plugin, definition.word, definition, variant).catch(error => {
+                    void playWordTTS(this.plugin, definition.word, variant).catch(error => {
                         console.error('HiWords 播放发音失败:', error);
                     });
                 },

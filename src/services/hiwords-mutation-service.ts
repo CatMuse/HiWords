@@ -1,7 +1,7 @@
 import { TFile } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { createStableId } from '../editor/hiwords-document';
-import { isHiWordsPack, type HiWordsCard, type HiWordsPack, type HiWordsSentence } from '../schema/hiwords';
+import { isHiWordsPack, normalizeHiWordsPack, type HiWordsCard, type HiWordsPack, type HiWordsSentence } from '../schema/hiwords';
 import type { WordDefinition } from '../utils';
 
 type CardMutation = (card: HiWordsCard, pack: HiWordsPack) => void;
@@ -21,7 +21,7 @@ export class HiWordsMutationService {
     async saveNote(wordDef: WordDefinition, text: string): Promise<boolean> {
         const value = text.trim();
         return this.mutate(wordDef, card => {
-            card.note = value ? { text: value, updatedAt: new Date().toISOString() } : undefined;
+            card.note = value ? { text: value } : undefined;
         });
     }
 
@@ -54,7 +54,6 @@ export class HiWordsMutationService {
                     text,
                     translation: sentence.translation?.trim() || undefined,
                     source: sentence.source?.trim() || undefined,
-                    createdAt: new Date().toISOString(),
                 });
                 saved = true;
             }
@@ -80,13 +79,11 @@ export class HiWordsMutationService {
             if (!(file instanceof TFile)) return false;
             let matched = false;
             await this.plugin.app.vault.process(file, data => {
-                const parsed = JSON.parse(data) as unknown;
+                const parsed = normalizeHiWordsPack(JSON.parse(data) as unknown);
                 if (!isHiWordsPack(parsed)) throw new Error('Unsupported .hiwords file.');
                 const card = parsed.cards.find(item => item.id === cardId);
                 if (!card) return data;
                 mutation(card, parsed);
-                card.revision = Math.max(1, card.revision || 1) + 1;
-                parsed.metadata = { ...(parsed.metadata || {}), updatedAt: new Date().toISOString() };
                 changedCard = card;
                 matched = true;
                 return `${JSON.stringify(parsed, null, 2)}\n`;

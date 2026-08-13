@@ -490,7 +490,7 @@ export class HiWordsSidebarView extends ItemView {
         // 点击主词发音
         wordTextEl.addEventListener('click', (e) => {
             e.stopPropagation();
-            void playWordTTS(this.plugin, wordDef.word, wordDef).catch(error => {
+            void playWordTTS(this.plugin, wordDef.word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);
             });
         });
@@ -560,7 +560,7 @@ export class HiWordsSidebarView extends ItemView {
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
                 pronunciationTarget: phoneticTarget,
-                onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
+                onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, variant),
                 display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
             });
         } else if (isExpanded && contentToRender && contentToRender.trim()) {

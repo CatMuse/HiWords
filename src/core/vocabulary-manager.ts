@@ -339,9 +339,6 @@ export class VocabularyManager {
             if (!definition.color) {
                 definition.color = book.color;
             }
-            if (definition.card && !definition.card.color) {
-                definition.card = { ...definition.card, color: book.color };
-            }
         }
     }
 

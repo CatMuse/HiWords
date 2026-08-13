@@ -5,6 +5,7 @@ import {
     HiWordsMeaning,
     HiWordsPack,
     isHiWordsPack,
+    normalizeHiWordsPack,
     validateHiWordsPack,
 } from '../schema/hiwords';
 import type { LearningItemType } from '../utils';
@@ -15,7 +16,7 @@ export type HiWordsEditorDocument =
 
 export function parseHiWordsEditorDocument(data: string): HiWordsEditorDocument {
     try {
-        const parsed = JSON.parse(data) as unknown;
+        const parsed = normalizeHiWordsPack(JSON.parse(data) as unknown);
         if (!isHiWordsPack(parsed)) {
             return {
                 kind: 'invalid',
@@ -34,31 +35,23 @@ export function parseHiWordsEditorDocument(data: string): HiWordsEditorDocument 
 }
 
 export function createEmptyHiWordsPack(title: string): HiWordsPack {
-    const now = new Date().toISOString();
     return {
         schema: HIWORDS_SCHEMA,
         schemaVersion: HIWORDS_SCHEMA_VERSION,
         id: createStableId('book'),
         title,
         language: 'en',
-        contentVersion: '1.0.0',
-        metadata: { createdAt: now, updatedAt: now },
         cards: [],
     };
 }
 
-export function createEmptyHiWordsCard(language = 'en'): HiWordsCard {
+export function createEmptyHiWordsCard(): HiWordsCard {
     const cardId = createStableId('word');
     return {
         id: cardId,
-        revision: 1,
         word: '',
         type: 'word',
-        language,
-        aliases: [],
-        phonetics: {},
         meanings: [createEmptyMeaning(cardId)],
-        sentences: [],
     };
 }
 
@@ -72,8 +65,6 @@ export function createEmptyMeaning(cardId: string): HiWordsMeaning {
 }
 
 export function serializeHiWordsPack(pack: HiWordsPack): string {
-    const metadata = pack.metadata && typeof pack.metadata === 'object' ? pack.metadata : {};
-    pack.metadata = { ...metadata, updatedAt: new Date().toISOString() };
     return `${JSON.stringify(pack, null, 2)}\n`;
 }
 
