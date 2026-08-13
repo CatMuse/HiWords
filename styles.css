@@ -4002,6 +4002,10 @@ body.hi-words-is-resizing-columns * {
     background: var(--background-primary);
 }
 
+.hi-words-file-inspector-pane.is-ai-draft .hi-words-file-editor-header {
+    background: color-mix(in srgb, var(--interactive-accent) 4%, var(--background-primary));
+}
+
 .hi-words-file-editor-scroll {
     min-height: 0;
     overflow-y: auto;
@@ -4033,6 +4037,18 @@ body.hi-words-is-resizing-columns * {
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.hi-words-file-ai-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.hi-words-file-ai-actions.has-draft {
+    padding: 2px;
+    border-radius: var(--radius-m);
+    background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
 }
 
 .hi-words-file-toolbar-button {
@@ -4087,6 +4103,24 @@ body.hi-words-is-resizing-columns * {
 .hi-words-file-header-action.is-active {
     background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
     color: var(--interactive-accent);
+}
+
+.hi-words-file-header-action.is-confirm {
+    background: color-mix(in srgb, var(--interactive-accent) 11%, transparent);
+    color: var(--interactive-accent);
+}
+
+.hi-words-file-ai-discard:hover {
+    background: rgba(var(--color-red-rgb), 0.1);
+    color: var(--text-error);
+}
+
+.hi-words-file-header-action.is-loading svg {
+    animation: hi-words-ai-spin 900ms linear infinite;
+}
+
+@keyframes hi-words-ai-spin {
+    to { transform: rotate(360deg); }
 }
 
 .hi-words-file-header-action svg {
@@ -4805,6 +4839,27 @@ button.hi-words-file-empty-state svg {
 .hi-words-file-preview-panel-header strong {
     color: var(--text-normal);
     font-size: var(--font-ui-medium);
+}
+
+.hi-words-file-preview-title {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.hi-words-file-preview-title span {
+    overflow: hidden;
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-file-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 3px;
 }
 
 .hi-words-file-live-sidebar {

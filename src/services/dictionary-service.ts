@@ -6,6 +6,7 @@ interface AIConfig {
     service: AIServiceSettings;
     apiKey: string;
     prompt: string;
+    maxTokens?: number;
 }
 
 type APIType = 'openai' | 'claude' | 'gemini';
@@ -16,13 +17,13 @@ type JsonPath = Array<string | number>;
  * API 配置接口
  */
 interface APIAdapter {
-    buildRequest: (model: string, prompt: string) => JsonObject;
+    buildRequest: (model: string, prompt: string, maxTokens: number) => JsonObject;
     buildHeaders: (apiKey: string) => Record<string, string>;
     extractResponse: (data: unknown) => string | undefined;
     buildUrl?: (baseUrl: string, model: string, apiKey: string) => string;
 }
 
-function readStringPath(data: unknown, path: JsonPath): string | undefined {
+function readPath(data: unknown, path: JsonPath): unknown {
     let current = data;
     for (const segment of path) {
         if (typeof segment === 'number') {
@@ -33,7 +34,74 @@ function readStringPath(data: unknown, path: JsonPath): string | undefined {
         if (!current || typeof current !== 'object') return undefined;
         current = (current as Record<string, unknown>)[segment];
     }
+    return current;
+}
+
+function readStringPath(data: unknown, path: JsonPath): string | undefined {
+    const current = readPath(data, path);
     return typeof current === 'string' ? current : undefined;
+}
+
+function textFromParts(value: unknown): string | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const text = value.flatMap(item => {
+        if (typeof item === 'string') return [item];
+        if (!item || typeof item !== 'object') return [];
+        const part = item as Record<string, unknown>;
+        if (typeof part.text === 'string') return [part.text];
+        if (typeof part.content === 'string') return [part.content];
+        return [];
+    }).join('\n').trim();
+    return text || undefined;
+}
+
+function extractOpenAIResponse(data: unknown): string | undefined {
+    if (typeof data === 'string' && data.trim()) return data;
+    const content = readPath(data, ['choices', 0, 'message', 'content']);
+    if (typeof content === 'string' && content.trim()) return content;
+    const contentParts = textFromParts(content);
+    if (contentParts) return contentParts;
+    return readStringPath(data, ['choices', 0, 'text'])
+        || readStringPath(data, ['output_text'])
+        || textFromParts(readPath(data, ['output', 0, 'content']));
+}
+
+function extractClaudeResponse(data: unknown): string | undefined {
+    if (typeof data === 'string' && data.trim()) return data;
+    return textFromParts(readPath(data, ['content'])) || readStringPath(data, ['completion']);
+}
+
+function extractGeminiResponse(data: unknown): string | undefined {
+    if (typeof data === 'string' && data.trim()) return data;
+    return textFromParts(readPath(data, ['candidates', 0, 'content', 'parts']));
+}
+
+function unwrapResponse(data: unknown): unknown {
+    if (typeof data === 'string') {
+        try {
+            return unwrapResponse(JSON.parse(data) as unknown);
+        } catch {
+            return data;
+        }
+    }
+    if (!data || typeof data !== 'object') return data;
+    const wrapped = (data as Record<string, unknown>).data;
+    return wrapped && typeof wrapped === 'object' ? wrapped : data;
+}
+
+function responseErrorMessage(data: unknown): string | undefined {
+    const candidates = [
+        readStringPath(data, ['error', 'message']),
+        readStringPath(data, ['message']),
+        readStringPath(data, ['detail']),
+    ];
+    return candidates.find(Boolean);
+}
+
+function responseFinishReason(data: unknown): string | undefined {
+    return readStringPath(data, ['choices', 0, 'finish_reason'])
+        || readStringPath(data, ['candidates', 0, 'finishReason'])
+        || readStringPath(data, ['stop_reason']);
 }
 
 /**
@@ -58,16 +126,16 @@ export class DictionaryService {
      */
     private readonly API_ADAPTERS: Record<APIType, APIAdapter> = {
         openai: {
-            buildRequest: (model: string, prompt: string) => ({
+            buildRequest: (model: string, prompt: string, maxTokens: number) => ({
                 model,
                 messages: [{ role: 'user', content: prompt }],
                 temperature: 0.3,
-                max_tokens: 500
+                max_tokens: maxTokens
             }),
             buildHeaders: (apiKey: string) => ({
                 'Authorization': `Bearer ${apiKey}`
             }),
-            extractResponse: (data: unknown) => readStringPath(data, ['choices', 0, 'message', 'content']),
+            extractResponse: (data: unknown) => extractOpenAIResponse(unwrapResponse(data)),
             buildUrl: (baseUrl: string) => {
                 const normalized = baseUrl.replace(/\/$/, '');
                 if (normalized.endsWith('/chat/completions')) {
@@ -77,16 +145,16 @@ export class DictionaryService {
             }
         },
         claude: {
-            buildRequest: (model: string, prompt: string) => ({
+            buildRequest: (model: string, prompt: string, maxTokens: number) => ({
                 model,
                 messages: [{ role: 'user', content: prompt }],
-                max_tokens: 1024
+                max_tokens: maxTokens
             }),
             buildHeaders: (apiKey: string) => ({
                 'x-api-key': apiKey,
                 'anthropic-version': '2023-06-01'
             }),
-            extractResponse: (data: unknown) => readStringPath(data, ['content', 0, 'text']),
+            extractResponse: (data: unknown) => extractClaudeResponse(unwrapResponse(data)),
             buildUrl: (baseUrl: string) => {
                 const normalized = baseUrl.replace(/\/$/, '');
                 if (normalized.endsWith('/messages')) {
@@ -96,11 +164,12 @@ export class DictionaryService {
             }
         },
         gemini: {
-            buildRequest: (model: string, prompt: string) => ({
-                contents: [{ parts: [{ text: prompt }] }]
+            buildRequest: (_model: string, prompt: string, maxTokens: number) => ({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 }
             }),
             buildHeaders: () => ({}),
-            extractResponse: (data: unknown) => readStringPath(data, ['candidates', 0, 'content', 'parts', 0, 'text']),
+            extractResponse: (data: unknown) => extractGeminiResponse(unwrapResponse(data)),
             buildUrl: (baseUrl: string, model: string, apiKey: string) => {
                 let url = baseUrl;
                 if (!url.includes(':generateContent')) {
@@ -278,17 +347,22 @@ export class DictionaryService {
                 ? adapter.buildUrl(this.config.service.apiUrl, this.config.service.model, this.config.apiKey)
                 : this.config.service.apiUrl;
             const headers = adapter.buildHeaders(this.config.apiKey);
-            let body = adapter.buildRequest(this.config.service.model, prompt);
+            let body = adapter.buildRequest(this.config.service.model, prompt, this.config.maxTokens || 500);
 
             // 合并额外参数
             body = this.mergeExtraParams(body);
 
-            // 发送请求(带重试)
+            // 网络错误由底层重试。已成功返回但没有正文时不隐式重发，避免重复计费。
             const data = await this.makeRequestWithRetry(url, headers, body);
-            
-            // 提取响应内容
             const content = adapter.extractResponse(data);
-            if (!content) {
+            if (!content?.trim()) {
+                const unwrapped = unwrapResponse(data);
+                const apiError = responseErrorMessage(unwrapped);
+                if (apiError) throw new Error(apiError);
+                const finishReason = responseFinishReason(unwrapped);
+                if (finishReason === 'length' || finishReason === 'MAX_TOKENS') {
+                    throw new Error('AI response was truncated before content was returned. Try again or increase the output token limit.');
+                }
                 throw new Error(t('ai_errors.invalid_response'));
             }
 
