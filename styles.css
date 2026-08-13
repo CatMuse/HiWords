@@ -4213,7 +4213,7 @@ body.hi-words-is-resizing-columns * {
 
 .hi-words-file-editor-outline {
     position: sticky;
-    top: 12px;
+    top: 22px;
     max-height: calc(100vh - 92px);
     padding-right: 0;
     overflow-y: auto;
@@ -4898,7 +4898,7 @@ button.hi-words-file-empty-state svg {
     .hi-words-file-editor-outline {
         position: sticky;
         z-index: 4;
-        top: 0;
+        top: 16px;
         max-height: none;
         padding: 5px 0;
         display: flex;
