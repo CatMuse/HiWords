@@ -2,7 +2,7 @@ import { Notice, setIcon } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { t } from '../i18n';
 import { VaultContextService, VaultWordContext } from '../services/vault-context-service';
-import { WordNoteService } from '../services/word-note-service';
+import { HiWordsMutationService } from '../services/hiwords-mutation-service';
 import { extractSentence } from '../utils/sentence-extractor';
 import type { WordDefinition } from '../utils';
 
@@ -19,12 +19,12 @@ interface WordPopoverActionOptions {
 
 export class WordPopoverActions {
     private readonly contextService: VaultContextService;
-    private readonly noteService: WordNoteService;
+    private readonly mutationService: HiWordsMutationService;
     private contextQueryId = 0;
 
     constructor(private readonly plugin: HiWordsPlugin) {
         this.contextService = new VaultContextService(plugin.app);
-        this.noteService = new WordNoteService(plugin);
+        this.mutationService = new HiWordsMutationService(plugin);
     }
 
     render(options: WordPopoverActionOptions): void {
@@ -69,7 +69,7 @@ export class WordPopoverActions {
                 icon: 'bookmark',
                 run: button => {
                     this.setActiveAction(actions, button);
-                    openSubview(() => this.renderExamples(options.contentEl, options.wordDef, options.currentSentence, restoreMainView));
+                    openSubview(() => this.renderExamples(options.contentEl, options.wordDef, options.currentSentence, options.sourcePath, restoreMainView));
                 },
             },
             {
@@ -81,6 +81,7 @@ export class WordPopoverActions {
                     openSubview(() => {
                         void this.renderVaultContexts(
                             options.contentEl,
+                            options.wordDef,
                             options.contextQuery || options.wordDef.word,
                             options.sourcePath,
                             restoreMainView,
@@ -122,16 +123,26 @@ export class WordPopoverActions {
         });
     }
 
-    private renderExamples(contentEl: HTMLElement, wordDef: WordDefinition, currentSentence: string, onBack: () => void): void {
+    private renderExamples(
+        contentEl: HTMLElement,
+        wordDef: WordDefinition,
+        currentSentence: string,
+        sourcePath: string,
+        onBack: () => void
+    ): void {
         this.cancel();
         this.prepareSubview(contentEl);
         this.renderSubviewHeader(contentEl, this.localized('popover.examples_title', 'Sentence'), onBack);
 
-        const examples = [
-            currentSentence ? { text: currentSentence, source: this.localized('popover.current_note', 'Current note') } : null,
-            ...(wordDef.card?.examples || []),
-        ].filter((item): item is { text: string; source?: string } => !!item?.text)
-            .filter((item, index, all) => all.findIndex(candidate => candidate.text === item.text) === index);
+        const examples: Array<{ text: string; translation?: string; source?: string }> = [
+            ...(currentSentence ? [{ text: currentSentence, source: sourcePath || this.localized('popover.current_note', 'Current note') }] : []),
+            ...(wordDef.card?.sentences?.map(sentence => ({
+                text: sentence.text,
+                translation: sentence.translation,
+                source: sentence.source,
+            })) || []),
+        ].filter(item => !!item.text)
+            .filter((item, index, all) => all.findIndex(candidate => normalizeSentence(candidate.text) === normalizeSentence(item.text)) === index);
 
         if (examples.length === 0) {
             this.renderEmpty(contentEl, this.localized('popover.no_examples', 'No examples found for this occurrence.'));
@@ -140,9 +151,30 @@ export class WordPopoverActions {
 
         const list = contentEl.createDiv({ cls: 'hi-words-tooltip-context-list' });
         for (const example of examples) {
-            const item = list.createDiv({ cls: 'hi-words-tooltip-context-item is-static' });
-            this.renderHighlightedSentence(item, example.text, wordDef.word);
-            if (example.source) item.createDiv({ text: example.source, cls: 'hi-words-tooltip-context-source' });
+            const item = list.createDiv({ cls: 'hi-words-tooltip-context-item is-static hi-words-tooltip-saveable-item' });
+            const body = item.createDiv({ cls: 'hi-words-tooltip-saveable-body' });
+            this.renderHighlightedSentence(body, example.text, wordDef.word);
+            if (example.translation) body.createDiv({ text: example.translation, cls: 'hi-words-tooltip-context-translation' });
+            if (example.source) body.createDiv({ text: example.source, cls: 'hi-words-tooltip-context-source' });
+            const saved = this.mutationService.isSentenceSaved(wordDef, example.text);
+            const save = this.createSentenceToggle(item, saved);
+            save.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                save.disabled = true;
+                void this.mutationService.toggleSentence(wordDef, example).then(result => {
+                    if (!result.success) {
+                        new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
+                        save.disabled = false;
+                        return;
+                    }
+                    this.renderExamples(contentEl, wordDef, currentSentence, sourcePath, onBack);
+                }).catch(error => {
+                    console.error('HiWords failed to update saved sentence:', error);
+                    new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
+                    save.disabled = false;
+                });
+            });
         }
     }
 
@@ -165,24 +197,12 @@ export class WordPopoverActions {
                 'aria-labelledby': noteLabelId,
             },
         });
-        textarea.value = this.noteService.getExistingNote(wordDef);
+        textarea.value = this.mutationService.getNote(wordDef);
         textarea.rows = 6;
-
-        let bookSelect: HTMLSelectElement | null = null;
-        if (!wordDef.userNoteSource) {
-            const books = this.noteService.getAvailableBooks();
-            const bookRow = form.createDiv({ cls: 'hi-words-tooltip-note-book is-select-only' });
-            if (books.length > 0) {
-                bookSelect = bookRow.createEl('select', { cls: 'dropdown' });
-                for (const book of books) bookSelect.createEl('option', { text: book.name, value: book.path });
-            } else {
-                bookRow.createDiv({ cls: 'hi-words-tooltip-note-hint', text: t('notices.no_canvas_files') });
-            }
-        }
 
         const status = form.createDiv({ cls: 'hi-words-tooltip-note-status', attr: { 'aria-live': 'polite' } });
         const buttons = form.createDiv({ cls: 'hi-words-tooltip-note-actions' });
-        if (wordDef.userNoteSource) {
+        if (this.mutationService.getNote(wordDef)) {
             const remove = buttons.createEl('button', {
                 cls: 'hi-words-tooltip-note-delete',
                 attr: { type: 'button' },
@@ -208,14 +228,13 @@ export class WordPopoverActions {
             text: t('modals.save_button'),
             attr: { type: 'button' },
         });
-        save.addEventListener('click', () => void this.saveNote(wordDef, textarea, bookSelect, buttons, status, onBack));
+        save.addEventListener('click', () => void this.saveNote(wordDef, textarea, buttons, status, onBack));
         window.setTimeout(() => textarea.focus(), 0);
     }
 
     private async saveNote(
         wordDef: WordDefinition,
         textarea: HTMLTextAreaElement,
-        bookSelect: HTMLSelectElement | null,
         buttons: HTMLElement,
         status: HTMLElement,
         onBack: () => void
@@ -226,15 +245,10 @@ export class WordPopoverActions {
             textarea.focus();
             return;
         }
-        if (!wordDef.userNoteSource && !bookSelect?.value) {
-            status.setText(t('notices.select_book_required'));
-            return;
-        }
-
         this.setNoteFormBusy(buttons, true);
         status.setText(this.localized('popover.saving_note', 'Saving…'));
         try {
-            const success = await this.noteService.save(wordDef, note, bookSelect?.value);
+            const success = await this.mutationService.saveNote(wordDef, note);
             if (!success) {
                 status.setText(t('sidebar.note_save_failed'));
                 return;
@@ -258,7 +272,7 @@ export class WordPopoverActions {
         this.setNoteFormBusy(buttons, true);
         status.setText(this.localized('popover.deleting_note', 'Deleting…'));
         try {
-            const success = await this.noteService.delete(wordDef);
+            const success = await this.mutationService.deleteNote(wordDef);
             if (!success) {
                 status.setText(t('sidebar.note_delete_failed'));
                 return;
@@ -281,6 +295,7 @@ export class WordPopoverActions {
 
     private async renderVaultContexts(
         contentEl: HTMLElement,
+        wordDef: WordDefinition,
         word: string,
         sourcePath: string,
         onBack: () => void,
@@ -345,7 +360,7 @@ export class WordPopoverActions {
                 group.countEl.setText(group.count === 1
                     ? this.localized('popover.context_count_one', '1 context')
                     : this.localized('popover.context_count', '{0} contexts').replace('{0}', String(group.count)));
-                this.renderContextItem(group.element, context, word, onClose);
+                this.renderContextItem(group.element, context, wordDef, word, onClose);
                 displayedContexts += 1;
             }
             updateSummary();
@@ -415,15 +430,59 @@ export class WordPopoverActions {
         await loadPage(true);
     }
 
-    private renderContextItem(container: HTMLElement, context: VaultWordContext, word: string, onClose: () => void): void {
-        const item = container.createEl('button', { cls: 'hi-words-tooltip-context-item', attr: { type: 'button' } });
-        this.renderHighlightedSentence(item, context.sentence, word);
-        item.addEventListener('click', event => {
+    private renderContextItem(container: HTMLElement, context: VaultWordContext, wordDef: WordDefinition, word: string, onClose: () => void): void {
+        const item = container.createDiv({ cls: 'hi-words-tooltip-context-item hi-words-tooltip-saveable-item' });
+        const open = item.createEl('button', { cls: 'hi-words-tooltip-context-open', attr: { type: 'button' } });
+        this.renderHighlightedSentence(open, context.sentence, word);
+        open.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
             onClose();
             void this.contextService.open(context).catch(error => console.error('HiWords failed to open word context:', error));
         });
+        const save = this.createSentenceToggle(item, this.mutationService.isSentenceSaved(wordDef, context.sentence));
+        save.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            save.disabled = true;
+            void this.mutationService.toggleSentence(wordDef, {
+                text: context.sentence,
+                source: context.file.path,
+            }).then(result => {
+                if (!result.success) {
+                    new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
+                    save.disabled = false;
+                    return;
+                }
+                this.updateSentenceToggle(save, result.saved);
+            }).catch(error => {
+                console.error('HiWords failed to update saved sentence:', error);
+                new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
+                save.disabled = false;
+            });
+        });
+    }
+
+    private createSentenceToggle(container: HTMLElement, saved: boolean): HTMLButtonElement {
+        const button = container.createEl('button', {
+            cls: `clickable-icon hi-words-tooltip-sentence-toggle${saved ? ' is-saved' : ''}`,
+            attr: {
+                type: 'button',
+                'aria-label': saved ? 'Remove saved sentence' : 'Save sentence',
+                'aria-pressed': String(saved),
+            },
+        });
+        setIcon(button, saved ? 'bookmark-check' : 'bookmark');
+        return button;
+    }
+
+    private updateSentenceToggle(button: HTMLButtonElement, saved: boolean): void {
+        button.empty();
+        button.disabled = false;
+        button.toggleClass('is-saved', saved);
+        button.setAttribute('aria-label', saved ? 'Remove saved sentence' : 'Save sentence');
+        button.setAttribute('aria-pressed', String(saved));
+        setIcon(button, saved ? 'bookmark-check' : 'bookmark');
     }
 
     private renderSubviewHeader(contentEl: HTMLElement, title: string, onBack?: () => void): void {
@@ -495,4 +554,8 @@ export function getPopoverTargetSentence(target: HTMLElement, word: string): str
         const offset = text.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
         return offset >= 0 ? extractSentence(text, offset + Math.floor(word.length / 2)) : '';
     }
+}
+
+function normalizeSentence(value: string): string {
+    return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 }

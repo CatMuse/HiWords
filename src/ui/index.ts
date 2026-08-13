@@ -4,6 +4,7 @@
 
 export { HiWordsSidebarView, SIDEBAR_VIEW_TYPE } from './sidebar-view';
 export { HiWordsLibraryView, LIBRARY_VIEW_TYPE } from './library-view';
+export { HiWordsFileView, HIWORDS_FILE_VIEW_TYPE, createAndOpenHiWordsFile } from './hiwords-file-view';
 export { DefinitionPopover } from './definition-popover';
 export { AddWordModal } from './add-word-modal';
 export { HiWordsSettingTab } from './settings-tab';

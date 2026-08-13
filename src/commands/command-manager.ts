@@ -2,6 +2,7 @@ import { Notice, MarkdownView } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { t } from '../i18n';
 import { extractSentenceFromEditorMultiline, extractSentenceFromSelection } from '../utils/sentence-extractor';
+import { createAndOpenHiWordsFile } from '../ui/hiwords-file-view';
 
 /**
  * 注册所有插件命令
@@ -38,6 +39,19 @@ export function registerCommands(plugin: HiWordsPlugin) {
                 console.error('打开 HiWords 单词管理失败:', error);
             });
         }
+    });
+
+    plugin.addCommand({
+        id: 'create-hiwords-vocabulary',
+        name: 'Create HiWords vocabulary',
+        callback: () => {
+            void createAndOpenHiWordsFile(plugin)
+                .then(file => new Notice(`Created ${file.name}`))
+                .catch(error => {
+                    console.error('Failed to create HiWords vocabulary:', error);
+                    new Notice('Unable to create the HiWords vocabulary.');
+                });
+        },
     });
 
     plugin.addCommand({

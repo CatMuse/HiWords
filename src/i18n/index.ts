@@ -224,6 +224,9 @@ export interface LanguagePack {
         section_confusables: string;
         section_relations: string;
         section_memory: string;
+        section_derived_words: string;
+        section_images: string;
+        section_custom: string;
         section_note: string;
         save_display_settings: string;
         reset_display_settings: string;

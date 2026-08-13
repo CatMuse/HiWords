@@ -3,7 +3,7 @@ import type HiWordsPlugin from '../../main';
 import type { VocabularyBook, VocabularyBookDisplaySettings, WordCardDetailSection, WordDefinition } from '../utils';
 import { mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
-import { DEFAULT_WORD_CARD_DETAIL_SECTIONS, DEFAULT_WORD_CARD_PREVIEW_SECTIONS, renderWordCard } from './word-card-renderer';
+import { DEFAULT_WORD_CARD_PREVIEW_SECTIONS, renderWordCard } from './word-card-renderer';
 import { AddWordModal } from './add-word-modal';
 import { WordPopoverActions } from './word-popover-actions';
 
@@ -15,14 +15,15 @@ const WORD_BATCH_SIZE = 200;
 const DETAIL_SECTION_OPTIONS: Array<{ key: WordCardDetailSection; labelKey: string }> = [
     { key: 'definitions', labelKey: 'library.section_definitions' },
     { key: 'examples', labelKey: 'library.section_examples' },
-    { key: 'collocations', labelKey: 'library.section_collocations' },
     { key: 'phrases', labelKey: 'library.section_phrases' },
     { key: 'usage', labelKey: 'library.section_usage' },
     { key: 'forms', labelKey: 'library.section_forms' },
     { key: 'morphology', labelKey: 'library.section_morphology' },
-    { key: 'confusables', labelKey: 'library.section_confusables' },
     { key: 'relations', labelKey: 'library.section_relations' },
     { key: 'memory', labelKey: 'library.section_memory' },
+    { key: 'derivedWords', labelKey: 'library.section_derived_words' },
+    { key: 'images', labelKey: 'library.section_images' },
+    { key: 'custom', labelKey: 'library.section_custom' },
     { key: 'note', labelKey: 'library.section_note' },
 ];
 
@@ -41,18 +42,26 @@ class BookDisplaySettingsModal extends Modal {
     private previewSections: WordCardDetailSection[];
     private detailSections: WordCardDetailSection[];
     private hiddenSections: WordCardDetailSection[];
+    private sectionOptions: Array<{ key: WordCardDetailSection; labelKey: string }>;
 
-    constructor(app: App, plugin: HiWordsPlugin, book: VocabularyBook, onSaved: () => void | Promise<void>) {
+    constructor(
+        app: App,
+        plugin: HiWordsPlugin,
+        book: VocabularyBook,
+        onSaved: () => void | Promise<void>,
+        sectionOptions: Array<{ key: WordCardDetailSection; labelKey: string }> = DETAIL_SECTION_OPTIONS
+    ) {
         super(app);
         this.plugin = plugin;
         this.book = book;
         this.onSaved = onSaved;
+        this.sectionOptions = sectionOptions;
         this.previewSections = this.normalizeSections(book.display?.previewSections || DEFAULT_WORD_CARD_PREVIEW_SECTIONS);
-        const detailDefaults = DEFAULT_WORD_CARD_DETAIL_SECTIONS.filter(section => !this.previewSections.includes(section));
+        const detailDefaults = this.sectionOptions.map(option => option.key).filter(section => !this.previewSections.includes(section));
         this.detailSections = this.normalizeSections(book.display?.detailSections || detailDefaults)
             .filter(section => !this.previewSections.includes(section));
         this.hiddenSections = this.normalizeSections(book.display?.hiddenSections || []);
-        for (const section of DETAIL_SECTION_OPTIONS.map(option => option.key)) {
+        for (const section of this.sectionOptions.map(option => option.key)) {
             if (!this.previewSections.includes(section) && !this.detailSections.includes(section) && !this.hiddenSections.includes(section)) {
                 this.detailSections.push(section);
             }
@@ -74,8 +83,9 @@ class BookDisplaySettingsModal extends Modal {
         const actions = this.contentEl.createDiv({ cls: 'hi-words-library-display-actions' });
         const reset = actions.createEl('button', { text: t('library.reset_display_settings') });
         reset.onclick = () => {
-            this.previewSections = [...DEFAULT_WORD_CARD_PREVIEW_SECTIONS];
-            this.detailSections = DEFAULT_WORD_CARD_DETAIL_SECTIONS.filter(section => !this.previewSections.includes(section));
+            const available = new Set(this.sectionOptions.map(option => option.key));
+            this.previewSections = DEFAULT_WORD_CARD_PREVIEW_SECTIONS.filter(section => available.has(section));
+            this.detailSections = this.sectionOptions.map(option => option.key).filter(section => !this.previewSections.includes(section));
             this.hiddenSections = [];
             void this.saveAndClose().catch(error => {
                 console.error('HiWords 保存显示设置失败:', error);
@@ -191,12 +201,12 @@ class BookDisplaySettingsModal extends Modal {
     }
 
     private getSectionLabel(section: WordCardDetailSection): string {
-        const option = DETAIL_SECTION_OPTIONS.find(item => item.key === section);
+        const option = this.sectionOptions.find(item => item.key === section);
         return option ? t(option.labelKey) : section;
     }
 
     private normalizeSections(sections: WordCardDetailSection[]): WordCardDetailSection[] {
-        const allowed = new Set(DETAIL_SECTION_OPTIONS.map(option => option.key));
+        const allowed = new Set(this.sectionOptions.map(option => option.key));
         const normalized: WordCardDetailSection[] = [];
         for (const section of sections) {
             if (allowed.has(section) && !normalized.includes(section)) {
@@ -452,6 +462,7 @@ export class HiWordsLibraryView extends ItemView {
         title.createEl('h3', { text: book.name });
         title.createEl('p', { text: book.path });
         if (book.path.endsWith('.hiwords')) {
+            const displaySections = this.getAvailableDisplaySections(await this.getRawDefinitions(book.path));
             const detailActions = header.createDiv({ cls: 'hi-words-library-actions' });
             const displayButton = this.addIconButton(detailActions, 'settings', t('library.book_display_settings'), () => {
                 new BookDisplaySettingsModal(this.app, this.plugin, book, () => {
@@ -461,7 +472,7 @@ export class HiWordsLibraryView extends ItemView {
                     })().catch(error => {
                         console.error('HiWords 更新显示设置失败:', error);
                     });
-                }).open();
+                }, displaySections).open();
             });
             displayButton.addClass('hi-words-library-book-settings-button');
         }
@@ -682,7 +693,14 @@ export class HiWordsLibraryView extends ItemView {
         main.createDiv({ cls: 'hi-words-library-study-key', text: definition.studyKey || `${definition.source}:${definition.nodeId}` });
 
         const actions = row.createDiv({ cls: 'hi-words-library-actions' });
-        if (!definition.source.endsWith('.hiwords')) {
+        if (definition.source.endsWith('.hiwords') && definition.card) {
+            this.addCardAction(actions, 'lucide-pen', t('library.edit_word'), () => {
+                this.removeTooltip();
+                void this.plugin.openHiWordsDefinition(definition).catch(error => {
+                    console.error('HiWords 打开词库编辑器失败:', error);
+                });
+            });
+        } else if (!definition.source.endsWith('.hiwords')) {
             this.addCardAction(actions, 'lucide-pen', t('library.edit_word'), () => {
                 this.removeTooltip();
                 new AddWordModal(this.app, this.plugin, definition.word, '', true, '', definition).open();
@@ -1016,6 +1034,11 @@ export class HiWordsLibraryView extends ItemView {
             definition.type || '',
             definition.language || '',
             ...(definition.aliases || []),
+            ...(definition.card?.meanings.flatMap(meaning => [
+                meaning.partOfSpeech,
+                meaning.definition,
+                meaning.translation,
+            ]) || []),
         ].some(value => value.toLowerCase().includes(query));
     }
 
@@ -1059,6 +1082,32 @@ export class HiWordsLibraryView extends ItemView {
         const definitions = await this.plugin.vocabularyManager.getWordDefinitionsByBook(bookPath);
         this.bookDefinitionsCache.set(bookPath, definitions);
         return definitions;
+    }
+
+    private getAvailableDisplaySections(definitions: WordDefinition[]): Array<{ key: WordCardDetailSection; labelKey: string }> {
+        const available = new Set<WordCardDetailSection>(['definitions', 'note']);
+        for (const definition of definitions) {
+            const card = definition.card;
+            if (!card) continue;
+            if (card.sentences?.some(item => item.text.trim())) available.add('examples');
+            if (card.phrases?.some(item => item.text.trim())) available.add('phrases');
+            if (card.usage && Object.values(card.usage).some(value => Array.isArray(value) ? value.length > 0 : !!value)) available.add('usage');
+            if (card.forms?.some(item => item.form.trim())) available.add('forms');
+            if (card.morphology && Object.values(card.morphology).some(value => Array.isArray(value) ? value.length > 0 : !!value)) available.add('morphology');
+            if (card.relations?.some(item => item.target?.trim())) available.add('relations');
+            if (card.memory?.some(item => item.text.trim())) available.add('memory');
+            if (card.derivedWords?.some(item => item.word.trim())) available.add('derivedWords');
+            if (card.images?.some(item => item.path.trim())) available.add('images');
+            if (card.customSections?.some(item => item.title.trim() || item.content.trim())) available.add('custom');
+        }
+        const order: WordCardDetailSection[] = [
+            'definitions', 'derivedWords', 'morphology', 'phrases', 'examples', 'memory',
+            'relations', 'usage', 'forms', 'images', 'custom', 'note',
+        ];
+        return order
+            .filter(section => available.has(section))
+            .map(section => DETAIL_SECTION_OPTIONS.find(option => option.key === section))
+            .filter((option): option is { key: WordCardDetailSection; labelKey: string } => !!option);
     }
 
     private scheduleRender() {

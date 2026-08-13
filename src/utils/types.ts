@@ -1,5 +1,6 @@
 // 使用 Obsidian 官方 Canvas 类型
 import type { AllCanvasNodeData, CanvasData as ObsidianCanvasData } from 'obsidian/canvas';
+import type { HiWordsCard } from '../schema/hiwords';
 
 // 导出官方类型的别名以保持向后兼容
 export type CanvasNode = AllCanvasNodeData;
@@ -10,110 +11,18 @@ export interface WordSection {
     content: string;
 }
 
-export interface WordCardDefinition {
-    pos?: string;
-    zh?: string;
-    en?: string;
-}
-
-export interface WordCardExample {
-    text: string;
-    translation?: string;
-    source?: string;
-}
-
-export interface WordCardMemory {
-    hint?: string;
-    note?: string;
-    root?: string;
-    mnemonic?: string;
-}
-
-export interface WordCardPhonetics {
-    uk?: string;
-    us?: string;
-}
-
-export interface WordCardAudio {
-    uk?: string;
-    us?: string;
-    default?: string;
-}
-
-export interface WordCardImage {
-    src: string;
-    alt?: string;
-    caption?: string;
-    credit?: string;
-}
-
-export interface WordCardConfusable {
-    word: string;
-    note: string;
-    examples?: string[];
-}
-
-export interface WordCardAffix {
-    text: string;
-    meaning?: string;
-    role?: string;
-}
-
-export interface WordCardMorphology {
-    type?: string;
-    root?: string;
-    prefixes?: WordCardAffix[];
-    suffixes?: WordCardAffix[];
-    compound?: string[];
-    breakdown?: string;
-    explanation?: string;
-}
-
-export interface WordCardPhrase {
-    phrase: string;
-    meaning?: string;
-    note?: string;
-    example?: string;
-}
-
-export interface WordCardRelation {
-    type: string;
-    target: string;
-    targetType?: LearningItemType | 'topic' | 'grammar' | 'pattern' | 'concept';
-    note?: string;
-}
-
-export interface WordCardUsageMistake {
-    wrong: string;
-    correct: string;
-    note?: string;
-}
-
-export interface WordCardUsage {
-    register?: string;
-    domains?: string[];
-    topics?: string[];
-    commonPatterns?: string[];
-    mistakes?: WordCardUsageMistake[];
-}
-
-export interface WordCardLearning {
-    depth?: string;
-    priority?: number;
-    reason?: string;
-}
-
 export type WordCardDetailSection =
     'definitions' |
     'examples' |
-    'collocations' |
     'memory' |
     'forms' |
     'morphology' |
     'phrases' |
     'usage' |
-    'confusables' |
     'relations' |
+    'derivedWords' |
+    'images' |
+    'custom' |
     'note';
 
 export type WordCardPreviewDensity = 'simple' | 'standard' | 'rich';
@@ -123,41 +32,6 @@ export interface VocabularyBookDisplaySettings {
     previewSections?: WordCardDetailSection[];
     detailSections?: WordCardDetailSection[];
     hiddenSections?: WordCardDetailSection[];
-}
-
-export interface WordCard {
-    id?: string;
-    version?: number;
-    word: string;
-    type?: LearningItemType;
-    aliases?: string[];
-    color?: string; // Optional Canvas-style color id: "1".."6"
-    phonetic?: string; // v1 compatibility; prefer phonetics in new .hiwords packs
-    phonetics?: WordCardPhonetics;
-    audio?: WordCardAudio;
-    language?: string;
-    level?: string;
-    partsOfSpeech?: string[];
-    difficulty?: number;
-    priority?: number;
-    tags?: string[];
-    frequency?: number;
-    register?: string;
-    domains?: string[];
-    examTags?: string[];
-    definitions?: WordCardDefinition[];
-    definition?: string;
-    examples?: WordCardExample[];
-    memory?: WordCardMemory;
-    collocations?: string[];
-    phrases?: WordCardPhrase[];
-    forms?: Record<string, string | string[] | number | boolean | null | undefined>;
-    morphology?: WordCardMorphology;
-    relations?: WordCardRelation[];
-    usage?: WordCardUsage;
-    learning?: WordCardLearning;
-    confusables?: WordCardConfusable[];
-    images?: WordCardImage[];
 }
 
 // 词汇定义
@@ -176,7 +50,7 @@ export interface WordDefinition {
     mastered?: boolean; // 是否已掌握
     isPattern?: boolean; // 是否为模式短语（包含 ... 占位符）
     patternParts?: string[]; // 模式短语的各个部分（不包含 ...）
-    card?: WordCard; // HiWords 结构化词卡（来自 .hiwords 词库包）
+    card?: HiWordsCard; // 正式 .hiwords 结构化词卡
     userNote?: string;
     userNoteSource?: {
         source: string;
@@ -267,6 +141,9 @@ export interface HiWordsSettings {
     enableSectionTabs?: boolean;
     // 侧边栏默认显示模式：详情模式显示完整内容，单词模式仅显示标题行
     sidebarDefaultDisplayMode?: 'detail' | 'word';
+    // Structured .hiwords editor column widths (desktop only)
+    hiWordsEditorSidebarWidth?: number;
+    hiWordsEditorPreviewWidth?: number;
     // 划词翻译配置
     selectionTranslate: SelectionTranslateSettings;
 }

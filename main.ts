@@ -1,4 +1,4 @@
-import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings, VocabularyBookDisplaySettings, WordDefinition } from './src/utils';
@@ -6,7 +6,7 @@ import { normalizeStoredSettings } from './src/settings-storage';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
-import { DefinitionPopover, HiWordsLibraryView, HiWordsSettingTab, HiWordsSidebarView, LIBRARY_VIEW_TYPE, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionTranslatePopover } from './src/ui';
+import { DefinitionPopover, HiWordsFileView, HiWordsLibraryView, HiWordsSettingTab, HiWordsSidebarView, HIWORDS_FILE_VIEW_TYPE, LIBRARY_VIEW_TYPE, SIDEBAR_VIEW_TYPE, AddWordModal, SelectionTranslatePopover } from './src/ui';
 import { i18n, t } from './src/i18n';
 import { registerCommands } from './src/commands';
 import { registerEvents } from './src/events';
@@ -64,6 +64,12 @@ export default class HiWordsPlugin extends Plugin {
             LIBRARY_VIEW_TYPE,
             (leaf) => new HiWordsLibraryView(leaf, this)
         );
+
+        this.registerView(
+            HIWORDS_FILE_VIEW_TYPE,
+            (leaf) => new HiWordsFileView(leaf, this)
+        );
+        this.registerExtensions(['hiwords'], HIWORDS_FILE_VIEW_TYPE);
         
         // 注册编辑器扩展
         this.setupEditorExtensions();
@@ -220,6 +226,18 @@ export default class HiWordsPlugin extends Plugin {
         }
     }
 
+    async openHiWordsDefinition(wordDef: WordDefinition): Promise<void> {
+        if (!wordDef.source.endsWith('.hiwords') || !wordDef.card) return;
+        const file = this.app.vault.getAbstractFileByPath(wordDef.source);
+        if (!(file instanceof TFile)) return;
+        const leaf = this.app.workspace.getLeaf('tab');
+        await leaf.openFile(file);
+        if (leaf.view instanceof HiWordsFileView) {
+            leaf.view.focusCard(wordDef.card.id);
+        }
+        await this.app.workspace.revealLeaf(leaf);
+    }
+
     getVocabularyBookDisplaySettings(sourcePath: string): VocabularyBookDisplaySettings | undefined {
         return this.settings.vocabularyBooks.find(book => book.path === sourcePath)?.display;
     }
@@ -284,7 +302,11 @@ export default class HiWordsPlugin extends Plugin {
         // 检查单词是否已存在
         const existingDefinition = this.vocabularyManager.getDefinition(word);
         
-        if (existingDefinition && !existingDefinition.source.endsWith('.hiwords')) {
+        if (existingDefinition?.source.endsWith('.hiwords') && existingDefinition.card) {
+            void this.openHiWordsDefinition(existingDefinition).catch(error => {
+                console.error('HiWords failed to open the vocabulary editor:', error);
+            });
+        } else if (existingDefinition && !existingDefinition.source.endsWith('.hiwords')) {
             // 用户 Canvas 单词本中的词条可以直接编辑
             new AddWordModal(this.app, this, word, sentence, true).open();
         } else {

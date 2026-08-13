@@ -371,7 +371,7 @@
     color: var(--text-muted);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
     .hi-words-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -718,6 +718,25 @@
     cursor: pointer;
 }
 
+.hi-words-word-title-phonetic-slot {
+    display: inline-flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    align-items: center;
+}
+
+.hi-words-word-title-phonetic-slot:empty {
+    display: none;
+}
+
+.hi-words-word-title-phonetic-slot .hi-words-structured-phonetic {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+
 .hi-words-word-source {
     margin-top: 6px;
     position: relative;
@@ -898,6 +917,11 @@
     padding-left: 0;
 }
 
+.hi-words-structured-card-sidebar > .hi-words-structured-section:first-child {
+    padding-left: 9px;
+    border-left: 2px solid color-mix(in srgb, var(--text-accent) 22%, transparent);
+}
+
 .hi-words-structured-section-header {
     display: flex;
     align-items: center;
@@ -941,6 +965,46 @@
     flex-direction: column;
     gap: 3px;
     min-width: 0;
+}
+
+.hi-words-card-sense {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.hi-words-card-sense + .hi-words-card-sense {
+    margin-top: 5px;
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 65%, transparent);
+}
+
+.hi-words-card-sense-header,
+.hi-words-card-derived-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+}
+
+.hi-words-card-sense-translation {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
+.hi-words-card-more-hint {
+    color: var(--text-faint);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.hi-words-card-example-sense {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 4px;
 }
 
 .hi-words-structured-definition-text,
@@ -1014,6 +1078,88 @@
     font-size: 13px;
     line-height: 1.25;
     font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.hi-words-card-form-chip {
+    gap: 6px;
+}
+
+.hi-words-card-form-type,
+.hi-words-card-derived-pos,
+.hi-words-card-derived-status {
+    color: var(--text-faint);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.hi-words-card-derived-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 6px;
+}
+
+.hi-words-card-derived-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.hi-words-card-usage-note,
+.hi-words-card-mistake-note {
+    padding: 7px 9px;
+    border-radius: 6px;
+    background: var(--background-secondary);
+    line-height: 1.5;
+}
+
+.hi-words-card-mistake-note {
+    position: relative;
+    padding-left: 12px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.hi-words-card-mistake-note::before {
+    position: absolute;
+    top: 7px;
+    bottom: 7px;
+    left: 0;
+    width: 2px;
+    background: var(--text-warning);
+    content: '';
+}
+
+.hi-words-card-memory-row {
+    grid-template-columns: minmax(52px, auto) minmax(0, 1fr);
+}
+
+.hi-words-card-memory-source {
+    margin-top: 2px;
+    color: var(--text-faint);
+    font-size: 10px;
+}
+
+.hi-words-card-custom-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 7px 9px;
+    border-radius: 6px;
+    background: var(--background-secondary);
+}
+
+.hi-words-card-custom-value {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
 
@@ -3151,6 +3297,77 @@ button.hi-words-tooltip-context-item:focus-visible {
     font-size: 11px;
 }
 
+.hi-words-tooltip-context-translation {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.hi-words-tooltip-saveable-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding-right: 7px;
+    transition: background-color 100ms ease;
+}
+
+.hi-words-tooltip-context-group .hi-words-tooltip-saveable-item:hover {
+    background: color-mix(in srgb, var(--interactive-accent) 7%, var(--background-primary)) !important;
+}
+
+.hi-words-tooltip-saveable-body {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+button.hi-words-tooltip-context-open {
+    min-width: 0;
+    height: auto;
+    margin: -9px 0 -10px -11px;
+    padding: 9px 11px 10px;
+    flex: 1 1 auto;
+    appearance: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    text-align: left;
+    transform: none;
+}
+
+button.hi-words-tooltip-context-open:hover {
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    transform: none;
+}
+
+.hi-words-tooltip-sentence-toggle {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    margin-top: -2px;
+    flex: 0 0 28px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-faint);
+}
+
+.hi-words-tooltip-sentence-toggle:hover,
+.hi-words-tooltip-sentence-toggle.is-saved {
+    background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+    color: var(--interactive-accent);
+}
+
+.hi-words-tooltip-sentence-toggle svg {
+    width: 15px;
+    height: 15px;
+}
+
 .hi-words-tooltip-loading,
 .hi-words-tooltip-empty {
     display: flex;
@@ -3183,5 +3400,1518 @@ button.hi-words-tooltip-context-item:focus-visible {
     .hi-words-tooltip-actions {
         min-height: 38px;
         margin: 0 8px 8px;
+    }
+}
+/* HiWords file editor */
+.view-content.hi-words-file-view {
+    padding: 0;
+    overflow: hidden;
+    background: var(--background-primary);
+}
+
+.hi-words-file-text-button,
+.hi-words-file-icon-button,
+.hi-words-file-card-list-item {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+}
+
+.hi-words-file-validation {
+    min-height: 0;
+    padding: 6px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-validation.is-valid {
+    display: none;
+}
+
+.hi-words-file-validation.has-errors {
+    background: rgba(var(--color-orange-rgb), 0.08);
+    color: var(--text-warning);
+}
+
+.hi-words-file-editor-layout {
+    min-height: 0;
+    display: grid;
+}
+
+.hi-words-file-editor-sidebar {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.hi-words-file-search {
+    width: 100%;
+    flex: none;
+}
+
+.hi-words-file-card-list {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.hi-words-file-card-list-item {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    color: var(--text-normal);
+    text-align: left;
+}
+
+.hi-words-file-card-list-item strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-file-card-list-item span {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-file-list-limit {
+    padding: 10px;
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.4;
+    text-align: center;
+}
+
+.hi-words-file-card-editor {
+    width: 100%;
+    margin: 0;
+}
+
+.hi-words-file-editor-section {
+    margin-bottom: 10px;
+    padding: 13px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-primary-alt);
+}
+
+.hi-words-file-editor-section-header,
+.hi-words-file-edit-item-header,
+.hi-words-file-nested-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.hi-words-file-editor-section-header {
+    margin-bottom: 13px;
+}
+
+.hi-words-file-editor-section-header h3 {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: var(--font-ui-medium);
+}
+
+.hi-words-file-text-button {
+    min-height: 28px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: var(--radius-s);
+    box-shadow: none;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-text-button:hover {
+    background: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+}
+
+.hi-words-file-icon-button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: none;
+    background: transparent;
+    color: var(--text-faint);
+}
+
+.hi-words-file-icon-button:hover {
+    background: var(--background-modifier-hover);
+    color: var(--interactive-accent);
+}
+
+.hi-words-file-icon-button:disabled {
+    opacity: 0.35;
+}
+
+.hi-words-file-danger-action:hover {
+    color: var(--text-error);
+}
+
+.hi-words-file-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 14px;
+}
+
+.hi-words-file-field {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-field + .hi-words-file-field-wide,
+.hi-words-file-field-wide + .hi-words-file-field-wide {
+    margin-top: 10px;
+}
+
+.hi-words-file-field input,
+.hi-words-file-field select,
+.hi-words-file-field textarea {
+    width: 100%;
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+}
+
+.hi-words-file-field textarea {
+    min-height: 74px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.hi-words-file-edit-item {
+    position: relative;
+    padding: 13px;
+    border-radius: var(--radius-s);
+    background: var(--background-secondary);
+}
+
+.hi-words-file-edit-item + .hi-words-file-edit-item {
+    margin-top: 8px;
+}
+
+.hi-words-file-edit-item-header {
+    margin-bottom: 10px;
+    color: var(--text-muted);
+}
+
+.hi-words-file-collection-item {
+    padding-right: 45px;
+}
+
+.hi-words-file-collection-item > .hi-words-file-icon-button {
+    position: absolute;
+    top: 10px;
+    right: 8px;
+}
+
+.hi-words-file-nested-editor {
+    margin-top: 13px;
+    padding-top: 12px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-file-nested-header {
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-inline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.hi-words-file-inline-item > .hi-words-file-icon-button {
+    margin-top: 23px;
+}
+
+.hi-words-file-inline-item + .hi-words-file-inline-item {
+    margin-top: 8px;
+}
+
+.hi-words-file-inline-fields {
+    min-width: 0;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 8px;
+}
+
+button.hi-words-file-add-custom-trigger {
+    margin-top: 20px;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px dashed var(--background-modifier-border-hover);
+    border-radius: var(--radius-m);
+    color: var(--text-faint);
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-medium);
+}
+
+button.hi-words-file-add-custom-trigger:hover,
+button.hi-words-file-add-custom-trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border));
+    color: var(--text-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 5%, transparent) !important;
+    box-shadow: none !important;
+}
+
+button.hi-words-file-add-custom-trigger:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+    outline-offset: 2px;
+}
+
+.hi-words-file-add-custom-icon {
+    display: inline-flex;
+}
+
+.hi-words-file-add-custom-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.hi-words-file-empty-list,
+.hi-words-file-editor-empty {
+    padding: 20px 12px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.hi-words-file-editor-empty {
+    margin: 15vh auto 0;
+}
+
+.hi-words-file-state {
+    width: min(560px, calc(100% - 32px));
+    margin: 15vh auto 0;
+    padding: 28px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-l);
+    background: var(--background-primary-alt);
+    text-align: center;
+}
+
+.hi-words-file-state-icon {
+    margin: 0 auto 12px;
+    color: var(--text-muted);
+}
+
+.hi-words-file-state-icon svg {
+    width: 34px;
+    height: 34px;
+}
+
+.hi-words-file-state h2 {
+    margin: 0 0 10px;
+}
+
+.hi-words-file-state p {
+    color: var(--text-muted);
+}
+
+.hi-words-file-modal-actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* HiWords structured editor — navigation, editor, live preview */
+.view-content.hi-words-file-view {
+    position: relative;
+}
+
+.hi-words-file-validation {
+    position: absolute;
+    z-index: 8;
+    top: 0;
+    right: 0;
+    left: 0;
+}
+
+.hi-words-file-editor-layout {
+    height: 100%;
+    position: relative;
+    grid-template-columns: var(--hi-words-editor-sidebar-width, 260px) minmax(520px, 1fr) var(--hi-words-editor-preview-width, 320px);
+    background: var(--background-primary);
+}
+
+.hi-words-file-editor-layout.is-preview-closed {
+    grid-template-columns: var(--hi-words-editor-sidebar-width, 260px) minmax(520px, 1fr);
+}
+
+.hi-words-file-editor-layout.is-preview-closed .hi-words-file-preview-pane {
+    display: none;
+}
+
+.hi-words-file-editor-sidebar {
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    gap: 0;
+    border-right: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+.hi-words-file-column-resizer {
+    position: absolute;
+    z-index: 7;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    touch-action: none;
+    transform: translateX(-50%);
+}
+
+.hi-words-file-column-resizer.is-sidebar {
+    left: var(--hi-words-editor-sidebar-width, 260px);
+}
+
+.hi-words-file-column-resizer.is-preview {
+    right: calc(var(--hi-words-editor-preview-width, 320px) - 4px);
+    transform: none;
+}
+
+.hi-words-file-column-resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: transparent;
+    transform: translateX(-50%);
+    transition: width 100ms ease, background-color 100ms ease;
+}
+
+.hi-words-file-column-resizer:hover::after,
+.hi-words-file-column-resizer:focus-visible::after,
+.hi-words-file-column-resizer.is-dragging::after {
+    width: 2px;
+    background: var(--interactive-accent);
+}
+
+.hi-words-file-column-resizer:focus-visible {
+    outline: none;
+}
+
+.hi-words-file-editor-layout.is-preview-closed .hi-words-file-column-resizer.is-preview {
+    display: none;
+}
+
+body.hi-words-is-resizing-columns,
+body.hi-words-is-resizing-columns * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+.hi-words-file-sidebar-controls {
+    min-height: 56px;
+    height: 56px;
+    padding: 0 12px;
+    display: flex;
+    flex: none;
+    align-items: center;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.hi-words-file-sidebar-header {
+    width: 100%;
+    min-height: 0;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.hi-words-file-sidebar-title {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    color: var(--text-normal);
+}
+
+.hi-words-file-sidebar-title strong {
+    color: var(--text-normal);
+    font-size: var(--font-ui-medium);
+    letter-spacing: 0.04em;
+}
+
+.hi-words-file-sidebar-title span {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-search-row {
+    padding: 8px 12px;
+    flex: none;
+}
+
+.hi-words-file-search {
+    width: 100%;
+    height: 30px;
+    border-color: var(--background-modifier-border);
+    background: var(--background-primary-alt);
+    box-shadow: none;
+}
+
+.hi-words-file-card-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 4px 12px 16px;
+    overflow-y: auto;
+    gap: 2px;
+}
+
+.hi-words-file-card-list-item {
+    min-height: 50px;
+    padding: 7px 10px 7px 13px;
+    gap: 2px;
+    position: relative;
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    outline: none;
+    transition: background-color 100ms ease, color 100ms ease;
+}
+
+.hi-words-file-card-list-item + .hi-words-file-card-list-item {
+    border-top: 0;
+}
+
+.hi-words-file-card-list-item::before {
+    position: absolute;
+    top: 9px;
+    bottom: 9px;
+    left: 5px;
+    width: 3px;
+    border-radius: 3px;
+    background: transparent;
+    content: '';
+}
+
+.hi-words-file-card-list-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.hi-words-file-card-list-item:focus-visible {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 65%, transparent);
+}
+
+.hi-words-file-card-list-item.is-active {
+    background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+    box-shadow: none;
+}
+
+.hi-words-file-card-list-item.is-active::before {
+    background: var(--interactive-accent);
+}
+
+.hi-words-file-card-list-item strong {
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-semibold);
+    line-height: 1.3;
+}
+
+.hi-words-file-card-list-item.is-active strong {
+    color: var(--text-accent);
+}
+
+.hi-words-file-card-list-item span {
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.35;
+}
+
+.hi-words-file-card-list-item.is-active span {
+    color: var(--text-muted);
+}
+
+.hi-words-file-inspector-pane {
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-left: 0;
+    background: var(--background-primary);
+}
+
+.hi-words-file-editor-header {
+    position: relative;
+    z-index: 5;
+    min-height: 56px;
+    height: 56px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+.hi-words-file-editor-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.hi-words-file-editor-identity {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+}
+
+.hi-words-file-editor-identity h1 {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: var(--font-ui-medium);
+    line-height: 1.15;
+}
+
+.hi-words-file-editor-identity span {
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hi-words-file-toolbar-button {
+    min-height: 32px;
+    background: transparent;
+}
+
+.hi-words-file-toolbar-button.is-active {
+    background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+    color: var(--interactive-accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+
+.hi-words-file-toolbar-button.is-icon-only {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+}
+
+.hi-words-file-toolbar-button.is-icon-only span:last-child {
+    display: none;
+}
+
+.hi-words-file-header-action.is-danger:hover {
+    background: rgba(var(--color-red-rgb), 0.1);
+    color: var(--text-error);
+}
+
+.hi-words-file-header-action {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+}
+
+.hi-words-file-header-action:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-file-header-action.is-active {
+    background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+    color: var(--interactive-accent);
+}
+
+.hi-words-file-header-action svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hi-words-file-card-list-item > strong,
+.hi-words-file-card-list-item > span {
+    padding-right: 28px;
+}
+
+.hi-words-file-card-list-delete {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: opacity 100ms ease, color 100ms ease, background-color 100ms ease;
+}
+
+.hi-words-file-card-list-item:hover .hi-words-file-card-list-delete,
+.hi-words-file-card-list-delete:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.hi-words-file-card-list-delete:hover {
+    background: rgba(var(--color-red-rgb), 0.1);
+    color: var(--text-error);
+}
+
+.hi-words-file-editor-tabs {
+    position: sticky;
+    z-index: 5;
+    top: 86px;
+    min-height: 43px;
+    padding: 0 28px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+.hi-words-file-editor-tab {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    min-height: 42px;
+    padding: 0 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex: none;
+    border: 0 !important;
+    border-radius: 0;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.hi-words-file-editor-tab:hover {
+    background: var(--background-modifier-hover) !important;
+    color: var(--text-normal);
+}
+
+.hi-words-file-editor-tab.is-active {
+    color: var(--text-normal);
+}
+
+.hi-words-file-editor-tab.is-active::after {
+    position: absolute;
+    right: 8px;
+    bottom: 0;
+    left: 8px;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--interactive-accent);
+    content: '';
+}
+
+.hi-words-file-tab-chevron {
+    display: inline-flex;
+}
+
+.hi-words-file-tab-chevron svg {
+    width: 13px;
+    height: 13px;
+}
+
+.hi-words-file-editor-content {
+    width: min(880px, 100%);
+    margin: 0 auto;
+    padding: 24px 28px 80px;
+}
+
+.hi-words-file-editor-workspace {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    padding: 22px 20px 80px;
+    display: grid;
+    grid-template-columns: 144px minmax(0, 1fr);
+    align-items: start;
+    gap: 20px;
+}
+
+.hi-words-file-editor-layout.is-preview-closed .hi-words-file-editor-workspace {
+    width: min(984px, 100%);
+}
+
+.hi-words-file-editor-workspace .hi-words-file-editor-content {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.hi-words-file-editor-outline {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 92px);
+    padding-right: 0;
+    overflow-y: auto;
+}
+
+.hi-words-file-editor-outline-title {
+    margin: 0 7px 9px;
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.hi-words-file-editor-outline-item {
+    min-height: 31px;
+    padding: 4px 7px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    border-radius: var(--radius-s);
+    color: var(--text-muted);
+    cursor: grab;
+    font-size: var(--font-ui-small);
+    outline: none;
+}
+
+.hi-words-file-editor-outline-item::before {
+    position: absolute;
+    top: 7px;
+    bottom: 7px;
+    left: 0;
+    width: 2px;
+    border-radius: 2px;
+    background: transparent;
+    content: '';
+}
+
+.hi-words-file-editor-outline-item:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-file-editor-outline-item:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.hi-words-file-editor-outline-item.is-active {
+    background: color-mix(in srgb, var(--interactive-accent) 9%, transparent);
+    color: var(--text-accent);
+    font-weight: var(--font-semibold);
+}
+
+.hi-words-file-editor-outline-item.is-active::before {
+    background: var(--interactive-accent);
+}
+
+.hi-words-file-editor-outline-item.is-incomplete::after {
+    width: 5px;
+    height: 5px;
+    margin-left: auto;
+    flex: 0 0 5px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    content: '';
+}
+
+.hi-words-file-editor-outline-item.is-incomplete.is-active::after {
+    background: var(--interactive-accent);
+}
+
+.hi-words-file-editor-outline-item.is-dragging {
+    cursor: grabbing;
+    opacity: 0.4;
+}
+
+.hi-words-file-editor-outline-item.is-drop-target {
+    box-shadow: inset 0 2px 0 var(--interactive-accent);
+}
+
+.hi-words-file-editor-outline-custom {
+    min-height: 27px;
+    margin-left: 15px;
+    padding-left: 10px;
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-editor-outline-custom::before {
+    top: 5px;
+    bottom: 5px;
+    width: 1px;
+    background: var(--background-modifier-border);
+}
+
+.hi-words-file-editor-outline-grip {
+    display: inline-flex;
+    color: var(--text-faint);
+    opacity: 0.16;
+    transition: opacity 100ms ease;
+}
+
+.hi-words-file-editor-outline-item:hover .hi-words-file-editor-outline-grip,
+.hi-words-file-editor-outline-item:focus-visible .hi-words-file-editor-outline-grip,
+.hi-words-file-editor-outline-item.is-dragging .hi-words-file-editor-outline-grip {
+    opacity: 1;
+}
+
+.hi-words-file-editor-outline-grip svg {
+    width: 14px;
+    height: 14px;
+}
+
+.hi-words-file-editor-outline-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-file-editor-module {
+    min-height: 0;
+    padding: 0 0 30px;
+    scroll-margin-top: 16px;
+}
+
+.hi-words-file-editor-module + .hi-words-file-editor-module {
+    padding-top: 26px;
+    border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 68%, transparent);
+}
+
+.hi-words-file-editor-module:last-child {
+    min-height: 32vh;
+}
+
+.hi-words-file-card-editor {
+    max-width: none;
+}
+
+.hi-words-file-inspector-heading {
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.hi-words-file-inspector-heading h2 {
+    margin: 0 0 3px;
+    color: var(--text-normal);
+    font-size: 1.45em;
+}
+
+.hi-words-file-inspector-heading p {
+    color: var(--text-muted);
+}
+
+.hi-words-file-editor-section {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.hi-words-file-editor-section-header {
+    min-height: 36px;
+    margin-bottom: 12px;
+}
+
+.hi-words-file-editor-section-header h3 {
+    color: var(--text-normal);
+    font-size: var(--font-ui-large);
+}
+
+button.hi-words-file-text-button {
+    min-height: 30px;
+    padding: 0 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--text-faint);
+}
+
+button.hi-words-file-text-button:hover {
+    background: var(--background-modifier-hover) !important;
+    color: var(--text-accent);
+}
+
+button.hi-words-file-text-button:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+.hi-words-file-edit-item {
+    padding: 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: transparent;
+}
+
+.hi-words-file-sense-editor {
+    padding-top: 12px;
+    background: color-mix(in srgb, var(--background-secondary) 45%, var(--background-primary));
+}
+
+.hi-words-file-edit-item + .hi-words-file-edit-item {
+    margin-top: 10px;
+}
+
+button.hi-words-file-empty-state {
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px dashed var(--background-modifier-border-hover);
+    border-radius: var(--radius-m);
+    box-shadow: none !important;
+    background: transparent !important;
+    color: var(--text-faint);
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-medium);
+}
+
+button.hi-words-file-empty-state:hover {
+    border-color: color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border));
+    background: color-mix(in srgb, var(--interactive-accent) 5%, transparent) !important;
+    color: var(--text-accent);
+}
+
+button.hi-words-file-empty-state:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+button.hi-words-file-empty-state svg {
+    width: 15px;
+    height: 15px;
+}
+
+.hi-words-file-edit-item-header {
+    min-height: 30px;
+    margin: -4px 0 10px;
+}
+
+.hi-words-file-collection-item {
+    padding: 12px 14px;
+    background: color-mix(in srgb, var(--background-secondary) 45%, var(--background-primary));
+}
+
+.hi-words-file-collection-item.is-collapsed {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.hi-words-file-collection-header {
+    margin: 0;
+}
+
+.hi-words-file-collection-toggle {
+    min-width: 0;
+    min-height: 30px;
+    padding: 3px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1;
+    gap: 7px;
+    border: 0;
+    border-radius: var(--radius-s);
+    box-shadow: none;
+    background: transparent;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.hi-words-file-collection-toggle:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.hi-words-file-collection-toggle:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+.hi-words-file-collection-summary {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-ui-small);
+    font-weight: var(--font-medium);
+}
+
+.hi-words-file-collection-fields {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--background-modifier-border-hover);
+}
+
+.hi-words-file-collection-fields[hidden] {
+    display: none !important;
+}
+
+.hi-words-file-inspector-pane .hi-words-file-form-grid.hi-words-file-memory-fields {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.hi-words-file-memory-fields .hi-words-file-field-wide {
+    margin-top: 0;
+}
+
+.hi-words-file-custom-section-fields .hi-words-file-field,
+.hi-words-file-custom-section-fields .hi-words-file-field-wide {
+    width: 100%;
+    margin-top: 0;
+}
+
+.hi-words-file-custom-section-fields textarea {
+    width: 100%;
+    min-height: 96px;
+}
+
+.hi-words-file-sentence-fields > .hi-words-file-field-wide {
+    margin-top: 0;
+}
+
+.hi-words-file-collection-item.is-collapsed .hi-words-file-sense-chevron {
+    transform: rotate(-90deg);
+}
+
+.hi-words-file-custom-drag-handle {
+    display: inline-flex;
+    flex: none;
+    color: var(--text-faint);
+    cursor: grab;
+    opacity: 0.35;
+}
+
+.hi-words-file-custom-drag-handle:hover {
+    opacity: 1;
+}
+
+.hi-words-file-custom-drag-handle:active {
+    cursor: grabbing;
+}
+
+.hi-words-file-custom-drag-handle svg {
+    width: 15px;
+    height: 15px;
+}
+
+.hi-words-file-collection-item.is-dragging {
+    opacity: 0.45;
+}
+
+.hi-words-file-collection-item.is-drop-target {
+    box-shadow: inset 0 2px 0 var(--interactive-accent);
+}
+
+.hi-words-file-list-field {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--background-modifier-border-hover);
+}
+
+.hi-words-file-list-field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hi-words-file-list-field-row + .hi-words-file-list-field-row {
+    margin-top: 7px;
+}
+
+.hi-words-file-list-field-row input {
+    min-width: 0;
+    min-height: 34px;
+    flex: 1;
+    border-color: var(--background-modifier-border);
+    background: var(--background-primary-alt);
+    box-shadow: none;
+}
+
+.hi-words-file-list-field-row input:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.hi-words-file-list-field-empty {
+    padding: 4px 1px;
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+}
+
+.hi-words-file-edit-item-header strong,
+.hi-words-file-nested-header strong {
+    color: var(--text-normal);
+    font-size: var(--font-ui-medium);
+}
+
+.hi-words-file-sense-toggle {
+    min-width: 0;
+    flex: 1;
+    padding: 3px 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+}
+
+.hi-words-file-sense-toggle:hover {
+    background: var(--background-modifier-hover);
+}
+
+.hi-words-file-sense-toggle:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+}
+
+.hi-words-file-sense-toggle strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hi-words-file-sense-chevron {
+    display: inline-flex;
+    color: var(--text-faint);
+    transition: transform 120ms ease;
+}
+
+.hi-words-file-sense-chevron svg {
+    width: 14px;
+    height: 14px;
+}
+
+.hi-words-file-sense-editor.is-collapsed {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.hi-words-file-sense-editor.is-collapsed .hi-words-file-edit-item-header {
+    margin-bottom: -4px;
+}
+
+.hi-words-file-sense-editor.is-collapsed .hi-words-file-sense-chevron {
+    transform: rotate(-90deg);
+}
+
+.hi-words-file-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hi-words-file-inspector-pane .hi-words-file-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hi-words-file-inspector-pane .hi-words-file-form-grid.hi-words-file-custom-section-fields {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.hi-words-file-field input,
+.hi-words-file-field select,
+.hi-words-file-field textarea {
+    border-color: var(--background-modifier-border);
+    background: var(--background-primary-alt);
+    box-shadow: none;
+}
+
+.hi-words-file-field input,
+.hi-words-file-field select {
+    min-height: 34px;
+}
+
+.hi-words-file-field input:focus,
+.hi-words-file-field select:focus,
+.hi-words-file-field textarea:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.hi-words-file-field-message {
+    display: none;
+    color: var(--text-error);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.3;
+}
+
+.hi-words-file-field-message.is-visible {
+    display: block;
+}
+
+.hi-words-file-field.has-error input,
+.hi-words-file-field.has-error textarea {
+    border-color: var(--background-modifier-error);
+}
+
+.hi-words-file-field textarea {
+    min-height: 64px;
+}
+
+.hi-words-file-nested-editor {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--background-modifier-border-hover);
+}
+
+.hi-words-file-inline-fields {
+    grid-template-columns: 1.35fr 1fr;
+}
+
+.hi-words-file-inspector-pane .hi-words-file-inline-fields {
+    grid-template-columns: 1.35fr 1fr;
+}
+
+.hi-words-file-editor-section-header h3,
+.hi-words-file-preview-identity h2 {
+    color: var(--text-normal);
+}
+
+.hi-words-file-preview-pane {
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+.hi-words-file-preview-panel-header {
+    position: relative;
+    z-index: 2;
+    min-height: 56px;
+    height: 56px;
+    padding: 0 14px 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+.hi-words-file-preview-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.hi-words-file-preview-panel-header strong {
+    color: var(--text-normal);
+    font-size: var(--font-ui-medium);
+}
+
+.hi-words-file-live-sidebar {
+    height: auto;
+    padding: 12px 10px;
+    overflow: visible;
+    background: transparent;
+}
+
+.hi-words-file-live-sidebar .hi-words-word-list {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.hi-words-file-live-sidebar .hi-words-word-card {
+    cursor: default;
+}
+
+.hi-words-file-live-sidebar .hi-words-word-card:hover {
+    transform: none;
+}
+
+@media (max-width: 1120px) {
+    .hi-words-file-editor-layout,
+    .hi-words-file-editor-layout.is-preview-closed {
+        grid-template-columns: 220px minmax(480px, 1fr);
+    }
+
+    .hi-words-file-preview-pane {
+        position: absolute;
+        z-index: 10;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(350px, calc(100% - 220px));
+        box-shadow: var(--shadow-l);
+    }
+
+    .hi-words-file-editor-layout.is-preview-closed .hi-words-file-preview-pane {
+        display: none;
+    }
+
+    .hi-words-file-column-resizer {
+        display: none;
+    }
+}
+
+@media (max-width: 720px) {
+    .hi-words-file-editor-layout,
+    .hi-words-file-editor-layout.is-preview-closed {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(150px, 25vh) minmax(0, 1fr);
+    }
+
+    .hi-words-file-editor-sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--background-modifier-border);
+    }
+
+    .hi-words-file-sidebar-controls {
+        min-height: auto;
+    }
+
+    .hi-words-file-editor-header {
+        min-height: 56px;
+        height: 56px;
+        padding: 0 16px;
+    }
+
+    .hi-words-file-editor-tabs {
+        top: 72px;
+    }
+
+    .hi-words-file-editor-identity h1 {
+        font-size: var(--font-ui-medium);
+    }
+
+    .hi-words-file-editor-tabs {
+        padding: 0 10px;
+    }
+
+    .hi-words-file-editor-content {
+        padding: 20px 14px 60px;
+    }
+
+    .hi-words-file-editor-workspace {
+        padding: 16px 14px 60px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .hi-words-file-editor-outline {
+        position: sticky;
+        z-index: 4;
+        top: 0;
+        max-height: none;
+        padding: 5px 0;
+        display: flex;
+        gap: 2px;
+        overflow-x: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--background-modifier-border);
+        background: var(--background-primary);
+    }
+
+    .hi-words-file-editor-outline-title {
+        display: none;
+    }
+
+    .hi-words-file-editor-outline-item {
+        flex: none;
+    }
+
+    .hi-words-file-editor-outline-item::before {
+        top: auto;
+        right: 7px;
+        bottom: 0;
+        left: 7px;
+        width: auto;
+        height: 2px;
+    }
+
+    .hi-words-file-editor-module {
+        scroll-margin-top: 48px;
+    }
+
+    .hi-words-file-inspector-pane .hi-words-file-form-grid,
+    .hi-words-file-inspector-pane .hi-words-file-inline-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .hi-words-file-preview-pane {
+        top: 25vh;
+        width: 100%;
+    }
+
+    .hi-words-file-preview-panel-header {
+        min-height: 56px;
+        height: 56px;
+    }
+
+    .hi-words-file-toolbar-button span:last-child {
+        display: none;
     }
 }

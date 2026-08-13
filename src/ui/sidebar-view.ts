@@ -485,6 +485,7 @@ export class HiWordsSidebarView extends ItemView {
             text: wordDef.word,
             cls: 'hi-words-word-text'
         });
+        const phoneticTarget = wordTitle.createSpan({ cls: 'hi-words-word-title-phonetic-slot' });
 
         // 点击主词发音
         wordTextEl.addEventListener('click', (e) => {
@@ -558,6 +559,7 @@ export class HiWordsSidebarView extends ItemView {
                 mode: 'sidebar',
                 app: this.app,
                 pronunciationVariant: this.plugin.settings.pronunciationVariant || 'us',
+                pronunciationTarget: phoneticTarget,
                 onPronunciationClick: (variant) => playWordTTS(this.plugin, wordDef.word, wordDef, variant),
                 display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
             });

@@ -47,6 +47,9 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     enableSectionTabs: true,
     // 侧边栏默认显示模式
     sidebarDefaultDisplayMode: 'detail',
+    // Structured editor column widths
+    hiWordsEditorSidebarWidth: 260,
+    hiWordsEditorPreviewWidth: 320,
     // 划词翻译配置
     selectionTranslate: {
         enabled: false,
