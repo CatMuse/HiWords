@@ -1,6 +1,6 @@
 // 使用 Obsidian 官方 Canvas 类型
 import type { AllCanvasNodeData, CanvasData as ObsidianCanvasData } from 'obsidian/canvas';
-import type { HiWordsCard } from '../schema/hiwords';
+import type { HiWordsCard, HiWordsSentence } from '../schema/hiwords';
 
 // 导出官方类型的别名以保持向后兼容
 export type CanvasNode = AllCanvasNodeData;
@@ -51,6 +51,8 @@ export interface WordDefinition {
     isPattern?: boolean; // 是否为模式短语（包含 ... 占位符）
     patternParts?: string[]; // 模式短语的各个部分（不包含 ...）
     card?: HiWordsCard; // 正式 .hiwords 结构化词卡
+    savedSentences?: HiWordsSentence[]; // Canvas 节点中的受控 Sentences 分区
+    canvasNodeType?: 'text' | 'file';
     userNote?: string;
     userNoteSource?: {
         source: string;

@@ -1,6 +1,7 @@
 import { App, TFile } from 'obsidian';
 import { CanvasData, CanvasNode, WordDefinition, WordSection, HiWordsSettings, buildStudyKey, inferLearningItemType } from '../utils';
 import { parsePhrase } from '../utils/pattern-matcher';
+import { getCanvasNoteFromSections, getCanvasSentencesFromSections } from './canvas-note';
 
 function formatError(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
@@ -245,7 +246,7 @@ export class CanvasParser {
             const rawDefinition = definition;
             let sections: WordSection[] | undefined;
 
-            if (definition && definition.includes('\n---\n')) {
+            if (definition && /\n\s*---\s*\n/.test(definition)) {
                 sections = this.parseSections(definition);
                 if (sections.length > 0) {
                     definition = sections[0].content;
@@ -261,6 +262,9 @@ export class CanvasParser {
                 definition,
                 rawDefinition: rawDefinition || definition,
                 sections,
+                userNote: getCanvasNoteFromSections(sections) || undefined,
+                savedSentences: getCanvasSentencesFromSections(sections),
+                canvasNodeType: node.type === 'file' ? 'file' : 'text',
                 source: sourcePath,
                 nodeId: node.id,
                 color: node.color,

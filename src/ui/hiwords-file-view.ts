@@ -73,7 +73,7 @@ export class HiWordsFileView extends TextFileView {
     }
 
     getIcon(): string {
-        return 'library-big';
+        return 'file-pen';
     }
 
     focusCard(cardId: string): void {

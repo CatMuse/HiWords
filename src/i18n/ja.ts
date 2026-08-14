@@ -30,7 +30,6 @@ export default {
         no_vocabulary_books: "単語帳がまだありません。Canvas または .hiwords ファイルを単語帳として追加してください。",
         path: "パス",
         reload_book: "この単語帳を再読み込み",
-        preview_book: "単語帳をプレビュー",
         book_color: "単語帳の色",
         book_color_default: "デフォルト",
         statistics: "統計",

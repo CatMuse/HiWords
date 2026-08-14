@@ -1,12 +1,11 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, Modal, SecretComponent, setIcon, TextComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, SecretComponent, setIcon, TextComponent } from 'obsidian';
 import HiWordsPlugin from '../../main';
-import { VocabularyBook, HighlightStyle, AIProvider, mapCanvasColorToCSSVar, getColorWithOpacity } from '../utils';
+import { VocabularyBook, HighlightStyle, AIProvider } from '../utils';
 import { CanvasParser } from '../canvas';
 import { HiWordsParser } from '../card';
 import { t } from '../i18n';
 import { DictionaryService } from '../services/dictionary-service';
 import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT } from '../settings';
-import { renderWordCard } from './word-card-renderer';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
@@ -782,19 +781,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
             const setting = new Setting(containerEl)
                 .setName(book.name)
                 .setDesc(`${t('settings.path')}: ${book.path}`);
+            setting.settingEl.addClass('hi-words-book-setting');
 
             // 创建图标容器
             const iconsContainer = setting.controlEl.createDiv({ cls: 'hi-words-book-icons' });
 
             if (book.path.endsWith('.hiwords')) {
                 this.addHiWordsBookColorSelector(iconsContainer, book);
-
-                const previewIcon = iconsContainer.createDiv({ cls: 'clickable-icon' });
-                setIcon(previewIcon, 'panel-top-open');
-                previewIcon.setAttribute('aria-label', t('settings.preview_book'));
-                previewIcon.addEventListener('click', () => {
-                    new HiWordsPackPreviewModal(this.app, book, this.plugin.settings.pronunciationVariant || 'us').open();
-                });
             }
 
             // 重新加载图标
@@ -969,85 +962,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const totalWordsItem = statsEl.createEl('div', { cls: 'stat-item' });
         totalWordsItem.createEl('div', { cls: 'stat-value', text: stats.totalWords.toString() });
         totalWordsItem.createEl('div', { cls: 'stat-label', text: t('settings.total_words').split(':')[0] });
-    }
-}
-
-class HiWordsPackPreviewModal extends Modal {
-    private book: VocabularyBook;
-    private pronunciationVariant: 'uk' | 'us';
-
-    constructor(app: App, book: VocabularyBook, pronunciationVariant: 'uk' | 'us') {
-        super(app);
-        this.book = book;
-        this.pronunciationVariant = pronunciationVariant;
-    }
-
-    onOpen() {
-        this.contentEl.empty();
-        this.modalEl.addClass('hi-words-pack-preview-modal-container');
-        this.contentEl.addClass('hi-words-pack-preview-modal');
-        void this.render();
-    }
-
-    private async render() {
-        const file = this.app.vault.getAbstractFileByPath(this.book.path);
-        if (!(file instanceof TFile)) {
-            this.contentEl.createEl('p', { text: t('notices.invalid_vocabulary_book_file') });
-            return;
-        }
-
-        const parser = new HiWordsParser(this.app);
-        const metadata = await parser.readMetadata(file);
-        const definitions = await parser.parseFile(file);
-        if (this.book.color) {
-            for (const definition of definitions) {
-                if (!definition.color) {
-                    definition.color = this.book.color;
-                }
-            }
-        }
-
-        this.titleEl.setText(metadata?.title || this.book.name);
-
-        const summary = this.contentEl.createDiv({ cls: 'hi-words-pack-preview-summary' });
-
-        const metaGrid = summary.createDiv({ cls: 'hi-words-pack-preview-meta-grid' });
-        this.addMetaItem(metaGrid, t('modals.pack_words'), String(metadata?.cardCount ?? definitions.length));
-        this.addMetaItem(metaGrid, t('modals.pack_language'), metadata?.language || '-');
-        this.addMetaItem(metaGrid, t('modals.pack_version'), String(metadata?.version ?? 1));
-
-        const sampleTitle = this.contentEl.createDiv({
-            cls: 'hi-words-pack-preview-section-title',
-            text: t('modals.pack_samples'),
-        });
-        sampleTitle.toggleClass('is-empty', definitions.length === 0);
-
-        const sampleList = this.contentEl.createDiv({ cls: 'hi-words-pack-preview-samples' });
-        for (const definition of definitions.slice(0, 3)) {
-            const sample = sampleList.createDiv({ cls: 'hi-words-pack-preview-sample' });
-            if (definition.color) {
-                const accentColor = mapCanvasColorToCSSVar(definition.color, 'var(--color-base-60)');
-                sample.style.setProperty('--word-card-accent-color', accentColor);
-                sample.style.setProperty('--word-card-bg-color', getColorWithOpacity(accentColor, 0.08));
-            }
-            sample.createDiv({ cls: 'hi-words-pack-preview-word', text: definition.word });
-            const body = sample.createDiv({ cls: 'hi-words-pack-preview-card-body' });
-            renderWordCard(body, definition, {
-                mode: 'sidebar',
-                app: this.app,
-                pronunciationVariant: this.pronunciationVariant,
-            });
-        }
-
-        if (definitions.length === 0) {
-            sampleList.createDiv({ cls: 'setting-item-description', text: t('sidebar.empty_state') });
-        }
-    }
-
-    private addMetaItem(container: HTMLElement, label: string, value: string) {
-        const item = container.createDiv({ cls: 'hi-words-pack-preview-meta-item' });
-        item.createDiv({ cls: 'hi-words-pack-preview-meta-label', text: label });
-        item.createDiv({ cls: 'hi-words-pack-preview-meta-value', text: value });
     }
 }
 

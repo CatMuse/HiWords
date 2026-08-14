@@ -1215,6 +1215,14 @@
     border: 1px solid var(--background-modifier-border);
 }
 
+.hi-words-card-phrase-translation {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
 .hi-words-structured-chip-code {
     font-family: var(--font-monospace);
 }
@@ -1427,125 +1435,6 @@
 .hi-words-tooltip-content .hi-words-structured-mistake,
 .hi-words-tooltip-content .hi-words-structured-relation {
     background: var(--background-secondary);
-}
-
-/* .hiwords 词库预览 */
-.modal.hi-words-pack-preview-modal-container {
-    width: min(720px, calc(100vw - 32px));
-    max-width: calc(100vw - 32px);
-}
-
-.hi-words-pack-preview-modal {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: hidden;
-    box-sizing: border-box;
-}
-
-.hi-words-pack-preview-summary {
-    padding: 14px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    background: var(--background-secondary);
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-}
-
-.hi-words-pack-preview-title {
-    color: var(--text-normal);
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.3;
-    margin-bottom: 12px;
-}
-
-.hi-words-pack-preview-meta-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    max-width: 100%;
-    min-width: 0;
-}
-
-.hi-words-pack-preview-meta-item {
-    min-width: 0;
-    padding: 8px 10px;
-    border-radius: 6px;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-}
-
-.hi-words-pack-preview-meta-label {
-    color: var(--text-faint);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.2;
-    text-transform: uppercase;
-}
-
-.hi-words-pack-preview-meta-value {
-    margin-top: 4px;
-    color: var(--text-normal);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-}
-
-.hi-words-pack-preview-section-title {
-    margin: 18px 0 10px;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.2;
-    text-transform: uppercase;
-}
-
-.hi-words-pack-preview-samples {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    max-width: 100%;
-    min-width: 0;
-}
-
-.hi-words-pack-preview-sample {
-    padding: 12px 14px;
-    border: 1px solid color-mix(in srgb, var(--word-card-accent-color, var(--background-modifier-border)) 45%, transparent);
-    border-left: 4px solid var(--word-card-accent-color, var(--background-modifier-border));
-    border-radius: 8px;
-    background: var(--word-card-bg-color, var(--background-primary));
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow-x: hidden;
-}
-
-.hi-words-pack-preview-word {
-    margin-bottom: 10px;
-    color: var(--word-card-accent-color, var(--text-accent));
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-}
-
-.hi-words-pack-preview-card-body {
-    color: var(--text-normal);
-    max-width: 100%;
-    min-width: 0;
-}
-
-@media (max-width: 640px) {
-    .hi-words-pack-preview-modal {
-        min-width: 0;
-    }
-
-    .hi-words-pack-preview-meta-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 .hi-words-empty-state {
@@ -1912,6 +1801,20 @@
 }
 
 /* 生词本图标样式 */
+.hi-words-book-setting {
+    align-items: center;
+}
+
+.hi-words-book-setting .setting-item-info,
+.hi-words-book-setting .setting-item-control,
+.hi-words-book-setting .hi-words-book-icons {
+    align-self: center;
+}
+
+.hi-words-book-setting .setting-item-control {
+    align-items: center;
+}
+
 .hi-words-book-icons {
     display: flex;
     gap: 4px;

@@ -37,7 +37,6 @@ export interface LanguagePack {
         no_vocabulary_books: string;
         path: string;
         reload_book: string;
-        preview_book?: string;
         book_color?: string;
         book_color_default?: string;
         statistics: string;

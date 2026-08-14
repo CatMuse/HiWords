@@ -30,7 +30,6 @@ export default {
         no_vocabulary_books: "暂无单词本，请添加 Canvas 或 .hiwords 文件作为单词本",
         path: "路径",
         reload_book: "重新解析该单词本",
-        preview_book: "预览词库",
         book_color: "词库颜色",
         book_color_default: "默认",
         statistics: "统计信息",

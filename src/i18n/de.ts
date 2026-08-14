@@ -30,7 +30,6 @@ export default {
         no_vocabulary_books: "Noch keine Wörterbücher. Fügen Sie eine Canvas- oder .hiwords-Datei als Wörterbuch hinzu.",
         path: "Pfad",
         reload_book: "Dieses Wörterbuch neu laden",
-        preview_book: "Wörterbuch-Vorschau",
         book_color: "Wörterbuchfarbe",
         book_color_default: "Standard",
         statistics: "Statistiken",

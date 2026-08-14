@@ -136,7 +136,7 @@ export class WordPopoverActions {
 
         const examples: Array<{ text: string; translation?: string; source?: string }> = [
             ...(currentSentence ? [{ text: currentSentence, source: sourcePath || this.localized('popover.current_note', 'Current note') }] : []),
-            ...(wordDef.card?.sentences?.map(sentence => ({
+            ...(this.mutationService.getSavedSentences(wordDef).map(sentence => ({
                 text: sentence.text,
                 translation: sentence.translation,
                 source: sentence.source,
@@ -156,25 +156,27 @@ export class WordPopoverActions {
             this.renderHighlightedSentence(body, example.text, wordDef.word);
             if (example.translation) body.createDiv({ text: example.translation, cls: 'hi-words-tooltip-context-translation' });
             if (example.source) body.createDiv({ text: example.source, cls: 'hi-words-tooltip-context-source' });
-            const saved = this.mutationService.isSentenceSaved(wordDef, example.text);
-            const save = this.createSentenceToggle(item, saved);
-            save.addEventListener('click', event => {
-                event.preventDefault();
-                event.stopPropagation();
-                save.disabled = true;
-                void this.mutationService.toggleSentence(wordDef, example).then(result => {
-                    if (!result.success) {
+            if (this.mutationService.canSaveSentences(wordDef)) {
+                const saved = this.mutationService.isSentenceSaved(wordDef, example.text);
+                const save = this.createSentenceToggle(item, saved);
+                save.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    save.disabled = true;
+                    void this.mutationService.toggleSentence(wordDef, example).then(result => {
+                        if (!result.success) {
+                            new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
+                            save.disabled = false;
+                            return;
+                        }
+                        this.renderExamples(contentEl, wordDef, currentSentence, sourcePath, onBack);
+                    }).catch(error => {
+                        console.error('HiWords failed to update saved sentence:', error);
                         new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
                         save.disabled = false;
-                        return;
-                    }
-                    this.renderExamples(contentEl, wordDef, currentSentence, sourcePath, onBack);
-                }).catch(error => {
-                    console.error('HiWords failed to update saved sentence:', error);
-                    new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
-                    save.disabled = false;
+                    });
                 });
-            });
+            }
         }
     }
 
@@ -440,27 +442,29 @@ export class WordPopoverActions {
             onClose();
             void this.contextService.open(context).catch(error => console.error('HiWords failed to open word context:', error));
         });
-        const save = this.createSentenceToggle(item, this.mutationService.isSentenceSaved(wordDef, context.sentence));
-        save.addEventListener('click', event => {
-            event.preventDefault();
-            event.stopPropagation();
-            save.disabled = true;
-            void this.mutationService.toggleSentence(wordDef, {
-                text: context.sentence,
-                source: context.file.path,
-            }).then(result => {
-                if (!result.success) {
+        if (this.mutationService.canSaveSentences(wordDef)) {
+            const save = this.createSentenceToggle(item, this.mutationService.isSentenceSaved(wordDef, context.sentence));
+            save.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                save.disabled = true;
+                void this.mutationService.toggleSentence(wordDef, {
+                    text: context.sentence,
+                    source: context.file.path,
+                }).then(result => {
+                    if (!result.success) {
+                        new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
+                        save.disabled = false;
+                        return;
+                    }
+                    this.updateSentenceToggle(save, result.saved);
+                }).catch(error => {
+                    console.error('HiWords failed to update saved sentence:', error);
                     new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
                     save.disabled = false;
-                    return;
-                }
-                this.updateSentenceToggle(save, result.saved);
-            }).catch(error => {
-                console.error('HiWords failed to update saved sentence:', error);
-                new Notice(this.localized('popover.sentence_save_failed', 'Could not update this vocabulary.'));
-                save.disabled = false;
+                });
             });
-        });
+        }
     }
 
     private createSentenceToggle(container: HTMLElement, saved: boolean): HTMLButtonElement {

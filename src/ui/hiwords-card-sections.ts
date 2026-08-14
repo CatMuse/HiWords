@@ -85,7 +85,10 @@ export function renderHiWordsPhrases(root: HTMLElement, card: HiWordsCard): void
         const row = section.createDiv({ cls: 'hi-words-structured-phrase' });
         const head = row.createDiv({ cls: 'hi-words-card-derived-header' });
         head.createSpan({ text: item.text, cls: 'hi-words-structured-confusable-word' });
-        if (item.translation) head.createSpan({ text: item.translation, cls: 'hi-words-structured-zh' });
+        if (item.translation) head.createSpan({
+            text: item.translation,
+            cls: 'hi-words-card-phrase-translation',
+        });
         if (item.sentence) row.createDiv({ text: item.sentence, cls: 'hi-words-structured-example-text' });
     }
 }

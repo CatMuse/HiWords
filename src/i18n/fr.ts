@@ -30,7 +30,6 @@ export default {
         no_vocabulary_books: "Aucun livre pour l'instant. Ajoutez un fichier Canvas ou .hiwords comme livre de mots.",
         path: "Chemin",
         reload_book: "Recharger ce livre",
-        preview_book: "Aperçu du livre",
         book_color: "Couleur du livre",
         book_color_default: "Par défaut",
         statistics: "Statistiques",
