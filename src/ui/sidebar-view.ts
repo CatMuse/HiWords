@@ -4,6 +4,7 @@ import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTT
 import { t } from '../i18n';
 import { findPatternMatches } from '../utils/pattern-matcher';
 import { renderWordCard } from './word-card-renderer';
+import { isWordCard } from '../schema/hiwords';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -489,6 +490,7 @@ export class HiWordsSidebarView extends ItemView {
 
         // 点击主词发音
         wordTextEl.addEventListener('click', (e) => {
+            if (wordDef.card && wordDef.cardKind && !isWordCard(wordDef.card, wordDef.cardKind)) return;
             e.stopPropagation();
             void playWordTTS(this.plugin, wordDef.word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);

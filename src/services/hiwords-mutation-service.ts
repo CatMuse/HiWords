@@ -8,7 +8,7 @@ import {
     updateCanvasTextNodeSentences,
 } from '../canvas/canvas-note';
 import { createStableId } from '../editor/hiwords-document';
-import { isHiWordsPack, normalizeHiWordsPack, type HiWordsCard, type HiWordsPack, type HiWordsSentence } from '../schema/hiwords';
+import { isHiWordsPack, isWordCard, normalizeHiWordsPack, type HiWordsCard, type HiWordsPack, type HiWordsSentence } from '../schema/hiwords';
 import type { WordDefinition } from '../utils';
 
 type CardMutation = (card: HiWordsCard, pack: HiWordsPack) => void;
@@ -43,12 +43,12 @@ export class HiWordsMutationService {
     }
 
     canSaveSentences(wordDef: WordDefinition): boolean {
-        if (wordDef.source.endsWith('.hiwords')) return !!(wordDef.card?.id || wordDef.nodeId);
+        if (wordDef.source.endsWith('.hiwords')) return Boolean(wordDef.card && wordDef.cardKind && isWordCard(wordDef.card, wordDef.cardKind) && (wordDef.card.id || wordDef.nodeId));
         return wordDef.source.endsWith('.canvas') && wordDef.canvasNodeType !== 'file' && !!wordDef.nodeId;
     }
 
     getSavedSentences(wordDef: WordDefinition): HiWordsSentence[] {
-        return wordDef.card?.sentences || wordDef.savedSentences || [];
+        return wordDef.card && wordDef.cardKind && isWordCard(wordDef.card, wordDef.cardKind) ? wordDef.card.data.sentences || [] : wordDef.savedSentences || [];
     }
 
     isSentenceSaved(wordDef: WordDefinition, text: string): boolean {
@@ -68,8 +68,9 @@ export class HiWordsMutationService {
             return this.toggleCanvasSentence(wordDef, sentence, key);
         }
         let saved = false;
-        const success = await this.mutate(wordDef, card => {
-            const sentences = card.sentences || [];
+        const success = await this.mutate(wordDef, (card, pack) => {
+            if (!isWordCard(card, pack.cardKind)) return;
+            const sentences = card.data.sentences || [];
             const existing = sentences.findIndex(item => normalizeSentence(item.text) === key);
             if (existing >= 0) {
                 sentences.splice(existing, 1);
@@ -83,7 +84,7 @@ export class HiWordsMutationService {
                 });
                 saved = true;
             }
-            card.sentences = sentences;
+            card.data.sentences = sentences;
         });
         return { success, saved: success && saved };
     }

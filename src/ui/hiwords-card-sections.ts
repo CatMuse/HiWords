@@ -1,9 +1,9 @@
 import type { App } from 'obsidian';
 import { normalizePath } from 'obsidian';
-import type { HiWordsCard, HiWordsMorphologyComponent } from '../schema/hiwords';
+import type { HiWordsCard, HiWordsImage, HiWordsImageFieldOptions, HiWordsWordCard, HiWordsMorphologyComponent } from '../schema/hiwords';
 
-export function renderHiWordsMeanings(root: HTMLElement, card: HiWordsCard, limit?: number): void {
-    const meanings = card.meanings.filter(item => item.translation.trim() || item.definition.trim());
+export function renderHiWordsMeanings(root: HTMLElement, card: HiWordsWordCard, limit?: number): void {
+    const meanings = card.data.meanings.filter(item => item.translation.trim() || item.definition.trim());
     if (!meanings.length) return;
     const section = createSection(root, 'Definition');
     for (const meaning of meanings.slice(0, limit)) {
@@ -18,10 +18,10 @@ export function renderHiWordsMeanings(root: HTMLElement, card: HiWordsCard, limi
     }
 }
 
-export function renderHiWordsSentences(root: HTMLElement, card: HiWordsCard, limit?: number): void {
-    const sentences = (card.sentences || []).filter(sentence => sentence.text.trim());
+export function renderHiWordsSentences(root: HTMLElement, card: HiWordsWordCard, limit?: number): void {
+    const sentences = (card.data.sentences || []).filter(sentence => sentence.text.trim());
     if (!sentences.length) return;
-    const section = createSection(root, 'Sentence');
+    const section = createSection(root, 'Examples');
     for (const sentence of sentences.slice(0, limit)) {
         const item = section.createDiv({ cls: 'hi-words-structured-example hi-words-card-example' });
         item.createDiv({ text: sentence.text, cls: 'hi-words-structured-example-text' });
@@ -30,8 +30,8 @@ export function renderHiWordsSentences(root: HTMLElement, card: HiWordsCard, lim
     }
 }
 
-export function renderHiWordsForms(root: HTMLElement, card: HiWordsCard): void {
-    const forms = (card.forms || []).filter(item => item.form.trim());
+export function renderHiWordsForms(root: HTMLElement, card: HiWordsWordCard): void {
+    const forms = (card.data.forms || []).filter(item => item.form.trim());
     if (!forms.length) return;
     const section = createSection(root, 'Word forms');
     const list = section.createDiv({ cls: 'hi-words-structured-form-list' });
@@ -42,8 +42,8 @@ export function renderHiWordsForms(root: HTMLElement, card: HiWordsCard): void {
     }
 }
 
-export function renderHiWordsDerivedWords(root: HTMLElement, card: HiWordsCard): void {
-    const words = (card.derivedWords || []).filter(item => item.word.trim());
+export function renderHiWordsDerivedWords(root: HTMLElement, card: HiWordsWordCard): void {
+    const words = (card.data.derivedWords || []).filter(item => item.word.trim());
     if (!words.length) return;
     const section = createSection(root, 'Derived words');
     const list = section.createDiv({ cls: 'hi-words-card-derived-list' });
@@ -56,8 +56,8 @@ export function renderHiWordsDerivedWords(root: HTMLElement, card: HiWordsCard):
     }
 }
 
-export function renderHiWordsMorphology(root: HTMLElement, card: HiWordsCard): void {
-    const morphology = card.morphology;
+export function renderHiWordsMorphology(root: HTMLElement, card: HiWordsWordCard): void {
+    const morphology = card.data.morphology;
     if (!morphology) return;
     const components = (morphology.components || []).filter(item => item.form.trim());
     if (!morphology.explanation?.trim() && !components.length) return;
@@ -77,8 +77,8 @@ export function renderHiWordsMorphology(root: HTMLElement, card: HiWordsCard): v
     if (morphology.explanation) section.createDiv({ text: morphology.explanation, cls: 'hi-words-structured-memory-text' });
 }
 
-export function renderHiWordsPhrases(root: HTMLElement, card: HiWordsCard): void {
-    const phrases = (card.phrases || []).filter(item => item.text.trim());
+export function renderHiWordsPhrases(root: HTMLElement, card: HiWordsWordCard): void {
+    const phrases = (card.data.phrases || []).filter(item => item.text.trim());
     if (!phrases.length) return;
     const section = createSection(root, 'Phrases');
     for (const item of phrases) {
@@ -93,8 +93,8 @@ export function renderHiWordsPhrases(root: HTMLElement, card: HiWordsCard): void
     }
 }
 
-export function renderHiWordsUsage(root: HTMLElement, card: HiWordsCard): void {
-    const usage = card.usage;
+export function renderHiWordsUsage(root: HTMLElement, card: HiWordsWordCard): void {
+    const usage = card.data.usage;
     if (!usage) return;
     const register = nonEmpty(usage.register);
     const patterns = nonEmpty(usage.patterns);
@@ -116,10 +116,10 @@ export function renderHiWordsUsage(root: HTMLElement, card: HiWordsCard): void {
     }
 }
 
-export function renderHiWordsRelations(root: HTMLElement, card: HiWordsCard): void {
-    const relations = (card.relations || []).filter(item => item.target.trim());
+export function renderHiWordsRelations(root: HTMLElement, card: HiWordsWordCard): void {
+    const relations = (card.data.relations || []).filter(item => item.target.trim());
     if (!relations.length) return;
-    const section = createSection(root, 'Related');
+    const section = createSection(root, 'Related words');
     const list = section.createDiv({ cls: 'hi-words-structured-relation-list' });
     for (const item of relations) {
         const row = list.createDiv({ cls: 'hi-words-structured-relation' });
@@ -129,8 +129,8 @@ export function renderHiWordsRelations(root: HTMLElement, card: HiWordsCard): vo
     }
 }
 
-export function renderHiWordsMemory(root: HTMLElement, card: HiWordsCard): void {
-    const memory = (card.memory || []).filter(item => item.text.trim());
+export function renderHiWordsMemory(root: HTMLElement, card: HiWordsWordCard): void {
+    const memory = (card.data.memory || []).filter(item => item.text.trim());
     if (!memory.length) return;
     const section = createSection(root, 'Memory');
     for (const item of memory) {
@@ -142,16 +142,30 @@ export function renderHiWordsMemory(root: HTMLElement, card: HiWordsCard): void 
 }
 
 export function renderHiWordsImages(root: HTMLElement, card: HiWordsCard, app?: App): void {
-    const images = (card.images || []).filter(item => item.path.trim());
+    renderHiWordsImageItems(root, 'Images', card.images || [], app);
+}
+
+export function renderHiWordsImageItems(
+    root: HTMLElement,
+    title: string,
+    values: HiWordsImage[],
+    app?: App,
+    options?: HiWordsImageFieldOptions,
+): void {
+    const images = values.filter(item => item.path.trim());
     if (!images.length) return;
-    const section = createSection(root, 'Images');
+    const visibleImages = options && !options.multiple ? images.slice(0, 1) : images;
+    const section = createSection(root, title);
     const gallery = section.createDiv({ cls: 'hi-words-structured-image-gallery' });
-    for (const image of images) {
+    gallery.toggleClass('is-cover', options?.displayMode === 'cover');
+    gallery.style.setProperty('--hi-words-image-aspect-ratio', formatAspectRatio(options?.aspectRatio));
+    gallery.style.setProperty('--hi-words-image-fit', options?.fit || 'cover');
+    for (const image of visibleImages) {
         const figure = gallery.createEl('figure', { cls: 'hi-words-structured-image' });
         const src = /^(?:https?:|data:|app:)/i.test(image.path)
             ? image.path
             : app?.vault.adapter.getResourcePath(normalizePath(image.path)) || image.path;
-        const img = figure.createEl('img', { attr: { src, alt: image.alt || card.word, loading: 'lazy' } });
+        const img = figure.createEl('img', { attr: { src, alt: image.alt || title, loading: 'lazy' } });
         img.addEventListener('error', () => {
             figure.remove();
             if (!gallery.querySelector('.hi-words-structured-image')) section.remove();
@@ -160,11 +174,21 @@ export function renderHiWordsImages(root: HTMLElement, card: HiWordsCard, app?: 
     }
 }
 
+function formatAspectRatio(value?: HiWordsImageFieldOptions['aspectRatio']): string {
+    if (value === '1:1') return '1 / 1';
+    if (value === '3:4') return '3 / 4';
+    if (value === 'original') return 'auto';
+    return '16 / 9';
+}
+
 export function renderHiWordsCustom(root: HTMLElement, card: HiWordsCard): void {
     const entries = (card.customSections || []).filter(item => item.title.trim() || item.content.trim());
+    if (!entries.length) return;
+    const section = createSection(root, 'Custom content');
     for (const item of entries) {
-        const section = createSection(root, item.title.trim() || 'Custom content');
-        if (item.content.trim()) section.createDiv({ text: item.content.trim(), cls: 'hi-words-card-custom-value' });
+        const group = section.createDiv({ cls: 'hi-words-structured-subsection hi-words-card-custom-group' });
+        if (item.title.trim()) group.createDiv({ text: item.title.trim(), cls: 'hi-words-structured-subtitle' });
+        if (item.content.trim()) group.createDiv({ text: item.content.trim(), cls: 'hi-words-card-custom-value' });
     }
 }
 

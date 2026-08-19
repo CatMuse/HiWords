@@ -1,31 +1,25 @@
 import { App, ItemView, MarkdownRenderer, Modal, Notice, setIcon, WorkspaceLeaf } from 'obsidian';
 import type HiWordsPlugin from '../../main';
-import type { VocabularyBook, VocabularyBookDisplaySettings, WordCardDetailSection, WordDefinition } from '../utils';
+import type { CardDisplaySection, VocabularyBook, VocabularyBookDisplaySettings, WordDefinition } from '../utils';
 import { mapCanvasColorToCSSVar, getColorWithOpacity, playWordTTS } from '../utils';
 import { t } from '../i18n';
-import { DEFAULT_WORD_CARD_PREVIEW_SECTIONS, renderWordCard } from './word-card-renderer';
+import { renderWordCard } from './word-card-renderer';
 import { AddWordModal } from './add-word-modal';
 import { WordPopoverActions } from './word-popover-actions';
+import { isConceptCard, isCustomCard, isPersonCard, isWordCard } from '../schema/hiwords';
+import { cardTypeRegistry, getOrderedCardDisplaySections } from '../knowledge';
 
 export const LIBRARY_VIEW_TYPE = 'hi-words-library';
 
 type StatusFilter = 'all' | 'learning' | 'mastered';
-type TypeFilter = 'all' | 'word' | 'phrase' | 'concept' | 'term';
+type TypeFilter = 'all' | 'word' | 'phrase' | 'person' | 'concept' | 'custom' | 'term';
 const WORD_BATCH_SIZE = 200;
-const DETAIL_SECTION_OPTIONS: Array<{ key: WordCardDetailSection; labelKey: string }> = [
-    { key: 'definitions', labelKey: 'library.section_definitions' },
-    { key: 'examples', labelKey: 'library.section_examples' },
-    { key: 'phrases', labelKey: 'library.section_phrases' },
-    { key: 'usage', labelKey: 'library.section_usage' },
-    { key: 'forms', labelKey: 'library.section_forms' },
-    { key: 'morphology', labelKey: 'library.section_morphology' },
-    { key: 'relations', labelKey: 'library.section_relations' },
-    { key: 'memory', labelKey: 'library.section_memory' },
-    { key: 'derivedWords', labelKey: 'library.section_derived_words' },
-    { key: 'images', labelKey: 'library.section_images' },
-    { key: 'custom', labelKey: 'library.section_custom' },
-    { key: 'note', labelKey: 'library.section_note' },
-];
+
+interface DisplaySectionOption {
+    key: CardDisplaySection;
+    label: string;
+    previewByDefault: boolean;
+}
 
 interface BookStats {
     rawCount: number;
@@ -35,28 +29,72 @@ interface BookStats {
     progress: number;
 }
 
+function getCardSearchValues(definition: WordDefinition): string[] {
+    const card = definition.card;
+    if (!card || !definition.cardKind) return [];
+    const values: string[] = [];
+    if (isWordCard(card, definition.cardKind)) values.push(...card.data.meanings.flatMap(meaning => [meaning.partOfSpeech, meaning.definition, meaning.translation]));
+    if (isPersonCard(card, definition.cardKind)) values.push(
+        card.data.summary,
+        ...(card.data.nationalities || []),
+        ...(card.data.occupations || []),
+        ...(card.data.achievements || []).flatMap(item => [item.title, item.description || '']),
+    );
+    if (isConceptCard(card, definition.cardKind)) values.push(
+        card.data.domain || '', card.data.definition, card.data.explanation || '',
+        ...(card.data.principles || []), ...(card.data.misconceptions || []),
+    );
+    for (const field of definition.cardFields || []) {
+        if (field.searchable === false) continue;
+        const value = card.fieldValues?.[field.id];
+        if (Array.isArray(value)) {
+            for (const item of value) {
+                if (typeof item === 'string') values.push(item);
+                else values.push(item.alt || '', item.caption || '', item.source || '');
+            }
+        }
+        else if (value !== undefined) values.push(String(value));
+    }
+    return values;
+}
+
+function getDefinitionType(definition: WordDefinition): Exclude<TypeFilter, 'all'> | undefined {
+    if (definition.card && definition.cardKind && isPersonCard(definition.card, definition.cardKind)) return 'person';
+    if (definition.card && definition.cardKind && isConceptCard(definition.card, definition.cardKind)) return 'concept';
+    if (definition.card && definition.cardKind && isCustomCard(definition.card, definition.cardKind)) return 'custom';
+    return definition.type;
+}
+
+function getLibraryRowSummary(definition: WordDefinition): string {
+    const value = definition.card && definition.cardKind
+        ? cardTypeRegistry.get(definition.cardKind).getSummary(definition.card, definition.cardFields)
+        : definition.definition;
+    return (value || definition.definition || '').replace(/\s+/g, ' ').trim();
+}
+
 class BookDisplaySettingsModal extends Modal {
     private plugin: HiWordsPlugin;
     private book: VocabularyBook;
     private onSaved: () => void | Promise<void>;
-    private previewSections: WordCardDetailSection[];
-    private detailSections: WordCardDetailSection[];
-    private hiddenSections: WordCardDetailSection[];
-    private sectionOptions: Array<{ key: WordCardDetailSection; labelKey: string }>;
+    private previewSections: CardDisplaySection[];
+    private detailSections: CardDisplaySection[];
+    private hiddenSections: CardDisplaySection[];
+    private sectionOptions: DisplaySectionOption[];
 
     constructor(
         app: App,
         plugin: HiWordsPlugin,
         book: VocabularyBook,
         onSaved: () => void | Promise<void>,
-        sectionOptions: Array<{ key: WordCardDetailSection; labelKey: string }> = DETAIL_SECTION_OPTIONS
+        sectionOptions: DisplaySectionOption[]
     ) {
         super(app);
         this.plugin = plugin;
         this.book = book;
         this.onSaved = onSaved;
         this.sectionOptions = sectionOptions;
-        this.previewSections = this.normalizeSections(book.display?.previewSections || DEFAULT_WORD_CARD_PREVIEW_SECTIONS);
+        const previewDefaults = this.sectionOptions.filter(option => option.previewByDefault).map(option => option.key);
+        this.previewSections = this.normalizeSections(book.display?.previewSections || previewDefaults);
         const detailDefaults = this.sectionOptions.map(option => option.key).filter(section => !this.previewSections.includes(section));
         this.detailSections = this.normalizeSections(book.display?.detailSections || detailDefaults)
             .filter(section => !this.previewSections.includes(section));
@@ -66,6 +104,8 @@ class BookDisplaySettingsModal extends Modal {
                 this.detailSections.push(section);
             }
         }
+        this.previewSections = this.orderByFile(this.previewSections);
+        this.detailSections = this.orderByFile(this.detailSections);
     }
 
     onOpen() {
@@ -83,8 +123,7 @@ class BookDisplaySettingsModal extends Modal {
         const actions = this.contentEl.createDiv({ cls: 'hi-words-library-display-actions' });
         const reset = actions.createEl('button', { text: t('library.reset_display_settings') });
         reset.onclick = () => {
-            const available = new Set(this.sectionOptions.map(option => option.key));
-            this.previewSections = DEFAULT_WORD_CARD_PREVIEW_SECTIONS.filter(section => available.has(section));
+            this.previewSections = this.sectionOptions.filter(option => option.previewByDefault).map(option => option.key);
             this.detailSections = this.sectionOptions.map(option => option.key).filter(section => !this.previewSections.includes(section));
             this.hiddenSections = [];
             void this.saveAndClose().catch(error => {
@@ -120,76 +159,41 @@ class BookDisplaySettingsModal extends Modal {
 
     private renderSectionOrder() {
         const list = this.contentEl.createDiv({ cls: 'hi-words-library-display-list' });
-        const ordered = [...this.previewSections, ...this.detailSections];
+        const renderZone = (title: string, sections: CardDisplaySection[], previewZone: boolean) => {
+            list.createDiv({ cls: 'hi-words-library-display-zone', text: title });
+            sections.forEach(section => {
 
-        ordered.forEach((section, index) => {
-            if (index === 0) {
-                list.createDiv({ cls: 'hi-words-library-display-zone', text: t('library.preview_area') });
-            }
-            if (index === this.previewSections.length) {
-                list.createDiv({ cls: 'hi-words-library-display-zone', text: t('library.detail_area') });
-            }
+                const isHidden = this.hiddenSections.includes(section);
+                const row = list.createDiv({ cls: `hi-words-library-display-row ${isHidden ? 'is-hidden' : ''}` });
+                const toggle = row.createEl('input', {
+                    type: 'checkbox',
+                    cls: 'hi-words-library-display-toggle',
+                });
+                toggle.checked = !isHidden;
+                toggle.onchange = () => this.toggleSection(section, toggle.checked);
+                row.createDiv({ cls: 'hi-words-library-display-row-label', text: this.getSectionLabel(section) });
 
-            const isHidden = this.hiddenSections.includes(section);
-            const row = list.createDiv({ cls: `hi-words-library-display-row ${isHidden ? 'is-hidden' : ''}` });
-            const toggle = row.createEl('input', {
-                type: 'checkbox',
-                cls: 'hi-words-library-display-toggle',
+                const actions = row.createDiv({ cls: 'hi-words-library-display-row-actions' });
+                const moveLabel = previewZone ? 'Move to details' : 'Move to preview';
+                const move = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': moveLabel, title: moveLabel } });
+                setIcon(move, previewZone ? 'arrow-down' : 'arrow-up');
+                move.onclick = () => {
+                    if (previewZone) {
+                        this.previewSections = this.previewSections.filter(item => item !== section);
+                        this.detailSections = this.orderByFile([...this.detailSections, section]);
+                    } else {
+                        this.detailSections = this.detailSections.filter(item => item !== section);
+                        this.previewSections = this.orderByFile([...this.previewSections, section]);
+                    }
+                    this.onOpen();
+                };
             });
-            toggle.checked = !isHidden;
-            toggle.onchange = () => this.toggleSection(index, toggle.checked);
-            row.createDiv({ cls: 'hi-words-library-display-row-label', text: this.getSectionLabel(section) });
-
-            const actions = row.createDiv({ cls: 'hi-words-library-display-row-actions' });
-            const up = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('library.move_up'), title: t('library.move_up') } });
-            setIcon(up, 'arrow-up');
-            up.disabled = index === 0;
-            up.onclick = () => this.moveSection(index, -1);
-
-            const down = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('library.move_down'), title: t('library.move_down') } });
-            setIcon(down, 'arrow-down');
-            down.disabled = index === ordered.length - 1;
-            down.onclick = () => this.moveSection(index, 1);
-        });
+        };
+        renderZone(t('library.preview_area'), this.orderByFile(this.previewSections), true);
+        renderZone(t('library.detail_area'), this.orderByFile(this.detailSections), false);
     }
 
-    private moveSection(index: number, delta: -1 | 1) {
-        const previewCount = this.previewSections.length;
-        const ordered = [...this.previewSections, ...this.detailSections];
-        const targetIndex = index + delta;
-        if (targetIndex < 0 || targetIndex >= ordered.length) return;
-
-        if (delta === 1 && index === previewCount - 1) {
-            const [item] = ordered.splice(index, 1);
-            ordered.splice(previewCount - 1, 0, item);
-            this.previewSections = ordered.slice(0, previewCount - 1);
-            this.detailSections = ordered.slice(previewCount - 1);
-            this.onOpen();
-            return;
-        }
-
-        if (delta === -1 && index === previewCount) {
-            const [item] = ordered.splice(index, 1);
-            ordered.splice(previewCount, 0, item);
-            this.previewSections = ordered.slice(0, previewCount + 1);
-            this.detailSections = ordered.slice(previewCount + 1);
-            this.onOpen();
-            return;
-        }
-
-        const [item] = ordered.splice(index, 1);
-        ordered.splice(targetIndex, 0, item);
-
-        this.previewSections = ordered.slice(0, previewCount);
-        this.detailSections = ordered.slice(previewCount);
-        this.onOpen();
-    }
-
-    private toggleSection(index: number, visible: boolean) {
-        const ordered = [...this.previewSections, ...this.detailSections];
-        const section = ordered[index];
-        if (!section) return;
-
+    private toggleSection(section: CardDisplaySection, visible: boolean) {
         if (visible && this.hiddenSections.includes(section)) {
             this.hiddenSections = this.hiddenSections.filter(item => item !== section);
         }
@@ -200,20 +204,25 @@ class BookDisplaySettingsModal extends Modal {
         this.onOpen();
     }
 
-    private getSectionLabel(section: WordCardDetailSection): string {
+    private getSectionLabel(section: CardDisplaySection): string {
         const option = this.sectionOptions.find(item => item.key === section);
-        return option ? t(option.labelKey) : section;
+        return option?.label || section;
     }
 
-    private normalizeSections(sections: WordCardDetailSection[]): WordCardDetailSection[] {
+    private normalizeSections(sections: CardDisplaySection[]): CardDisplaySection[] {
         const allowed = new Set(this.sectionOptions.map(option => option.key));
-        const normalized: WordCardDetailSection[] = [];
+        const normalized: CardDisplaySection[] = [];
         for (const section of sections) {
             if (allowed.has(section) && !normalized.includes(section)) {
                 normalized.push(section);
             }
         }
         return normalized;
+    }
+
+    private orderByFile(sections: CardDisplaySection[]): CardDisplaySection[] {
+        const selected = new Set(sections);
+        return this.sectionOptions.map(option => option.key).filter(section => selected.has(section));
     }
 
     private format(template: string, ...values: string[]): string {
@@ -518,7 +527,9 @@ export class HiWordsLibraryView extends ItemView {
         this.addOption(typeSelect, 'all', t('library.all_types'), this.typeFilter);
         this.addOption(typeSelect, 'word', 'Word', this.typeFilter);
         this.addOption(typeSelect, 'phrase', 'Phrase', this.typeFilter);
+        this.addOption(typeSelect, 'person', 'Person', this.typeFilter);
         this.addOption(typeSelect, 'concept', 'Concept', this.typeFilter);
+        this.addOption(typeSelect, 'custom', 'Custom', this.typeFilter);
         this.addOption(typeSelect, 'term', 'Term', this.typeFilter);
         typeSelect.onchange = () => {
             this.typeFilter = typeSelect.value as TypeFilter;
@@ -669,28 +680,35 @@ export class HiWordsLibraryView extends ItemView {
         const word = title.createSpan({
             text: definition.word,
             cls: 'hi-words-library-word-name',
-            attr: { role: 'button', tabindex: '0' },
         });
-        word.onclick = (event) => {
-            event.stopPropagation();
-            void playWordTTS(this.plugin, definition.word).catch(error => {
-                console.error('HiWords 播放发音失败:', error);
-            });
-        };
+        const pronounceable = !definition.cardKind || cardTypeRegistry.get(definition.cardKind).capabilities.pronounceable;
+        if (pronounceable) {
+            word.setAttribute('role', 'button');
+            word.setAttribute('tabindex', '0');
+            word.onclick = (event) => {
+                event.stopPropagation();
+                void playWordTTS(this.plugin, definition.word).catch(error => {
+                    console.error('HiWords 播放发音失败:', error);
+                });
+            };
+            word.onkeydown = (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                event.stopPropagation();
+                void playWordTTS(this.plugin, definition.word).catch(error => {
+                    console.error('HiWords 播放发音失败:', error);
+                });
+            };
+        } else {
+            word.addClass('is-not-pronounceable');
+        }
         word.onmouseenter = () => this.scheduleTooltip(word, definition);
         word.onmouseleave = () => this.scheduleTooltipHide();
-        word.onkeydown = (event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            event.stopPropagation();
-            void playWordTTS(this.plugin, definition.word).catch(error => {
-                console.error('HiWords 播放发音失败:', error);
-            });
-        };
+        const summary = getLibraryRowSummary(definition);
+        if (summary) main.createDiv({ cls: 'hi-words-library-summary', text: summary, attr: { title: summary } });
         if (definition.aliases?.length) {
             main.createDiv({ cls: 'hi-words-library-aliases', text: definition.aliases.join(', ') });
         }
-        main.createDiv({ cls: 'hi-words-library-study-key', text: definition.studyKey || `${definition.source}:${definition.nodeId}` });
 
         const actions = row.createDiv({ cls: 'hi-words-library-actions' });
         if (definition.source.endsWith('.hiwords') && definition.card) {
@@ -1023,7 +1041,7 @@ export class HiWordsLibraryView extends ItemView {
     private matchesFilters(definition: WordDefinition): boolean {
         if (this.statusFilter === 'learning' && definition.mastered) return false;
         if (this.statusFilter === 'mastered' && !definition.mastered) return false;
-        if (this.typeFilter !== 'all' && definition.type !== this.typeFilter) return false;
+        if (this.typeFilter !== 'all' && getDefinitionType(definition) !== this.typeFilter) return false;
 
         const query = this.query.trim().toLowerCase();
         if (!query) return true;
@@ -1034,11 +1052,7 @@ export class HiWordsLibraryView extends ItemView {
             definition.type || '',
             definition.language || '',
             ...(definition.aliases || []),
-            ...(definition.card?.meanings.flatMap(meaning => [
-                meaning.partOfSpeech,
-                meaning.definition,
-                meaning.translation,
-            ]) || []),
+            ...getCardSearchValues(definition),
         ].some(value => value.toLowerCase().includes(query));
     }
 
@@ -1084,30 +1098,21 @@ export class HiWordsLibraryView extends ItemView {
         return definitions;
     }
 
-    private getAvailableDisplaySections(definitions: WordDefinition[]): Array<{ key: WordCardDetailSection; labelKey: string }> {
-        const available = new Set<WordCardDetailSection>(['definitions', 'note']);
-        for (const definition of definitions) {
-            const card = definition.card;
-            if (!card) continue;
-            if (card.sentences?.some(item => item.text.trim())) available.add('examples');
-            if (card.phrases?.some(item => item.text.trim())) available.add('phrases');
-            if (card.usage && Object.values(card.usage).some(value => Array.isArray(value) ? value.length > 0 : !!value)) available.add('usage');
-            if (card.forms?.some(item => item.form.trim())) available.add('forms');
-            if (card.morphology && Object.values(card.morphology).some(value => Array.isArray(value) ? value.length > 0 : !!value)) available.add('morphology');
-            if (card.relations?.some(item => item.target?.trim())) available.add('relations');
-            if (card.memory?.some(item => item.text.trim())) available.add('memory');
-            if (card.derivedWords?.some(item => item.word.trim())) available.add('derivedWords');
-            if (card.images?.some(item => item.path.trim())) available.add('images');
-            if (card.customSections?.some(item => item.title.trim() || item.content.trim())) available.add('custom');
-        }
-        const order: WordCardDetailSection[] = [
-            'definitions', 'derivedWords', 'morphology', 'phrases', 'examples', 'memory',
-            'relations', 'usage', 'forms', 'images', 'custom', 'note',
-        ];
-        return order
-            .filter(section => available.has(section))
-            .map(section => DETAIL_SECTION_OPTIONS.find(option => option.key === section))
-            .filter((option): option is { key: WordCardDetailSection; labelKey: string } => !!option);
+    private getAvailableDisplaySections(definitions: WordDefinition[]): DisplaySectionOption[] {
+        const cardKind = definitions.find(definition => definition.card && definition.cardKind)?.cardKind;
+        if (!cardKind) return [];
+        const cards = definitions
+            .filter(definition => definition.cardKind === cardKind && definition.card)
+            .map(definition => definition.card!);
+        const moduleOrder = definitions.find(definition => definition.cardKind === cardKind)?.cardModuleOrder;
+        const fields = definitions.find(definition => definition.cardKind === cardKind)?.cardFields;
+        return getOrderedCardDisplaySections(cardKind, moduleOrder, fields)
+            .filter(section => section.id.startsWith('field:') || cards.some(card => section.isAvailable(card)))
+            .map(section => ({
+                key: section.id,
+                label: section.label,
+                previewByDefault: Boolean(section.previewByDefault),
+            }));
     }
 
     private scheduleRender() {

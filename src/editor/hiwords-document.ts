@@ -1,14 +1,23 @@
 import {
     HIWORDS_SCHEMA,
     HIWORDS_SCHEMA_VERSION,
+    CONCEPT_CARD_KIND,
+    CUSTOM_CARD_KIND,
     HiWordsCard,
+    HiWordsCardKind,
+    HiWordsConceptCard,
+    HiWordsCustomCard,
+    HiWordsFieldDefinition,
     HiWordsMeaning,
     HiWordsPack,
+    HiWordsPersonCard,
+    HiWordsWordCard,
+    PERSON_CARD_KIND,
+    WORD_CARD_KIND,
     isHiWordsPack,
     normalizeHiWordsPack,
     validateHiWordsPack,
 } from '../schema/hiwords';
-import type { LearningItemType } from '../utils';
 
 export type HiWordsEditorDocument =
     | { kind: 'hiwords'; pack: HiWordsPack; original: string }
@@ -40,19 +49,59 @@ export function createEmptyHiWordsPack(title: string): HiWordsPack {
         schemaVersion: HIWORDS_SCHEMA_VERSION,
         id: createStableId('book'),
         title,
-        language: 'en',
+        cardKind: WORD_CARD_KIND,
+        cardKindVersion: 1,
         cards: [],
     };
 }
 
-export function createEmptyHiWordsCard(): HiWordsCard {
-    const cardId = createStableId('word');
+export function createEmptyHiWordsCard(kind: HiWordsCardKind = WORD_CARD_KIND): HiWordsCard {
+    if (kind === PERSON_CARD_KIND) return createEmptyPersonCard();
+    if (kind === CONCEPT_CARD_KIND) return createEmptyConceptCard();
+    if (kind === CUSTOM_CARD_KIND) return createEmptyCustomCard();
+    return createEmptyWordCard();
+}
+
+export function createDefaultFieldsForKind(kind: HiWordsCardKind): HiWordsFieldDefinition[] | undefined {
+    if (kind !== CUSTOM_CARD_KIND) return undefined;
+    return [{
+        id: 'images',
+        label: 'Images',
+        type: 'image',
+        searchable: false,
+        previewByDefault: true,
+        image: {
+            multiple: true,
+            displayMode: 'gallery',
+            aspectRatio: '16:9',
+            fit: 'cover',
+        },
+    }];
+}
+
+export function createEmptyWordCard(): HiWordsWordCard {
+    const cardId = createStableId('card');
     return {
         id: cardId,
-        word: '',
-        type: 'word',
-        meanings: [createEmptyMeaning(cardId)],
+        title: '',
+        data: {
+            language: 'en',
+            itemType: 'word',
+            meanings: [createEmptyMeaning(cardId)],
+        },
     };
+}
+
+export function createEmptyPersonCard(): HiWordsPersonCard {
+    return { id: createStableId('card'), title: '', data: { summary: '' } };
+}
+
+export function createEmptyConceptCard(): HiWordsConceptCard {
+    return { id: createStableId('card'), title: '', data: { definition: '' } };
+}
+
+export function createEmptyCustomCard(): HiWordsCustomCard {
+    return { id: createStableId('card'), title: '', data: {}, fieldValues: {} };
 }
 
 export function createEmptyMeaning(cardId: string): HiWordsMeaning {
@@ -74,8 +123,8 @@ export function createStableId(prefix: string): string {
     return `${prefix}-${random.toLowerCase()}`;
 }
 
-export function normalizeLearningItemType(value: string): LearningItemType {
-    return value === 'phrase' || value === 'concept' || value === 'term' ? value : 'word';
+export function normalizeLearningItemType(value: string): HiWordsWordCard['data']['itemType'] {
+    return value === 'phrase' || value === 'term' ? value : 'word';
 }
 
 export { validateHiWordsPack };

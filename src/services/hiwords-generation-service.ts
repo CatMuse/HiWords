@@ -1,7 +1,7 @@
 import type HiWordsPlugin from '../../main';
 import { createStableId } from '../editor/hiwords-document';
 import type {
-    HiWordsCard,
+    HiWordsWordCard,
     HiWordsDerivedWord,
     HiWordsForm,
     HiWordsMeaning,
@@ -12,6 +12,7 @@ import type {
     HiWordsSentence,
     HiWordsUsage,
 } from '../schema/hiwords';
+import { normalizeHiWordsPartOfSpeech } from '../schema/hiwords';
 import { DictionaryService } from './dictionary-service';
 
 export interface HiWordsGeneratedContent {
@@ -37,10 +38,10 @@ Return this shape, omitting empty optional fields:
 {
   "aliases": ["spelling variants only"],
   "phonetics": { "us": "IPA without slashes", "uk": "IPA without slashes" },
-  "meanings": [{ "partOfSpeech": "noun|verb|adjective|...", "translation": "中文释义", "definition": "concise English definition" }],
+  "meanings": [{ "partOfSpeech": "noun|verb|adjective|adverb|pronoun|preposition|conjunction|determiner|interjection|auxiliary|modal|phrase", "translation": "中文释义", "definition": "concise English definition" }],
   "sentences": [{ "text": "natural example", "translation": "中文翻译" }],
   "forms": [{ "form": "inflected form", "type": "past|plural|comparative|..." }],
-  "derivedWords": [{ "word": "derived word", "partOfSpeech": "noun|verb|...", "meaning": "中文释义" }],
+  "derivedWords": [{ "word": "derived word", "partOfSpeech": "noun|verb|adjective|adverb|phrase", "meaning": "中文释义" }],
   "morphology": { "components": [{ "type": "root|prefix|suffix|base|other", "form": "component", "meaning": "中文说明" }], "explanation": "brief explanation" },
   "phrases": [{ "text": "common phrase", "translation": "中文释义", "sentence": "natural example" }],
   "usage": { "register": ["neutral|formal|informal"], "patterns": ["common pattern"], "notes": ["usage guidance"], "commonMistakes": ["common mistake"] },
@@ -68,21 +69,21 @@ export class HiWordsGenerationService {
     }
 }
 
-export function mergeGeneratedContent(card: HiWordsCard, generated: HiWordsGeneratedContent): HiWordsCard {
+export function mergeGeneratedContent(card: HiWordsWordCard, generated: HiWordsGeneratedContent): HiWordsWordCard {
     const merged = cloneCard(card);
     if (!(merged.aliases?.length) && generated.aliases?.length) merged.aliases = generated.aliases;
-    merged.phonetics = mergePhonetics(merged.phonetics, generated.phonetics);
+    merged.data.phonetics = mergePhonetics(merged.data.phonetics, generated.phonetics);
 
-    const currentMeaningsHaveContent = merged.meanings.some(hasMeaningContent);
+    const currentMeaningsHaveContent = merged.data.meanings.some(hasMeaningContent);
     if (!currentMeaningsHaveContent && generated.meanings?.length) {
-        merged.meanings = generated.meanings;
+        merged.data.meanings = generated.meanings;
     } else if (generated.meanings?.length) {
-        merged.meanings = merged.meanings.map(meaning => {
+        merged.data.meanings = merged.data.meanings.map(meaning => {
             const candidate = generated.meanings?.find(item => normalize(item.partOfSpeech) === normalize(meaning.partOfSpeech));
             if (!candidate) return meaning;
             return {
                 ...meaning,
-                partOfSpeech: meaning.partOfSpeech || candidate.partOfSpeech,
+                partOfSpeech: normalizeHiWordsPartOfSpeech(meaning.partOfSpeech || candidate.partOfSpeech),
                 translation: meaning.translation || candidate.translation,
                 definition: meaning.definition || candidate.definition,
             };
@@ -95,14 +96,14 @@ export function mergeGeneratedContent(card: HiWordsCard, generated: HiWordsGener
     fillArray(merged, 'phrases', generated.phrases);
     fillArray(merged, 'relations', generated.relations);
     fillArray(merged, 'memory', generated.memory);
-    if (!merged.morphology && generated.morphology) merged.morphology = generated.morphology;
+    if (!merged.data.morphology && generated.morphology) merged.data.morphology = generated.morphology;
     else if (generated.morphology) {
-        merged.morphology = {
-            components: merged.morphology?.components?.length ? merged.morphology.components : generated.morphology.components,
-            explanation: merged.morphology?.explanation || generated.morphology.explanation,
+        merged.data.morphology = {
+            components: merged.data.morphology?.components?.length ? merged.data.morphology.components : generated.morphology.components,
+            explanation: merged.data.morphology?.explanation || generated.morphology.explanation,
         };
     }
-    merged.usage = mergeUsage(merged.usage, generated.usage);
+    merged.data.usage = mergeUsage(merged.data.usage, generated.usage);
     return merged;
 }
 
@@ -128,7 +129,7 @@ function sanitizeGeneratedContent(value: unknown): HiWordsGeneratedContent {
     }
     result.meanings = records(value.meanings, 4).map(item => ({
         id: createStableId('meaning'),
-        partOfSpeech: stringValue(item.partOfSpeech),
+        partOfSpeech: normalizeHiWordsPartOfSpeech(stringValue(item.partOfSpeech)),
         translation: stringValue(item.translation),
         definition: stringValue(item.definition),
     })).filter(item => !!item.partOfSpeech && !!item.translation && !!item.definition);
@@ -137,7 +138,9 @@ function sanitizeGeneratedContent(value: unknown): HiWordsGeneratedContent {
     })).filter(item => !!item.text);
     result.forms = records(value.forms, 5).map(item => ({ form: stringValue(item.form), type: stringValue(item.type) })).filter(item => !!item.form);
     result.derivedWords = records(value.derivedWords, 5).map(item => ({
-        word: stringValue(item.word), partOfSpeech: optionalString(item.partOfSpeech), meaning: optionalString(item.meaning),
+        word: stringValue(item.word),
+        partOfSpeech: optionalString(item.partOfSpeech) ? normalizeHiWordsPartOfSpeech(stringValue(item.partOfSpeech)) : undefined,
+        meaning: optionalString(item.meaning),
     })).filter(item => !!item.word);
     if (isRecord(value.morphology)) {
         const components = records(value.morphology.components, 8).map(item => ({
@@ -167,8 +170,8 @@ function sanitizeGeneratedContent(value: unknown): HiWordsGeneratedContent {
     return cleaned;
 }
 
-function cloneCard(card: HiWordsCard): HiWordsCard {
-    return JSON.parse(JSON.stringify(card)) as HiWordsCard;
+function cloneCard(card: HiWordsWordCard): HiWordsWordCard {
+    return JSON.parse(JSON.stringify(card)) as HiWordsWordCard;
 }
 
 function hasMeaningContent(item: HiWordsMeaning): boolean {
@@ -176,14 +179,14 @@ function hasMeaningContent(item: HiWordsMeaning): boolean {
 }
 
 function fillArray<K extends 'sentences' | 'forms' | 'derivedWords' | 'phrases' | 'relations' | 'memory'>(
-    card: HiWordsCard,
+    card: HiWordsWordCard,
     key: K,
-    generated: NonNullable<HiWordsCard[K]> | undefined,
+    generated: NonNullable<HiWordsWordCard['data'][K]> | undefined,
 ): void {
-    if (!(card[key]?.length) && generated?.length) card[key] = generated as HiWordsCard[K];
+    if (!(card.data[key]?.length) && generated?.length) card.data[key] = generated as HiWordsWordCard['data'][K];
 }
 
-function mergePhonetics(current: HiWordsCard['phonetics'], generated: HiWordsCard['phonetics']): HiWordsCard['phonetics'] {
+function mergePhonetics(current: HiWordsWordCard['data']['phonetics'], generated: HiWordsWordCard['data']['phonetics']): HiWordsWordCard['data']['phonetics'] {
     const result = { us: current?.us || generated?.us, uk: current?.uk || generated?.uk };
     return result.us || result.uk ? result : undefined;
 }

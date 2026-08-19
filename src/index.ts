@@ -15,5 +15,8 @@ export * from './ui';
 // 工具类和类型
 export * from './utils';
 
+// 通用知识卡片类型系统
+export * from './knowledge';
+
 // 国际化
 export * from './i18n';

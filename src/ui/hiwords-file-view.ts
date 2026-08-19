@@ -1,26 +1,25 @@
-import { Modal, normalizePath, Notice, setIcon, TextFileView, TFile, WorkspaceLeaf } from 'obsidian';
+import { Menu, Modal, normalizePath, Notice, setIcon, TextFileView, TFile, WorkspaceLeaf } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import {
-    createEmptyHiWordsCard,
+    createDefaultFieldsForKind,
     createEmptyHiWordsPack,
     HiWordsEditorDocument,
     parseHiWordsEditorDocument,
     serializeHiWordsPack,
     validateHiWordsPack,
 } from '../editor/hiwords-document';
-import type { HiWordsCard, HiWordsPack } from '../schema/hiwords';
+import { HiWordsCard, HiWordsImage, HiWordsPack, isConceptCard, isPersonCard, isWordCard } from '../schema/hiwords';
+import { generateKnowledgeCardDraft } from '../services/knowledge-card-generation-service';
+import type { CardDisplaySection, WordDefinition } from '../utils';
+import { cardTypeRegistry, getOrderedCardDisplaySections } from '../knowledge';
 import {
-    HiWordsGenerationService,
-    mergeGeneratedContent,
-} from '../services/hiwords-generation-service';
-import type { WordCardDetailSection, WordDefinition } from '../utils';
-import {
-    HIWORDS_EDITOR_MODULES,
+    getHiWordsEditorModules,
     renderAddCustomContentControl,
     renderHiWordsCardEditor,
 } from './hiwords-card-editor';
 import type { HiWordsEditorModule } from './hiwords-card-editor';
 import { renderWordCard } from './word-card-renderer';
+import { FieldManagerModal } from './field-manager-modal';
 
 export const HIWORDS_FILE_VIEW_TYPE = 'hi-words-file-editor';
 const CARD_LIST_RENDER_LIMIT = 400;
@@ -80,7 +79,8 @@ export class HiWordsFileView extends TextFileView {
         if (this.document.kind !== 'hiwords' || !this.document.pack.cards.some(card => card.id === cardId)) return;
         if (this.aiDraft && this.aiDraft.cardId !== cardId) this.discardAIDraft();
         this.selectedCardId = cardId;
-        this.selectedModule = 'word';
+        const card = this.document.pack.cards.find(item => item.id === cardId);
+        this.selectedModule = card ? getHiWordsEditorModules(this.document.pack.cardKind, this.document.pack.fields)[0]?.id || 'identity' : 'identity';
         this.renderCardList();
         this.renderSelectedCard();
     }
@@ -169,13 +169,13 @@ export class HiWordsFileView extends TextFileView {
         const sidebarTitle = sidebarHeader.createDiv({ cls: 'hi-words-file-sidebar-title' });
         const wordListLabelId = `hi-words-file-list-${window.crypto.randomUUID()}`;
         sidebarTitle.createEl('strong', { text: 'HIWORDS', attr: { id: wordListLabelId } });
-        const addButton = this.createHeaderAction(sidebarHeader, 'plus', 'Add word');
-        addButton.onclick = () => this.addCard();
+        const addButton = this.createHeaderAction(sidebarHeader, 'plus', 'Add card');
+        addButton.onclick = event => this.requestAddCard(event);
         const searchRow = sidebar.createDiv({ cls: 'hi-words-file-search-row' });
         const search = searchRow.createEl('input', {
             type: 'search',
             cls: 'hi-words-file-search',
-            placeholder: 'Search words…',
+            placeholder: 'Search cards…',
             value: this.query,
         });
         search.oninput = () => {
@@ -213,7 +213,7 @@ export class HiWordsFileView extends TextFileView {
 
     private createColumnResizer(layout: HTMLElement, target: EditorResizeTarget): void {
         const isSidebar = target === 'sidebar';
-        const label = isSidebar ? 'Resize word list' : 'Resize preview';
+        const label = isSidebar ? 'Resize card list' : 'Resize preview';
         const min = isSidebar ? MIN_EDITOR_SIDEBAR_WIDTH : MIN_EDITOR_PREVIEW_WIDTH;
         const max = isSidebar ? MAX_EDITOR_SIDEBAR_WIDTH : MAX_EDITOR_PREVIEW_WIDTH;
         const defaultWidth = isSidebar ? DEFAULT_EDITOR_SIDEBAR_WIDTH : DEFAULT_EDITOR_PREVIEW_WIDTH;
@@ -337,14 +337,16 @@ export class HiWordsFileView extends TextFileView {
 
     private renderCardList(): void {
         if (!this.listEl || this.document.kind !== 'hiwords') return;
+        const cardKind = this.document.pack.cardKind;
+        const fields = this.document.pack.fields;
         this.listEl.empty();
         const query = this.query.trim().toLowerCase();
         const cards = this.document.pack.cards.filter(card => {
             if (!query) return true;
-            return card.word.toLowerCase().includes(query) || (card.aliases || []).some(alias => alias.toLowerCase().includes(query));
+            return card.title.toLowerCase().includes(query) || (card.aliases || []).some(alias => alias.toLowerCase().includes(query));
         });
         if (!cards.length) {
-            this.listEl.createDiv({ cls: 'hi-words-file-empty-list', text: 'No matching words.' });
+            this.listEl.createDiv({ cls: 'hi-words-file-empty-list', text: 'No matching cards.' });
             return;
         }
         for (const card of cards.slice(0, CARD_LIST_RENDER_LIMIT)) {
@@ -356,21 +358,21 @@ export class HiWordsFileView extends TextFileView {
                     'aria-selected': String(card.id === this.selectedCardId),
                 },
             });
-            button.createEl('strong', { text: card.word || 'New word' });
-            const meaning = card.meanings[0]?.translation || card.meanings[0]?.definition || 'Draft';
+            button.createEl('strong', { text: card.title || `New ${getCardKindLabel(this.document.pack.cardKind)}` });
+            const meaning = getCardSummary(card, this.document.pack.cardKind, this.document.pack.fields) || 'Draft';
             button.createSpan({ text: meaning });
-            const remove = this.createHeaderAction(button, 'trash-2', `Delete ${card.word || 'new word'}`);
+            const remove = this.createHeaderAction(button, 'trash-2', `Delete ${card.title || 'new card'}`);
             remove.addClass('hi-words-file-card-list-delete');
             remove.onclick = event => {
                 event.preventDefault();
                 event.stopPropagation();
-                new DeleteCardModal(this.plugin, card.word || 'New word', () => this.deleteCard(card)).open();
+                new DeleteCardModal(this.plugin, card.title || 'New card', () => this.deleteCard(card)).open();
             };
             const selectCard = () => {
                 if (this.selectedCardId === card.id) return;
                 const finishSelection = () => {
                     this.selectedCardId = card.id;
-                    this.selectedModule = 'word';
+                    this.selectedModule = getHiWordsEditorModules(cardKind, fields)[0]?.id || 'identity';
                     this.renderCardList();
                     this.renderSelectedCard();
                 };
@@ -401,7 +403,7 @@ export class HiWordsFileView extends TextFileView {
         if (cards.length > CARD_LIST_RENDER_LIMIT) {
             this.listEl.createDiv({
                 cls: 'hi-words-file-list-limit',
-                text: `Showing the first ${CARD_LIST_RENDER_LIMIT.toLocaleString()} of ${cards.length.toLocaleString()} words. Search to narrow the list.`,
+                text: `Showing the first ${CARD_LIST_RENDER_LIMIT.toLocaleString()} of ${cards.length.toLocaleString()} cards. Search to narrow the list.`,
             });
         }
     }
@@ -413,10 +415,12 @@ export class HiWordsFileView extends TextFileView {
             this.inspectorEl.empty();
             this.previewEl.empty();
             const empty = this.inspectorEl.createDiv({ cls: 'hi-words-file-editor-empty' });
-            empty.createEl('h2', { text: 'Start your vocabulary' });
-            empty.createEl('p', { text: 'Add a word to begin editing structured content.' });
-            const add = empty.createEl('button', { text: 'Add word', cls: 'mod-cta' });
-            add.onclick = () => this.addCard();
+            empty.createEl('h2', { text: 'Start your collection' });
+            empty.createEl('p', { text: this.document.pack.cards.length === 0
+                ? 'Choose a card type to begin.'
+                : `Add a ${getCardKindLabel(this.document.pack.cardKind)} card to continue.` });
+            const add = empty.createEl('button', { text: 'Add card', cls: 'mod-cta' });
+            add.onclick = event => this.requestAddCard(event);
             return;
         }
 
@@ -440,14 +444,17 @@ export class HiWordsFileView extends TextFileView {
         close.onclick = () => this.setPreviewOpen(false);
         const previewScroll = this.previewEl.createDiv({ cls: 'hi-words-file-preview-scroll' });
         const wordDefinition: WordDefinition = {
-            word: previewCard.word || 'New word',
-            type: previewCard.type,
-            language: previewCard.language || this.document.pack.language,
+            word: previewCard.title || 'New card',
+            type: isWordCard(previewCard, this.document.pack.cardKind) ? previewCard.data.itemType : 'concept',
+            language: isWordCard(previewCard, this.document.pack.cardKind) ? previewCard.data.language : 'und',
             aliases: previewCard.aliases,
-            definition: previewCard.meanings[0]?.translation || previewCard.meanings[0]?.definition || '',
+            definition: getCardSummary(previewCard, this.document.pack.cardKind, this.document.pack.fields),
             source: this.file?.path || '',
             nodeId: previewCard.id,
             card: previewCard,
+            cardKind: this.document.pack.cardKind,
+            cardModuleOrder: this.document.pack.display?.moduleOrder,
+            cardFields: this.document.pack.fields,
             userNote: previewCard.note?.text,
         };
         const sidebar = previewScroll.createDiv({ cls: 'hi-words-sidebar hi-words-file-live-sidebar' });
@@ -476,14 +483,15 @@ export class HiWordsFileView extends TextFileView {
 
     private renderCardInspector(card: HiWordsCard): void {
         if (!this.inspectorEl || this.document.kind !== 'hiwords') return;
+        const cardKind = this.document.pack.cardKind;
         const editingAIDraft = this.aiDraft?.cardId === card.id && this.aiDraft.card === card;
         this.inspectorEl.empty();
         this.inspectorEl.toggleClass('is-ai-draft', editingAIDraft);
         const header = this.inspectorEl.createDiv({ cls: 'hi-words-file-editor-header' });
         const identity = header.createDiv({ cls: 'hi-words-file-editor-identity' });
-        identity.createEl('h1', { text: card.word || 'New word' });
-        if (card.phonetics?.us) identity.createSpan({ text: `US /${card.phonetics.us}/` });
-        if (card.phonetics?.uk) identity.createSpan({ text: `UK /${card.phonetics.uk}/` });
+        identity.createEl('h1', { text: card.title || `New ${getCardKindLabel(this.document.pack.cardKind)}` });
+        if (isWordCard(card, this.document.pack.cardKind) && card.data.phonetics?.us) identity.createSpan({ text: `US /${card.data.phonetics.us}/` });
+        if (isWordCard(card, this.document.pack.cardKind) && card.data.phonetics?.uk) identity.createSpan({ text: `UK /${card.data.phonetics.uk}/` });
         const actions = header.createDiv({ cls: 'hi-words-file-editor-actions' });
         this.renderEditorActions(actions, card);
 
@@ -506,7 +514,7 @@ export class HiWordsFileView extends TextFileView {
                 if (!editingAIDraft) this.renderValidation();
             },
             onWordChange: () => {
-                identity.querySelector('h1')?.setText(card.word || 'New word');
+                identity.querySelector('h1')?.setText(card.title || `New ${getCardKindLabel(cardKind)}`);
                 updateDraftIndicators();
                 if (!editingAIDraft) {
                     this.markChanged(card);
@@ -527,11 +535,12 @@ export class HiWordsFileView extends TextFileView {
                 if (nextScroll) nextScroll.scrollTop = scrollTop;
                 if (!editingAIDraft) this.renderValidation();
             },
-            onDelete: () => new DeleteCardModal(this.plugin, card.word, () => this.deleteCard(card)).open(),
+            onDelete: () => new DeleteCardModal(this.plugin, card.title, () => this.deleteCard(card)).open(),
         };
-        const moduleOrder = this.getEditorModuleOrder().filter(module => module !== 'custom' || this.hasCustomContent(card));
+        const moduleOrder = this.getEditorModuleOrder(card).filter(module => module !== 'custom' || this.hasCustomContent(card));
+        const moduleDefinitions = getHiWordsEditorModules(this.document.pack.cardKind, this.document.pack.fields);
         for (const module of moduleOrder) {
-            const meta = HIWORDS_EDITOR_MODULES.find(item => item.id === module);
+            const meta = moduleDefinitions.find(item => item.id === module);
             if (!meta) continue;
             const outlineItem = outline.createDiv({
                 cls: `hi-words-file-editor-outline-item${module === this.selectedModule ? ' is-active' : ''}${this.isRequiredModuleIncomplete(card, module) ? ' is-incomplete' : ''}`,
@@ -540,7 +549,7 @@ export class HiWordsFileView extends TextFileView {
             setIcon(outlineItem.createSpan({ cls: 'hi-words-file-editor-outline-grip' }), 'grip-vertical');
             outlineItem.createSpan({
                 cls: 'hi-words-file-editor-outline-label',
-                text: module === 'word' ? 'Basic' : meta.title,
+                text: module === 'word' || module === 'identity' ? 'Basic' : meta.title,
             });
             const section = editor.createDiv({
                 cls: `hi-words-file-editor-module${this.isEditorModuleEmpty(card, module) ? ' is-empty' : ''}`,
@@ -615,6 +624,7 @@ export class HiWordsFileView extends TextFileView {
     private renderEditorActions(container: HTMLElement, card: HiWordsCard): void {
         container.empty();
         const hasAIDraft = this.aiDraft?.cardId === card.id;
+        const aiSupported = this.document.kind === 'hiwords' && cardTypeRegistry.get(this.document.pack.cardKind).capabilities.aiGeneratable;
         const aiGroup = container.createDiv({ cls: `hi-words-file-ai-actions${hasAIDraft ? ' has-draft' : ''}` });
         const aiButton = this.createHeaderAction(
             aiGroup,
@@ -624,7 +634,7 @@ export class HiWordsFileView extends TextFileView {
         aiButton.addClass('hi-words-file-ai-action');
         aiButton.toggleClass('is-loading', this.aiGeneratingCardId === card.id);
         aiButton.toggleClass('is-active', hasAIDraft);
-        aiButton.disabled = this.aiGeneratingCardId !== null;
+        aiButton.disabled = this.aiGeneratingCardId !== null || !aiSupported;
         aiButton.onclick = () => {
             if (hasAIDraft) {
                 this.setPreviewOpen(true);
@@ -649,11 +659,35 @@ export class HiWordsFileView extends TextFileView {
             };
         }
 
+        if (!aiSupported) aiGroup.hide();
+
+        const fieldsButton = this.createHeaderAction(container, 'list-plus', 'Manage fields');
+        fieldsButton.onclick = () => this.openFieldManager(card);
+
         const previewButton = this.createHeaderAction(container, 'eye', 'Preview');
         previewButton.addClass('hi-words-file-preview-action');
         previewButton.toggleClass('is-active', this.previewOpen);
         previewButton.setAttribute('aria-pressed', String(this.previewOpen));
         previewButton.onclick = () => this.setPreviewOpen(!this.previewOpen);
+    }
+
+    private openFieldManager(card: HiWordsCard): void {
+        if (this.document.kind !== 'hiwords') return;
+        const pack = this.document.pack;
+        const reservedLabels = getHiWordsEditorModules(pack.cardKind).map(module => module.title);
+        new FieldManagerModal(this.plugin, pack.fields || [], fields => {
+            const currentOrder = this.getEditorModuleOrder(card).filter(module => !module.startsWith('field:'));
+            const commonIndex = currentOrder.findIndex(module => module === 'note' || module === 'images' || module === 'custom');
+            const fieldModules = fields.map(field => `field:${field.id}` as HiWordsEditorModule);
+            currentOrder.splice(commonIndex < 0 ? currentOrder.length : commonIndex, 0, ...fieldModules);
+            pack.fields = fields.length ? fields : undefined;
+            pack.display = { ...(pack.display || {}), moduleOrder: currentOrder };
+            if (!getHiWordsEditorModules(pack.cardKind, pack.fields).some(module => module.id === this.selectedModule)) {
+                this.selectedModule = getHiWordsEditorModules(pack.cardKind, pack.fields)[0]?.id || 'identity';
+            }
+            this.markChanged(card);
+            this.render();
+        }, reservedLabels).open();
     }
 
     private refreshEditorActions(card: HiWordsCard): void {
@@ -663,28 +697,59 @@ export class HiWordsFileView extends TextFileView {
     }
 
     private getEditorModuleItemCount(card: HiWordsCard, module: HiWordsEditorModule): number {
+        if (this.document.kind !== 'hiwords') return 0;
+        if (module.startsWith('field:')) {
+            const value = card.fieldValues?.[module.slice('field:'.length)];
+            if (Array.isArray(value)) return (value as Array<string | HiWordsImage>).filter(item => typeof item === 'string' ? Boolean(item.trim()) : Boolean(item.path.trim())).length;
+            if (typeof value === 'string') return value.trim() ? 1 : 0;
+            return value === undefined ? 0 : 1;
+        }
+        if (module === 'note') return card.note?.text.trim() ? 1 : 0;
+        if (module === 'images') return card.images?.length || 0;
+        if (module === 'custom') return card.customSections?.length || 0;
+        const kind = this.document.pack.cardKind;
+        if (isPersonCard(card, kind)) {
+            const data = card.data;
+            switch (module) {
+                case 'timeline': return data.timeline?.length || 0;
+                case 'achievements': return data.achievements?.length || 0;
+                case 'works': return data.works?.length || 0;
+                case 'personRelations': return data.relations?.length || 0;
+                default: return 0;
+            }
+        }
+        if (isConceptCard(card, kind)) {
+            const data = card.data;
+            switch (module) {
+                case 'principles': return data.principles?.length || 0;
+                case 'examples': return data.examples?.length || 0;
+                case 'misconceptions': return data.misconceptions?.length || 0;
+                case 'prerequisites': return data.prerequisites?.length || 0;
+                case 'relatedConcepts': return data.relatedConcepts?.length || 0;
+                default: return 0;
+            }
+        }
+        if (!isWordCard(card, kind)) return 0;
         switch (module) {
-            case 'meanings': return card.meanings.length;
-            case 'sentences': return card.sentences?.length || 0;
-            case 'forms': return card.forms?.length || 0;
-            case 'derivedWords': return card.derivedWords?.length || 0;
-            case 'phrases': return card.phrases?.length || 0;
-            case 'relations': return card.relations?.length || 0;
-            case 'memory': return card.memory?.length || 0;
-            case 'note': return card.note?.text.trim() ? 1 : 0;
-            case 'images': return card.images?.length || 0;
-            case 'custom': return card.customSections?.length || 0;
+            case 'meanings': return card.data.meanings.length;
+            case 'sentences': return card.data.sentences?.length || 0;
+            case 'forms': return card.data.forms?.length || 0;
+            case 'derivedWords': return card.data.derivedWords?.length || 0;
+            case 'phrases': return card.data.phrases?.length || 0;
+            case 'relations': return card.data.relations?.length || 0;
+            case 'memory': return card.data.memory?.length || 0;
             default: return 0;
         }
     }
 
     private isEditorModuleEmpty(card: HiWordsCard, module: HiWordsEditorModule): boolean {
-        if (module === 'word' || module === 'meanings') return false;
+        if (module === 'word' || module === 'meanings' || module === 'identity' || module === 'biography' || module === 'definition') return false;
+        if (this.document.kind !== 'hiwords' || !isWordCard(card, this.document.pack.cardKind)) return this.getEditorModuleItemCount(card, module) === 0;
         if (module === 'morphology') {
-            return !card.morphology?.explanation && !(card.morphology?.components?.length);
+            return !card.data.morphology?.explanation && !(card.data.morphology?.components?.length);
         }
         if (module === 'usage') {
-            const usage = card.usage;
+            const usage = card.data.usage;
             return !usage || ![
                 ...(usage.register || []),
                 ...(usage.patterns || []),
@@ -696,9 +761,20 @@ export class HiWordsFileView extends TextFileView {
     }
 
     private isRequiredModuleIncomplete(card: HiWordsCard, module: HiWordsEditorModule): boolean {
-        if (module === 'word') return !card.word.trim();
-        if (module === 'meanings') {
-            return !card.meanings.some(meaning =>
+        if (this.document.kind !== 'hiwords') return false;
+        if (module.startsWith('field:')) {
+            const fieldId = module.slice('field:'.length);
+            const field = this.document.pack.fields?.find(item => item.id === fieldId);
+            if (!field?.required) return false;
+            const value = card.fieldValues?.[fieldId];
+            return value === undefined || value === '' || (Array.isArray(value) && !(value as Array<string | HiWordsImage>).some(item => typeof item === 'string' ? Boolean(item.trim()) : Boolean(item.path.trim())));
+        }
+        const kind = this.document.pack.cardKind;
+        if (module === 'word' || module === 'identity') return !card.title.trim();
+        if (isPersonCard(card, kind) && module === 'biography') return !card.data.summary.trim();
+        if (isConceptCard(card, kind) && module === 'definition') return !card.data.definition.trim();
+        if (isWordCard(card, kind) && module === 'meanings') {
+            return !card.data.meanings.some(meaning =>
                 !!meaning.partOfSpeech.trim() && !!meaning.translation.trim() && !!meaning.definition.trim()
             );
         }
@@ -723,9 +799,9 @@ export class HiWordsFileView extends TextFileView {
     }
 
     private async generateAIDraft(card: HiWordsCard): Promise<void> {
-        const word = card.word.trim();
-        if (!word) {
-            new Notice('Enter a headword before generating content.');
+        const title = card.title.trim();
+        if (!title) {
+            new Notice('Enter a card title before generating content.');
             this.inspectorEl?.querySelector<HTMLInputElement>('input')?.focus();
             return;
         }
@@ -735,9 +811,9 @@ export class HiWordsFileView extends TextFileView {
         this.aiGeneratingCardId = card.id;
         this.refreshEditorActions(card);
         try {
-            const generated = await new HiWordsGenerationService(this.plugin).generate(word);
+            if (this.document.kind !== 'hiwords') return;
+            const draftCard = await generateKnowledgeCardDraft(this.plugin, card, this.document.pack.cardKind);
             if (requestId !== this.aiRequestId || this.selectedCardId !== card.id) return;
-            const draftCard = mergeGeneratedContent(card, generated);
             this.aiDraft = { cardId: card.id, card: draftCard };
             this.previewOpen = true;
             const layout = this.contentEl.querySelector<HTMLElement>('.hi-words-file-editor-layout');
@@ -793,35 +869,31 @@ export class HiWordsFileView extends TextFileView {
         return JSON.parse(JSON.stringify(card)) as HiWordsCard;
     }
 
-    private getEditorModuleOrder(): HiWordsEditorModule[] {
-        if (this.document.kind !== 'hiwords') return HIWORDS_EDITOR_MODULES.map(item => item.id);
+    private getEditorModuleOrder(card: HiWordsCard): HiWordsEditorModule[] {
+        if (this.document.kind !== 'hiwords') return [];
+        const kind = this.document.pack.cardKind;
+        const definitions = getHiWordsEditorModules(kind, this.document.pack.fields);
         const stored = this.document.pack.display?.moduleOrder;
         const valid = Array.isArray(stored)
             ? stored.filter((value): value is HiWordsEditorModule =>
-                typeof value === 'string' && HIWORDS_EDITOR_MODULES.some(item => item.id === value))
+                typeof value === 'string' && definitions.some(item => item.id === value))
             : [];
-        const missing = HIWORDS_EDITOR_MODULES.map(item => item.id).filter(module => !valid.includes(module));
+        const missing = definitions.map(item => item.id).filter(module => !valid.includes(module));
         return [...new Set([...valid, ...missing])];
     }
 
-    private getEditorPreviewSections(): WordCardDetailSection[] {
-        const sectionByModule: Partial<Record<HiWordsEditorModule, WordCardDetailSection>> = {
-            meanings: 'definitions',
-            sentences: 'examples',
-            forms: 'forms',
-            derivedWords: 'derivedWords',
-            morphology: 'morphology',
-            phrases: 'phrases',
-            usage: 'usage',
-            relations: 'relations',
-            memory: 'memory',
-            note: 'note',
-            images: 'images',
-            custom: 'custom',
-        };
-        return this.getEditorModuleOrder()
-            .map(module => sectionByModule[module])
-            .filter((section): section is WordCardDetailSection => !!section);
+    private getEditorPreviewSections(): CardDisplaySection[] {
+        const card = this.document.kind === 'hiwords' ? this.document.pack.cards.find(item => item.id === this.selectedCardId) : undefined;
+        if (!card || this.document.kind !== 'hiwords') return [];
+        const sections = getOrderedCardDisplaySections(
+            this.document.pack.cardKind,
+            this.document.pack.display?.moduleOrder,
+            this.document.pack.fields
+        );
+        const sectionByModule = new Map(sections.map(section => [section.editorModule, section.id]));
+        return this.getEditorModuleOrder(card)
+            .map(module => sectionByModule.get(module))
+            .filter((section): section is CardDisplaySection => !!section);
     }
 
     private saveEditorModuleOrder(order: HiWordsEditorModule[], card: HiWordsCard): void {
@@ -832,7 +904,7 @@ export class HiWordsFileView extends TextFileView {
     }
 
     private reorderEditorModules(source: HiWordsEditorModule, target: HiWordsEditorModule, card: HiWordsCard): void {
-        const order = this.getEditorModuleOrder();
+        const order = this.getEditorModuleOrder(card);
         const sourceIndex = order.indexOf(source);
         const targetIndex = order.indexOf(target);
         if (sourceIndex < 0 || targetIndex < 0) return;
@@ -846,7 +918,7 @@ export class HiWordsFileView extends TextFileView {
     }
 
     private moveEditorModule(module: HiWordsEditorModule, offset: number, card: HiWordsCard): void {
-        const order = this.getEditorModuleOrder();
+        const order = this.getEditorModuleOrder(card);
         const index = order.indexOf(module);
         const target = Math.max(0, Math.min(order.length - 1, index + offset));
         if (index < 0 || target === index) return;
@@ -891,13 +963,36 @@ export class HiWordsFileView extends TextFileView {
 
     private addCard(): void {
         if (this.document.kind !== 'hiwords') return;
-        const card = createEmptyHiWordsCard();
+        const card = cardTypeRegistry.get(this.document.pack.cardKind).createCard();
         this.document.pack.cards.push(card);
         this.selectedCardId = card.id;
-        this.selectedModule = 'word';
+        this.selectedModule = getHiWordsEditorModules(this.document.pack.cardKind, this.document.pack.fields)[0]?.id || 'identity';
         this.markChanged(card);
         this.render();
         window.setTimeout(() => this.inspectorEl?.querySelector<HTMLInputElement>('input')?.select(), 0);
+    }
+
+    private requestAddCard(event: MouseEvent): void {
+        if (this.document.kind !== 'hiwords') return;
+        if (this.document.pack.cards.length > 0) {
+            this.addCard();
+            return;
+        }
+
+        const menu = new Menu();
+        for (const definition of cardTypeRegistry.list()) {
+            menu.addItem(item => item
+                .setTitle(definition.label)
+                .setIcon(definition.icon)
+                .onClick(() => {
+                    if (this.document.kind !== 'hiwords' || this.document.pack.cards.length > 0) return;
+                    this.document.pack.cardKind = definition.kind;
+                    this.document.pack.fields = createDefaultFieldsForKind(definition.kind);
+                    this.document.pack.display = undefined;
+                    this.addCard();
+                }));
+        }
+        menu.showAtMouseEvent(event);
     }
 
     private deleteCard(card: HiWordsCard): void {
@@ -934,7 +1029,7 @@ export class HiWordsFileView extends TextFileView {
         if (!this.validationEl || this.document.kind !== 'hiwords') return;
         this.validationEl.empty();
         const issues = validateHiWordsPack(this.document.pack).filter(issue =>
-            !issue.cardId || issue.message === 'Duplicate word ID.' || issue.message.includes('unique ID')
+            !issue.cardId || issue.message.includes('unique stable ID')
         );
         if (!issues.length) {
             this.validationEl.removeClass('has-errors');
@@ -985,7 +1080,7 @@ class LeaveAIDraftModal extends Modal {
         super(plugin.app);
         this.setTitle('AI draft not applied');
         this.contentEl.createEl('p', {
-            text: 'Apply your AI draft before switching words, or discard it and restore the original entry.',
+            text: 'Apply your AI draft before switching cards, or discard it and restore the original entry.',
         });
         const actions = this.contentEl.createDiv({ cls: 'hi-words-file-modal-actions' });
         const keepEditing = actions.createEl('button', { text: 'Keep editing' });
@@ -1006,8 +1101,8 @@ class LeaveAIDraftModal extends Modal {
 class DeleteCardModal extends Modal {
     constructor(plugin: HiWordsPlugin, word: string, onConfirm: () => void) {
         super(plugin.app);
-        this.setTitle('Delete word');
-        this.contentEl.createEl('p', { text: `Delete “${word}” from this vocabulary? This changes the .hiwords file.` });
+        this.setTitle('Delete card');
+        this.contentEl.createEl('p', { text: `Delete “${word}” from this collection? This changes the .hiwords file.` });
         const actions = this.contentEl.createDiv({ cls: 'hi-words-file-modal-actions' });
         const cancel = actions.createEl('button', { text: 'Cancel' });
         cancel.onclick = () => this.close();
@@ -1017,4 +1112,12 @@ class DeleteCardModal extends Modal {
             this.close();
         };
     }
+}
+
+function getCardSummary(card: HiWordsCard, kind: HiWordsPack['cardKind'], fields: HiWordsPack['fields'] = []): string {
+    return cardTypeRegistry.get(kind).getSummary(card, fields);
+}
+
+function getCardKindLabel(kind: HiWordsPack['cardKind']): string {
+    return cardTypeRegistry.get(kind).label.toLowerCase();
 }

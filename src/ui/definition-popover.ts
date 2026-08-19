@@ -4,6 +4,7 @@ import { playWordTTS, WordDefinition } from '../utils';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
 import { renderWordCard } from './word-card-renderer';
+import { isWordCard } from '../schema/hiwords';
 import { getPopoverTargetSentence, WordPopoverActions } from './word-popover-actions';
 
 interface HoverLinkWorkspace {
@@ -307,6 +308,7 @@ export class DefinitionPopover extends Component {
         titleContainer.appendChild(headingEl);
         // 点击标题发音
         titleEl.addEventListener('click', (e) => {
+            if (wordDef?.card && wordDef.cardKind && !isWordCard(wordDef.card, wordDef.cardKind)) return;
             e.stopPropagation();
             void playWordTTS(this.plugin, word).catch(error => {
                 console.error('HiWords 播放发音失败:', error);
