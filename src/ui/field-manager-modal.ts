@@ -22,6 +22,7 @@ export class FieldManagerModal extends Modal {
         fields: HiWordsFieldDefinition[],
         private readonly onSave: (fields: HiWordsFieldDefinition[]) => void,
         private readonly reservedLabels: string[] = [],
+        private readonly populatedFieldIds: ReadonlySet<string> = new Set(),
     ) {
         super(plugin.app);
         this.fields = JSON.parse(JSON.stringify(fields)) as HiWordsFieldDefinition[];
@@ -137,6 +138,13 @@ export class FieldManagerModal extends Modal {
         const typeField = grid.createEl('label', { cls: 'hi-words-file-field' });
         typeField.createSpan({ text: 'Field type' });
         const type = typeField.createEl('select');
+        type.disabled = this.populatedFieldIds.has(field.id);
+        if (type.disabled) {
+            typeField.createSpan({
+                cls: 'setting-item-description',
+                text: 'Clear this field on all cards before changing its type.',
+            });
+        }
         FIELD_TYPES.forEach(optionDefinition => {
             const option = type.createEl('option', { value: optionDefinition.value, text: optionDefinition.label });
             option.selected = optionDefinition.value === field.type;

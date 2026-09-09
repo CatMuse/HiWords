@@ -69,9 +69,19 @@ export async function updateCanvasTextNodeSentences(
     app: App,
     source: string,
     nodeId: string,
-    sentences: HiWordsSentence[]
+    sentences: HiWordsSentence[] | ((current: HiWordsSentence[]) => HiWordsSentence[])
 ): Promise<'updated' | 'not-text' | 'missing' | 'invalid'> {
-    return updateCanvasTextNode(app, source, nodeId, text => setCanvasNodeSentences(text, sentences));
+    return updateCanvasTextNode(app, source, nodeId, text => {
+        const sections = text.split(SECTION_SEPARATOR).map(part => {
+            const [heading, ...body] = part.trim().split('\n');
+            const match = heading.match(/^\*\*(.+?)\*\*$/);
+            return { title: match?.[1] || '', content: body.join('\n') };
+        });
+        const next = typeof sentences === 'function'
+            ? sentences(getCanvasSentencesFromSections(sections))
+            : sentences;
+        return setCanvasNodeSentences(text, next);
+    });
 }
 
 export async function updateCanvasTextNodeContent(

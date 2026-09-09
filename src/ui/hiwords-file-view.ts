@@ -687,7 +687,12 @@ export class HiWordsFileView extends TextFileView {
             }
             this.markChanged(card);
             this.render();
-        }, reservedLabels).open();
+        }, reservedLabels, new Set(
+            [...pack.cards, ...(this.aiDraft ? [this.aiDraft.card] : [])]
+                .flatMap(item => Object.entries(item.fieldValues || {})
+                    .filter(([, value]) => value !== undefined)
+                    .map(([id]) => id))
+        )).open();
     }
 
     private refreshEditorActions(card: HiWordsCard): void {

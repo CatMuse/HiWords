@@ -196,7 +196,19 @@ export function isHiWordsPack(value: unknown): value is HiWordsPack {
     return isRecord(value) && value.schema === HIWORDS_SCHEMA && value.schemaVersion === HIWORDS_SCHEMA_VERSION &&
         typeof value.id === 'string' && typeof value.title === 'string' && isHiWordsCardKind(value.cardKind) && value.cardKindVersion === 1 &&
         isOptionalFieldDefinitions(value.fields) && isOptionalPackDisplay(value.display) &&
-        Array.isArray(value.cards) && value.cards.every(card => isHiWordsCard(card, value.cardKind as HiWordsCardKind));
+        Array.isArray(value.cards) && value.cards.every(card =>
+            isHiWordsCard(card, value.cardKind as HiWordsCardKind) &&
+            (value.fields as HiWordsFieldDefinition[] | undefined || []).every(field =>
+                isFieldValueCompatible(card.fieldValues?.[field.id], field.type)));
+}
+
+function isFieldValueCompatible(value: unknown, type: HiWordsFieldType): boolean {
+    if (value === undefined) return true;
+    if (type === 'image') return Array.isArray(value) && value.every(item => isRecord(item) && isImage(item));
+    if (type === 'list') return Array.isArray(value) && value.every(item => typeof item === 'string');
+    if (type === 'number') return typeof value === 'number' && Number.isFinite(value);
+    if (type === 'boolean') return typeof value === 'boolean';
+    return typeof value === 'string';
 }
 
 export function isHiWordsCard(value: unknown, kind: HiWordsCardKind): value is HiWordsCard {

@@ -2,6 +2,8 @@
 
 HiWords schema version 2 stores one knowledge-card type per `.hiwords` collection.
 
+Older `.hiwords` schema versions are not automatically migrated. Unsupported files remain unchanged and need conversion before the structured editor can use them.
+
 The collection declares a namespaced `cardKind` and `cardKindVersion`. Every card in that file has a stable `id`, a `title`, optional aliases/tags, and data matching the collection type.
 
 Built-in kinds:
@@ -12,6 +14,8 @@ Built-in kinds:
 - `knowledge.custom`: a blank low-code card whose fields are defined by the `.hiwords` collection.
 
 Custom fields support single-line text, long text, numbers, dates, checkboxes, text lists, URLs, and configurable images. Image fields can be single or multiple and define cover/gallery rendering, aspect ratio, and crop behavior.
+
+Field values must match their declared types. A field's type is locked while any card (including an AI draft) has a stored value for it; clear those values before changing the type. Invalid field values are rejected when loading a collection, without rewriting the original file.
 
 Every collection may also declare `fields`. These low-code fields are appended to the built-in template and are shared by every card in the file. Supported field types are single-line text, long text, number, date, checkbox, text list and URL. Field IDs are stable; labels, descriptions, validation, search behavior and default preview visibility are editable in the UI.
 

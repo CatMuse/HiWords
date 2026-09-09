@@ -175,7 +175,7 @@ function cloneCard(card: HiWordsWordCard): HiWordsWordCard {
 }
 
 function hasMeaningContent(item: HiWordsMeaning): boolean {
-    return !!(item.partOfSpeech.trim() || item.translation.trim() || item.definition.trim());
+    return !!(item.translation.trim() || item.definition.trim());
 }
 
 function fillArray<K extends 'sentences' | 'forms' | 'derivedWords' | 'phrases' | 'relations' | 'memory'>(

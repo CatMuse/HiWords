@@ -127,7 +127,7 @@ Select any text and right-click to quickly add it to your vocabulary book, or us
 ### AI Assistant Settings
 
 - **API URL**: Your AI service endpoint
-- **API Key**: Authentication key for AI service
+- **API Key**: Select an authentication key stored in Obsidian SecretStorage (Obsidian 1.11.5 or newer). HiWords stores only the secret ID in its settings. Legacy plaintext keys are removed on upgrade; select a secret again to resume AI features.
 - **Model**: AI model to use (e.g., gpt-4o-mini)
 - **Custom Prompt**: Design your prompt with `{{word}}` and `{{sentence}}` placeholders
 
@@ -175,7 +175,9 @@ Access these commands via `Ctrl/Cmd+P`:
 
 ## 🔒 Privacy & Security
 
-HiWords is privacy-focused: all vocabulary data is stored locally in your vault, and the plugin works completely offline by default with no telemetry. The optional AI dictionary feature (disabled by default) sends words and sentences directly to your configured AI provider only when you manually use the auto-fill button.
+Vocabulary data and vault-context searches stay in your vault, with no telemetry. AI features require a configured provider and key. Requesting a definition sends the word and any supplied sentence; generating a card draft sends its title; using selection translation sends the selected text to your configured AI provider. Provider data-retention policies apply to these requests. Review AI drafts before applying them.
+
+Playing pronunciation sends the word to the configured TTS service (Youdao by default). Cards with remote image URLs load those images from their hosts when displayed.
 
 ---
 

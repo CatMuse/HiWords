@@ -96,26 +96,26 @@ export class HiWordsMutationService {
     ): Promise<{ success: boolean; saved: boolean }> {
         if (!this.canSaveSentences(wordDef)) return { success: false, saved: false };
 
-        const sentences = this.getSavedSentences(wordDef).map(item => ({ ...item }));
-        const existing = sentences.findIndex(item => normalizeSentence(item.text) === key);
         let saved = false;
-        if (existing >= 0) {
-            sentences.splice(existing, 1);
-        } else {
-            sentences.push({
-                id: createStableId('sentence'),
-                text: sentence.text.trim(),
-                translation: sentence.translation?.trim() || undefined,
-                source: sentence.source?.trim() || undefined,
-            });
-            saved = true;
-        }
-
         const result = await updateCanvasTextNodeSentences(
             this.plugin.app,
             wordDef.source,
             wordDef.nodeId,
-            sentences
+            sentences => {
+                const existing = sentences.findIndex(item => normalizeSentence(item.text) === key);
+                saved = existing < 0;
+                if (existing >= 0) {
+                    sentences.splice(existing, 1);
+                } else {
+                    sentences.push({
+                        id: createStableId('sentence'),
+                        text: sentence.text.trim(),
+                        translation: sentence.translation?.trim() || undefined,
+                        source: sentence.source?.trim() || undefined,
+                    });
+                }
+                return sentences;
+            }
         );
         if (result !== 'updated') return { success: false, saved: false };
 
