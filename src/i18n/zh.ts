@@ -12,6 +12,8 @@ export default {
         group_learning: "学习与发音",
         group_ai: "AI 与翻译",
         group_canvas: "Canvas 布局",
+        card_width_desc: "Canvas 卡片宽度（px），默认 260。用于新建卡片和自动布局。",
+        card_height_desc: "Canvas 卡片高度（px），默认 120。用于新建卡片和自动布局。",
         card_width: "卡片宽度",
         card_height: "卡片高度",
         json_object_required: "请输入 JSON 对象。",
@@ -88,7 +90,7 @@ export default {
         // 自动布局
         auto_layout: "白板自动布局",
         enable_auto_layout: "启用自动布局",
-        enable_auto_layout_desc: "在添加/更新/删除节点和分组变更后自动规范化布局",
+        enable_auto_layout_desc: "通过 HiWords 增删改词条后，按三列排列 Canvas 节点，会覆盖手动位置。",
         card_size: "卡片尺寸",
         card_size_desc: "默认卡片尺寸（宽 × 高，默认：260 × 120）",
         grid_gaps: "网格间距",

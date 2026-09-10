@@ -7,6 +7,9 @@ const bundled = await build({
     stdin: {
         contents: `
             export { TFile } from 'obsidian';
+            export { CanvasEditor } from './src/canvas/canvas-editor';
+            export { CanvasParser } from './src/canvas/canvas-parser';
+            export { normalizeLayout } from './src/canvas/layout';
             export { createEmptyWordCard } from './src/editor/hiwords-document';
             export { createEmptyHiWordsPack } from './src/editor/hiwords-document';
             export { isHiWordsPack } from './src/schema/hiwords';
@@ -160,4 +163,36 @@ test('concurrent Canvas sentence additions do not overwrite each other', async (
         fixture.service.toggleSentence(fixture.definition(), { text: 'Second addition.' }),
     ]);
     assert.deepEqual(fixture.sentences().map(item => item.text), ['The existing sentence.', 'First addition.', 'Second addition.']);
+});
+
+function layoutFixture() {
+    return { nodes: [
+        { id: 'group', type: 'group', label: '已掌握', x: 1000, y: 1000, width: 500, height: 500 },
+        { id: 'inside', type: 'text', text: 'word', x: 1050, y: 1050, width: 200, height: 100 },
+        ...[0, 1, 2, 3].map(i => ({ id: `outside-${i}`, type: 'text', text: 'word', x: -400, y: i * 150, width: 200, height: 100 })),
+    ], edges: [] };
+}
+test('Canvas layout respects the disabled switch and preserves Chinese mastered groups', () => {
+    const canvas = layoutFixture();
+    const original = structuredClone(canvas);
+    const parser = new api.CanvasParser({});
+    api.normalizeLayout(canvas, { autoLayoutEnabled: false, cardWidth: 360, cardHeight: 160 }, parser);
+    assert.deepEqual(canvas, original);
+    api.normalizeLayout(canvas, { autoLayoutEnabled: true, cardWidth: 360, cardHeight: 160 }, parser);
+    assert.deepEqual(canvas.nodes.slice(0, 2), original.nodes.slice(0, 2));
+    assert.deepEqual(canvas.nodes.slice(2).map(n => [n.x, n.y, n.width, n.height]), [
+        [50, 50, 360, 160], [430, 50, 360, 160], [810, 50, 360, 160], [50, 230, 360, 160],
+    ]);
+});
+test('changing Canvas node color does not move or resize any nodes', async () => {
+    const file = new api.TFile('words.canvas');
+    const original = layoutFixture();
+    let content = JSON.stringify(original);
+    const editor = new api.CanvasEditor({ vault: {
+        getAbstractFileByPath: () => file,
+        process: async (_file, update) => { content = update(content); },
+    } }, { autoLayoutEnabled: true, cardWidth: 360, cardHeight: 160 });
+    assert.equal(await editor.setNodeColor(file.path, 'outside-0', 3), true);
+    const expected = structuredClone(original); expected.nodes[2].color = '3';
+    assert.deepEqual(JSON.parse(content), expected);
 });

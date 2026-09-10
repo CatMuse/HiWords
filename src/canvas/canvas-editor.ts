@@ -264,7 +264,6 @@ export class CanvasEditor {
             }
 
             let updated = false;
-            const parser = new CanvasParser(this.app, this.settings);
             await this.app.vault.process(file, (current) => {
                 const canvasData: CanvasData = JSON.parse(current || '{"nodes":[],"edges":[]}');
                 if (!Array.isArray(canvasData.nodes)) canvasData.nodes = [];
@@ -280,9 +279,6 @@ export class CanvasEditor {
                 } else {
                     delete canvasData.nodes[index].color;
                 }
-
-                // 为保持布局一致性，仍调用一次规范化（轻量）
-                normalizeLayout(canvasData, this.settings, parser);
 
                 updated = true;
                 return JSON.stringify(canvasData);

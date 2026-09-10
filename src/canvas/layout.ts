@@ -30,7 +30,7 @@ export function normalizeLayout(
   const CARD_HEIGHT = settings.cardHeight ?? DEFAULT_CARD_HEIGHT;
 
   const masteredGroup = canvasData.nodes.find(
-    (n) => n.type === 'group' && n.label === 'Mastered'
+    (n) => n.type === 'group' && (n.label === 'Mastered' || n.label === '已掌握')
   );
 
   // 收集需要布局的节点（不在 Mastered 分组内的 text 和 file 节点）

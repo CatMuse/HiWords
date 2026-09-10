@@ -12,6 +12,8 @@ export default {
         group_learning: "Learning and pronunciation",
         group_ai: "AI and translation",
         group_canvas: "Canvas layout",
+        card_width_desc: "Canvas card width in px. Default: 260. Applies to new cards and auto layout.",
+        card_height_desc: "Canvas card height in px. Default: 120. Applies to new cards and auto layout.",
         card_width: "Card width",
         card_height: "Card height",
         json_object_required: "Enter a JSON object.",
@@ -88,7 +90,7 @@ export default {
         // Auto layout
         auto_layout: "Canvas auto layout",
         enable_auto_layout: "Enable auto layout",
-        enable_auto_layout_desc: "Automatically normalize layout after add/update/delete and group changes",
+        enable_auto_layout_desc: "Arrange Canvas nodes in three columns after HiWords adds, edits or deletes entries. Replaces manual positions.",
         card_size: "Card size",
         card_size_desc: "Default card size (Width × Height, default: 260 × 120)",
         grid_gaps: "Grid gaps",

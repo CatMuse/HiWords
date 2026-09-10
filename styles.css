@@ -5226,18 +5226,29 @@ body .hi-words-hidden.hi-words-hidden {
     margin: 8px 0 0;
 }
 
-/* Give multiline settings the full row without changing native controls. */
-.hi-words-settings-group .setting-item:has(textarea) {
+/* Multiline rows opt in explicitly; no descendant-dependent selectors. */
+.hi-words-settings-group .hi-words-setting-textarea {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
 }
 
-.hi-words-settings-group .setting-item:has(textarea) > .setting-item-info,
-.hi-words-settings-group .setting-item:has(textarea) > .setting-item-control {
+.hi-words-settings-group .hi-words-setting-textarea > .setting-item-info,
+.hi-words-settings-group .hi-words-setting-textarea > .setting-item-control {
     width: 100%;
     min-width: 0;
     margin-inline: 0;
+}
+
+.hi-words-settings-group .hi-words-setting-textarea > .setting-item-control {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.hi-words-setting-input-error {
+    color: var(--text-error);
+    font-size: var(--font-ui-small);
 }
 
 .hi-words-settings-group .setting-item-control textarea {

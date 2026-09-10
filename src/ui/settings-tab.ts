@@ -26,7 +26,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
         });
         const options = (prefix: string, values: string[]) => Object.fromEntries(values.map(value => [value, t(`settings.${prefix}${value}`)]));
         const group = (heading: string, items: SettingDefinition[]): SettingDefinitionItem => ({
-            type: 'group', heading: t(`settings.${heading}`), cls: 'hi-words-settings-group', items,
+            type: 'group', heading: t(`settings.${heading}`), cls: 'hi-words-settings-group',
+            items: items.map(item => this.withMultilineLayout(item)),
         });
         const prompt = (key: string, label: string, defaultPrompt: string, enabled: () => boolean): SettingDefinition => ({
             ...field(key, label, 'textarea'),
@@ -89,10 +90,48 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 field('autoLayoutEnabled', 'enable_auto_layout'),
                 ...['cardWidth', 'cardHeight'].map(key => ({
                     name: t(`settings.${key === 'cardWidth' ? 'card_width' : 'card_height'}`),
+                    desc: t(`settings.${key === 'cardWidth' ? 'card_width_desc' : 'card_height_desc'}`),
                     control: { type: 'number' as const, key, validate: (value: number) => Number.isInteger(value) && value > 0 ? undefined : t('settings.positive_integer_required') },
                 })),
             ]),
         ];
+    }
+
+    private withMultilineLayout(item: SettingDefinition): SettingDefinition {
+        if (item.control?.type !== 'textarea') return item;
+        const control = item.control;
+        return {
+            name: item.name, desc: item.desc, aliases: item.aliases,
+            visible: item.visible, searchable: item.searchable,
+            render: setting => {
+                setting.settingEl.addClass('hi-words-setting-textarea');
+                let active = true;
+                let revision = 0;
+                const errorEl = setting.controlEl.createDiv({ cls: 'hi-words-setting-input-error' });
+                errorEl.setAttribute('role', 'status');
+                errorEl.hidden = true;
+                setting.addTextArea(text => {
+                    const stored = this.getControlValue(control.key);
+                    text.setValue(typeof stored === 'string' ? stored : control.defaultValue || '')
+                        .setPlaceholder(control.placeholder || '')
+                        .setDisabled(typeof control.disabled === 'function' ? control.disabled() : control.disabled || false);
+                    text.inputEl.rows = control.rows || 4;
+                    const validate = async (value: string, save: boolean): Promise<void> => {
+                        const currentRevision = ++revision;
+                        const error = await control.validate?.(value);
+                        if (!active || currentRevision !== revision) return;
+                        errorEl.setText(error || '');
+                        errorEl.hidden = !error;
+                        text.inputEl.setAttribute('aria-invalid', String(Boolean(error)));
+                        if (!error && save) await this.setControlValue(control.key, value);
+                    };
+                    text.onChange(value => this.runAsync(() => validate(value, true), 'HiWords multiline setting failed:'));
+                    this.runAsync(() => validate(text.inputEl.value, false), 'HiWords setting validation failed:');
+                });
+                setting.controlEl.appendChild(errorEl);
+                return () => { active = false; };
+            },
+        };
     }
 
     getControlValue(key: string): unknown {

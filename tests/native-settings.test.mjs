@@ -29,7 +29,7 @@ test('settings use five native groups with independently indexed controls', () =
     assert.equal(tab.getSettingDefinitions().length, 5);
     assert.ok(tab.getSettingDefinitions().every(group => group.type === 'group' && group.heading));
     const keys = rows.filter(row => row.control).map(row => row.control.key);
-    assert.equal(keys.length, 24);
+    assert.equal(keys.length, 20);
     assert.equal(new Set(keys).size, keys.length);
     assert.equal(typeof tab.display, 'undefined');
 });
@@ -37,9 +37,9 @@ test('nested settings persist and control conditional prompt visibility', async 
     const { tab, plugin, rows } = fixture();
     await tab.setControlValue('aiDefinition.enabled', false);
     assert.equal(plugin.settings.aiDefinition.enabled, false);
-    assert.equal(rows.find(row => row.control?.key === 'aiDefinition.prompt').visible(), false);
+    assert.equal(rows.find(row => row.name === 'Definition prompt').visible(), false);
     await tab.setControlValue('selectionTranslate.enabled', true);
-    assert.equal(rows.find(row => row.control?.key === 'selectionTranslate.prompt').visible(), true);
+    assert.equal(rows.find(row => row.name === 'Translation prompt').visible(), true);
     await tab.setControlValue('selectionTranslate.targetLang', 'ja');
     assert.equal(tab.getControlValue('selectionTranslate.targetLang'), 'ja');
 });
@@ -58,8 +58,7 @@ test('native validators reject invalid card sizes and non-object extra parameter
     const { rows } = fixture();
     const size = rows.find(row => row.control?.key === 'cardWidth').control;
     assert.ok(size.validate(-1)); assert.ok(size.validate(1.5)); assert.equal(size.validate(360), undefined);
-    const json = rows.find(row => row.control?.key === 'aiService.extraParams').control;
-    assert.ok(json.validate('[]')); assert.ok(json.validate('{')); assert.equal(json.validate('{}'), undefined);
+
 });
 
 test('blank prompts use defaults and custom prompts remain unchanged', async () => {
@@ -68,8 +67,10 @@ test('blank prompts use defaults and custom prompts remain unchanged', async () 
         ['aiDefinition.prompt', api.DEFAULT_AI_DEFINITION_PROMPT],
         ['selectionTranslate.prompt', api.DEFAULT_TRANSLATE_PROMPT],
     ]) {
-        const control = rows.find(row => row.control?.key === key).control;
-        assert.equal(control.placeholder, fallback);
+        const row = rows.find(row => row.name === (key.startsWith('aiDefinition') ? 'Definition prompt' : 'Translation prompt'));
+        const rendered = renderMultiline(row);
+        assert.equal(rendered.input.placeholder, fallback);
+        rendered.cleanup();
         assert.equal(tab.getControlValue(key), '');
         await tab.setControlValue(key, fallback);
         assert.equal(tab.getControlValue(key), '', 'old stored defaults should appear as placeholders');
@@ -84,4 +85,47 @@ test('blank prompts use defaults and custom prompts remain unchanged', async () 
         assert.equal(api.resolvePrompt(plugin.settings[section][property], fallback), fallback);
     }
     assert.ok(rows.every(row => row.name !== 'Restore default prompt'));
+});
+
+function renderMultiline(row) {
+    const input = { value: '', placeholder: '', rows: 0, setAttribute() {} };
+    const error = { hidden: true, text: '', setAttribute() {}, setText(text) { this.text = text; } };
+    const classes = [];
+    let change;
+    const component = {
+        inputEl: input,
+        setValue(value) { input.value = value; return this; },
+        setPlaceholder(value) { input.placeholder = value; return this; },
+        setDisabled() { return this; },
+        onChange(callback) { change = callback; return this; },
+    };
+    const cleanup = row.render({
+        settingEl: { addClass: name => classes.push(name) },
+        controlEl: { createDiv: () => error, appendChild() {} },
+        addTextArea: callback => callback(component),
+    });
+    return { input, error, classes, cleanup, change: value => change(value) };
+}
+const settle = () => new Promise(resolve => setImmediate(resolve));
+
+test('explicit multiline rows preserve validation, saving, placeholders and cleanup', async () => {
+    const { plugin, rows } = fixture();
+    const json = renderMultiline(rows.find(row => row.name === 'Extra Request Parameters'));
+    assert.ok(json.classes.includes('hi-words-setting-textarea'));
+    json.change('[]'); await settle();
+    assert.equal(json.error.hidden, false);
+    assert.equal(plugin.settings.aiService.extraParams, '{}');
+    json.change('{"temperature":0.5}'); await settle();
+    assert.equal(json.error.hidden, true);
+    assert.equal(plugin.settings.aiService.extraParams, '{"temperature":0.5}');
+    const prompt = renderMultiline(rows.find(row => row.name === 'Definition prompt'));
+    assert.equal(prompt.input.rows, 8);
+    assert.equal(prompt.input.placeholder, api.DEFAULT_AI_DEFINITION_PROMPT);
+    prompt.change('Custom {{word}}'); await settle();
+    assert.equal(plugin.settings.aiDefinition.prompt, 'Custom {{word}}');
+    prompt.change(''); await settle();
+    assert.equal(api.resolvePrompt(plugin.settings.aiDefinition.prompt, api.DEFAULT_AI_DEFINITION_PROMPT), api.DEFAULT_AI_DEFINITION_PROMPT);
+    prompt.change('Ignored after teardown'); prompt.cleanup(); await settle();
+    assert.equal(plugin.settings.aiDefinition.prompt, '');
+    json.cleanup();
 });
