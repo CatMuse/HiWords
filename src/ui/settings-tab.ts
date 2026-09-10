@@ -53,7 +53,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 select('sidebarDefaultDisplayMode', 'sidebar_default_display_mode', { detail: t('settings.sidebar_display_detail'), word: t('settings.sidebar_display_word') }),
                 select('highlightStyle', 'highlight_style', options('style_', ['underline', 'background', 'bold', 'dotted', 'wavy'])),
                 select('highlightMode', 'highlight_mode', options('mode_', ['all', 'exclude', 'include'])),
-                field('highlightPaths', 'highlight_paths', 'textarea'),
+                {
+                    ...field('highlightPaths', 'highlight_paths', 'textarea'),
+                    visible: () => ['exclude', 'include'].includes(this.plugin.settings.highlightMode || 'all'),
+                },
             ]),
             group('group_learning', [
                 field('enableMasteredFeature', 'enable_mastered_feature'),
@@ -115,6 +118,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         if (key === 'fileNodeParseMode') await this.plugin.vocabularyManager.loadAllVocabularyBooks();
         if (['enableAutoHighlight', 'highlightStyle', 'highlightMode', 'highlightPaths', 'enableMasteredFeature', 'pronunciationVariant', 'fileNodeParseMode'].includes(key)) this.plugin.refreshHighlighter();
         this.app.workspace.trigger(key === 'enableMasteredFeature' ? 'hi-words:mastered-changed' : 'hi-words:settings-changed');
+        if (key === 'highlightMode') this.refreshDomState();
         if (key.endsWith('.enabled') || key === 'aiService.provider' || key.endsWith('.prompt')) this.update();
     }
 
