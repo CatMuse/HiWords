@@ -18,3 +18,11 @@
 ## 验证限制
 
 没有提交官方网页复审，不能将本地规则通过等同于官方审核通过。通过电脑工具找到了 HiWordsDev 的 Obsidian 1.14.1 窗口，但重载后窗口呈空白，重新连接仍没有可操作内容，因此设置搜索与视觉布局尚未完成实机确认。DOM mock 检查不替代实机验证。
+
+## CSS 审查补充
+
+- 移除所有 `!important`；仅将需要覆盖主题的声明放入更具体的插件选择器，保留普通布局声明的原有优先级。
+- 将 Flex 标题区域的 `column-gap`/`row-gap` 改为等价的 `gap: 2px 10px`，避免 multicolumn 检查误分类。
+- Stylelint `declaration-no-important` 与 multicolumn 定向兼容性检查无诊断。临时兼容性检查使用 Chrome 120 / Safari 16，并非官方 Obsidian 检查器的完整环境；其他兼容性类别仍有 4 项提示，不宣称全量 CSS lint 清零。
+- 本地浏览器对比了修改前后 12 个代表元素的默认计算样式，以及隐藏状态、拖动光标和文本选择限制，结果一致。使用模拟主题和固定 HTML 样例，未覆盖所有第三方主题或全部交互状态。
+- 生产构建与 `git diff --check` 通过。此次未修改 TypeScript 或插件依赖。
