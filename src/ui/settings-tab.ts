@@ -29,7 +29,9 @@ export class HiWordsSettingTab extends PluginSettingTab {
             type: 'group', heading: t(`settings.${heading}`), cls: 'hi-words-settings-group', items,
         });
         const prompt = (key: string, label: string, enabled: () => boolean): SettingDefinition => ({
-            ...field(key, label, 'textarea'), visible: enabled,
+            ...field(key, label, 'textarea'),
+            control: { type: 'textarea', key, rows: 8 },
+            visible: enabled,
         });
         return [
             group('group_books', [

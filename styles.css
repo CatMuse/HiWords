@@ -5225,3 +5225,32 @@ body .hi-words-hidden.hi-words-hidden {
     width: 100%;
     margin: 8px 0 0;
 }
+
+/* Give multiline settings the full row without changing native controls. */
+.hi-words-settings-group .setting-item:has(textarea) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.hi-words-settings-group .setting-item:has(textarea) > .setting-item-info,
+.hi-words-settings-group .setting-item:has(textarea) > .setting-item-control {
+    width: 100%;
+    min-width: 0;
+    margin-inline: 0;
+}
+
+.hi-words-settings-group .setting-item-control textarea {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.hi-words-settings-group .setting-item-control textarea[rows="8"] {
+    min-height: 200px;
+}
