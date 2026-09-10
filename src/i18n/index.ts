@@ -70,10 +70,6 @@ export interface LanguagePack {
         auto_layout: string;
         enable_auto_layout: string;
         enable_auto_layout_desc: string;
-        card_size: string;
-        card_size_desc: string;
-        grid_gaps: string;
-        grid_gaps_desc: string;
         left_padding: string;
         left_padding_desc: string;
         columns_auto: string;

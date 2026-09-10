@@ -289,13 +289,7 @@
 .hi-words-tooltip {
     position: absolute;
     z-index: 1000;
-    background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    padding: 10px 14px;
-    max-width: 400px;
-    min-width: 200px;
     font-size: 14px;
     animation: hi-words-tooltip-fade-in 0.2s ease;
     transition: opacity 0.2s ease;
@@ -309,7 +303,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 8px 0;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--background-modifier-border);
 }
@@ -345,9 +338,6 @@
 }
 
 .hi-words-tooltip-title {
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--text-accent);
     margin-bottom: 4px;
     padding-bottom: 4px;
     cursor: pointer;
@@ -360,18 +350,10 @@
 }
 
 .hi-words-tooltip-content {
-    color: var(--text-muted);
     line-height: 1.5;
     font-size: 14px;
     margin-bottom: 6px;
     /* 限制悬停预览高度，避免过长内容撑开 */
-    max-height: 280px;
-    overflow: auto;
-}
-
-.hi-words-tooltip-structured .hi-words-tooltip-content {
-    max-height: none;
-    overflow: visible;
 }
 
 /* Markdown 内容样式 - Tooltip */
@@ -902,11 +884,7 @@
 
 /* 弹出框标题容器样式 */
 .hi-words-tooltip-title-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     width: 100%;
-    min-height: 24px;
     margin-bottom: 4px;
     padding-bottom: 4px;
 }
@@ -916,12 +894,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--color-green);
     flex-shrink: 0;
 }
 
@@ -1532,85 +1506,6 @@
     overflow-wrap: anywhere;
 }
 
-.hi-words-structured-relation-graph {
-    position: relative;
-    min-height: 220px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--background-secondary) 72%, transparent);
-    overflow: hidden;
-}
-
-.hi-words-structured-relation-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-.hi-words-structured-relation-edge {
-    stroke: color-mix(in srgb, var(--text-accent) 38%, var(--background-modifier-border));
-    stroke-width: 0.8;
-    vector-effect: non-scaling-stroke;
-}
-
-.hi-words-structured-relation-edge-label {
-    fill: var(--text-faint);
-    font-size: 3.3px;
-    font-weight: 700;
-    text-anchor: middle;
-    dominant-baseline: middle;
-    text-transform: uppercase;
-    paint-order: stroke;
-    stroke: var(--background-secondary);
-    stroke-width: 1.8px;
-    stroke-linejoin: round;
-}
-
-.hi-words-structured-relation-node {
-    position: absolute;
-    z-index: 1;
-    max-width: 36%;
-    transform: translate(-50%, -50%);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 8px;
-    background: var(--background-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    color: var(--text-normal);
-    line-height: 1.25;
-    text-align: center;
-    overflow-wrap: anywhere;
-}
-
-.hi-words-structured-relation-node-center {
-    max-width: 42%;
-    padding: 8px 10px;
-    border-color: color-mix(in srgb, var(--text-accent) 42%, var(--background-modifier-border));
-    background: color-mix(in srgb, var(--text-accent) 10%, var(--background-primary));
-    color: var(--text-accent);
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.hi-words-structured-relation-node-target {
-    padding: 6px 8px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.hi-words-structured-relation-node-word {
-    overflow-wrap: anywhere;
-}
-
-.hi-words-structured-relation-node-type {
-    margin-top: 2px;
-    color: var(--text-faint);
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
 .hi-words-structured-relation-notes {
     display: grid;
     gap: 5px;
@@ -1936,35 +1831,6 @@
 }
 
 /* 高亮范围设置文本域样式 */
-.hi-words-textarea-container {
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-
-.hi-words-textarea-container .hi-words-reset-prompt-button {
-    margin-top: 8px;
-}
-
-.hi-words-ai-privacy-note {
-    margin: 4px 0 12px;
-}
-
-.hi-words-textarea-container textarea {
-    width: 100%;
-    resize: vertical;
-    font-family: var(--font-monospace);
-    font-size: var(--font-ui-small);
-    padding: 8px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background-color: var(--background-primary);
-    color: var(--text-normal);
-}
-
-.hi-words-textarea-container textarea:focus {
-    outline: none;
-    border-color: var(--interactive-accent);
-}
 
 .hi-words-setting-textarea {
     display: flex;
@@ -1978,66 +1844,6 @@
     flex: 0 0 auto;
     width: 100%;
     max-width: 100%;
-}
-
-/* JSON 编辑器文本域 */
-.hi-words-json-editor {
-    width: 100%;
-    min-height: 120px;
-    resize: vertical;
-    font-family: var(--font-monospace);
-    font-size: var(--font-ui-small);
-    padding: 8px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background-color: var(--background-primary);
-    color: var(--text-normal);
-}
-
-.hi-words-json-editor:focus {
-    outline: none;
-    border-color: var(--interactive-accent);
-}
-
-/* JSON 错误状态 */
-.hi-words-json-editor.hi-words-json-error {
-    border-color: var(--text-error);
-}
-
-/* 添加生词本按钮样式 */
-.hi-words-add-book-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.hi-words-add-book-container:hover .hi-words-add-book-icon {
-    background-color: var(--background-modifier-hover);
-    color: var(--interactive-accent);
-}
-
-.hi-words-add-book-label {
-    font-size: var(--font-ui-medium);
-    color: var(--text-normal);
-    font-weight: 500;
-}
-
-.hi-words-add-book-icon {
-    padding: 6px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    transition: all 0.2s ease;
-}
-
-.hi-words-add-book-icon svg {
-    width: 18px;
-    height: 18px;
 }
 
 /* 生词本图标样式 */
@@ -3626,12 +3432,10 @@ button.hi-words-tooltip-context-open:hover {
 }
 
 .hi-words-file-search {
-    width: 100%;
     flex: none;
 }
 
 .hi-words-file-card-list {
-    min-height: 0;
     display: flex;
     flex-direction: column;
 }
@@ -3658,8 +3462,6 @@ button.hi-words-tooltip-context-open:hover {
 .hi-words-file-card-list-item span {
     max-width: 100%;
     overflow: hidden;
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -3679,10 +3481,6 @@ button.hi-words-tooltip-context-open:hover {
 
 .hi-words-file-editor-section {
     margin-bottom: 10px;
-    padding: 13px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    background: var(--background-primary-alt);
 }
 
 .hi-words-file-editor-section-header,
@@ -3694,14 +3492,8 @@ button.hi-words-tooltip-context-open:hover {
     gap: 12px;
 }
 
-.hi-words-file-editor-section-header {
-    margin-bottom: 13px;
-}
-
 .hi-words-file-editor-section-header h3 {
     margin: 0;
-    color: var(--text-normal);
-    font-size: var(--font-ui-medium);
 }
 
 .hi-words-file-text-button {
@@ -3750,7 +3542,6 @@ button.hi-words-tooltip-context-open:hover {
 
 .hi-words-file-form-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 11px 14px;
 }
 
@@ -3786,20 +3577,12 @@ button.hi-words-tooltip-context-open:hover {
 }
 
 .hi-words-file-field textarea {
-    min-height: 74px;
     resize: vertical;
     line-height: 1.5;
 }
 
 .hi-words-file-edit-item {
     position: relative;
-    padding: 13px;
-    border-radius: var(--radius-s);
-    background: var(--background-secondary);
-}
-
-.hi-words-file-edit-item + .hi-words-file-edit-item {
-    margin-top: 8px;
 }
 
 .hi-words-file-edit-item-header {
@@ -3815,12 +3598,6 @@ button.hi-words-tooltip-context-open:hover {
     position: absolute;
     top: 10px;
     right: 8px;
-}
-
-.hi-words-file-nested-editor {
-    margin-top: 13px;
-    padding-top: 12px;
-    border-top: 1px solid var(--background-modifier-border);
 }
 
 .hi-words-file-nested-header {
@@ -3847,7 +3624,6 @@ button.hi-words-tooltip-context-open:hover {
     min-width: 0;
     flex: 1;
     display: grid;
-    grid-template-columns: 1.4fr 1fr;
     gap: 8px;
 }
 
@@ -4233,28 +4009,6 @@ body.hi-words-is-resizing-columns.hi-words-is-resizing-columns.hi-words-is-resiz
     background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
 }
 
-.hi-words-file-toolbar-button {
-    min-height: 32px;
-    background: transparent;
-}
-
-.hi-words-file-toolbar-button.is-active {
-    background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
-    color: var(--interactive-accent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
-}
-
-.hi-words-file-toolbar-button.is-icon-only {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    justify-content: center;
-}
-
-.hi-words-file-toolbar-button.is-icon-only span:last-child {
-    display: none;
-}
-
 .hi-words-file-header-action.is-danger:hover {
     background: rgba(var(--color-red-rgb), 0.1);
     color: var(--text-error);
@@ -4338,73 +4092,6 @@ body.hi-words-is-resizing-columns.hi-words-is-resizing-columns.hi-words-is-resiz
 .hi-words-file-card-list-delete:hover {
     background: rgba(var(--color-red-rgb), 0.1);
     color: var(--text-error);
-}
-
-.hi-words-file-editor-tabs {
-    position: sticky;
-    z-index: 5;
-    top: 86px;
-    min-height: 43px;
-    padding: 0 28px;
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    overflow-x: auto;
-    border-bottom: 1px solid var(--background-modifier-border);
-    background: var(--background-primary);
-}
-
-.hi-words-file-editor-tab {
-    appearance: none;
-    -webkit-appearance: none;
-    position: relative;
-    min-height: 42px;
-    padding: 0 13px;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    flex: none;
-    border-radius: 0;
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
-}
-
-.hi-words-file-view .hi-words-file-editor-tab {
-    border: 0;
-    box-shadow: none;
-    background: transparent;
-}
-
-.hi-words-file-editor-tab:hover {
-    color: var(--text-normal);
-}
-
-.hi-words-file-view .hi-words-file-editor-tab:hover {
-    background: var(--background-modifier-hover);
-}
-
-.hi-words-file-editor-tab.is-active {
-    color: var(--text-normal);
-}
-
-.hi-words-file-editor-tab.is-active::after {
-    position: absolute;
-    right: 8px;
-    bottom: 0;
-    left: 8px;
-    height: 2px;
-    border-radius: 2px 2px 0 0;
-    background: var(--interactive-accent);
-    content: '';
-}
-
-.hi-words-file-tab-chevron {
-    display: inline-flex;
-}
-
-.hi-words-file-tab-chevron svg {
-    width: 13px;
-    height: 13px;
 }
 
 .hi-words-file-editor-content {
@@ -5128,16 +4815,8 @@ button.hi-words-file-empty-state svg {
         padding: 0 16px;
     }
 
-    .hi-words-file-editor-tabs {
-        top: 72px;
-    }
-
     .hi-words-file-editor-identity h1 {
         font-size: var(--font-ui-medium);
-    }
-
-    .hi-words-file-editor-tabs {
-        padding: 0 10px;
     }
 
     .hi-words-file-editor-content {
@@ -5198,10 +4877,6 @@ button.hi-words-file-empty-state svg {
     .hi-words-file-preview-panel-header {
         min-height: 56px;
         height: 56px;
-    }
-
-    .hi-words-file-toolbar-button span:last-child {
-        display: none;
     }
 }
 body .hi-words-hidden.hi-words-hidden {

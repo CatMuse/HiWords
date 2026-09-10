@@ -1,4 +1,4 @@
-import { CanvasData, CanvasNode, HiWordsSettings } from '../utils';
+import { CanvasData, HiWordsSettings } from '../utils';
 import { CanvasParser } from './canvas-parser';
 
 // 固定布局参数
@@ -8,14 +8,11 @@ const DEFAULT_CARD_WIDTH = 260;
 const DEFAULT_CARD_HEIGHT = 120;
 const GAP = 20;
 const COLUMNS = 3;
-const GROUP_PADDING = 24;
-const GROUP_GAP = 12;
-const GROUP_COLUMNS = 2;
 
 /**
  * 简化的布局算法：使用固定参数的网格布局
  * - 左侧区域：3列固定网格（布局所有非分组节点：text 和 file）
- * - Mastered 分组内：2列固定网格
+ * - 保留 Mastered / 已掌握分组及其成员的位置
  * - 无复杂计算，位置可预测
  */
 export function normalizeLayout(
@@ -53,44 +50,4 @@ export function normalizeLayout(
     node.width = CARD_WIDTH;
     node.height = CARD_HEIGHT;
   }
-}
-
-/**
- * 分组内部布局：简单的固定列网格
- */
-export function layoutGroupInner(
-  canvasData: CanvasData,
-  group: CanvasNode,
-  settings: HiWordsSettings,
-  parser: CanvasParser
-) {
-  // 从设置中读取卡片尺寸，如果未设置则使用默认值
-  const CARD_WIDTH = settings.cardWidth ?? DEFAULT_CARD_WIDTH;
-  const CARD_HEIGHT = settings.cardHeight ?? DEFAULT_CARD_HEIGHT;
-
-  const members = canvasData.nodes.filter(
-    (n) => n.type !== 'group' && parser.isNodeInGroup(n, group)
-  );
-  
-  if (members.length === 0) return;
-
-  // 简单网格布局
-  for (let i = 0; i < members.length; i++) {
-    const node = members[i];
-    const col = i % GROUP_COLUMNS;
-    const row = Math.floor(i / GROUP_COLUMNS);
-    
-    node.x = group.x + GROUP_PADDING + col * (CARD_WIDTH + GROUP_GAP);
-    node.y = group.y + GROUP_PADDING + row * (CARD_HEIGHT + GROUP_GAP);
-    node.width = CARD_WIDTH;
-    node.height = CARD_HEIGHT;
-  }
-
-  // 根据内容调整分组尺寸
-  const rows = Math.ceil(members.length / GROUP_COLUMNS);
-  const minWidth = GROUP_PADDING * 2 + GROUP_COLUMNS * CARD_WIDTH + (GROUP_COLUMNS - 1) * GROUP_GAP;
-  const minHeight = GROUP_PADDING * 2 + rows * CARD_HEIGHT + (rows - 1) * GROUP_GAP;
-  
-  group.width = Math.max(group.width, minWidth);
-  group.height = Math.max(group.height, minHeight);
 }
