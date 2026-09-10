@@ -11,6 +11,7 @@ const bundled = await build({
             export { createEmptyHiWordsPack } from './src/editor/hiwords-document';
             export { isHiWordsPack } from './src/schema/hiwords';
             export { normalizeStoredSettings } from './src/settings-storage';
+            export { VaultContextService } from './src/services/vault-context-service';
             export { mergeGeneratedContent } from './src/services/hiwords-generation-service';
             export { HiWordsMutationService } from './src/services/hiwords-mutation-service';
             export { setCanvasNodeSentences, getCanvasSentencesFromSections } from './src/canvas/canvas-note';
@@ -18,6 +19,7 @@ const bundled = await build({
         resolveDir: process.cwd(),
     },
     bundle: true, write: false, platform: 'node', format: 'esm',
+    define: { window: 'globalThis' },
     plugins: [{
         name: 'obsidian-test-boundary',
         setup(build) {
@@ -25,12 +27,23 @@ const bundled = await build({
             build.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: `
                 export class TFile { constructor(path) { this.path = path; this.extension = path.split('.').pop(); } }
                 export const getLanguage = () => 'en';
+                export class MarkdownView {}
                 export const requestUrl = () => { throw new Error('Unexpected network request'); };
             ` }));
         },
     }],
 });
 const api = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
+
+test('vault context search excludes a custom configuration directory without hiding similarly named notes', () => {
+    const service = new api.VaultContextService({ vault: { configDir: 'AppConfig/nested/' } });
+    const file = path => ({ path, extension: 'md', stat: { size: 100 } });
+    assert.equal(service.shouldSearchFile(file('AppConfig/nested/private.md')), false);
+    assert.equal(service.shouldSearchFile(file('AppConfig/nested-notes/lesson.md')), true);
+    assert.equal(service.shouldSearchFile(file('Notes/lesson.md')), true);
+    assert.equal(service.shouldSearchFile(file('.git/private.md')), false);
+    assert.equal(service.shouldSearchFile(file('node_modules/package/README.md')), false);
+});
 
 test('legacy plaintext credentials are removed without losing the selected secret or provider', () => {
     const result = api.normalizeStoredSettings({ aiService: {

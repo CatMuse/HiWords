@@ -5166,3 +5166,7 @@ button.hi-words-file-empty-state svg {
         display: none;
     }
 }
+
+.hi-words-hidden {
+    display: none !important;
+}

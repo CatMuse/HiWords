@@ -74,7 +74,7 @@ export interface HiWordsMorphologyComponent { type: string; form: string; meanin
 export interface HiWordsMorphology { components?: HiWordsMorphologyComponent[]; explanation?: string; }
 export interface HiWordsPhrase { id: string; text: string; translation?: string; sentence?: string; }
 export interface HiWordsUsage { register?: string[]; patterns?: string[]; notes?: string[]; commonMistakes?: string[]; }
-export interface HiWordsRelation { type: 'synonym' | 'antonym' | 'confusable' | 'related' | string; target: string; note?: string; }
+export interface HiWordsRelation { type: string; target: string; note?: string; }
 export interface HiWordsMemoryItem { type: string; text: string; }
 
 export interface HiWordsWordCardData {
@@ -135,7 +135,7 @@ export interface HiWordsConceptCard extends HiWordsCardBase {
     data: HiWordsConceptCardData;
 }
 
-export interface HiWordsCustomCardData {}
+export type HiWordsCustomCardData = Record<string, unknown>;
 
 export interface HiWordsCustomCard extends HiWordsCardBase {
     data: HiWordsCustomCardData;

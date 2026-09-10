@@ -299,7 +299,7 @@ function firstFieldValue(card: HiWordsCard, fields: HiWordsFieldDefinition[] = [
         if (!hasFieldValue(value)) continue;
         if (!Array.isArray(value)) return String(value);
         const items = value as Array<string | { path: string }>;
-        if (items.every(item => typeof item === 'string')) return (items as string[]).join(', ');
+        if (items.every(item => typeof item === 'string')) return items.join(', ');
     }
     return '';
 }

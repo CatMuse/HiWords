@@ -1,6 +1,6 @@
 import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, Component } from 'obsidian';
 import { VocabularyManager, MasteredService } from '../core';
-import { playWordTTS, WordDefinition } from '../utils';
+import { playWordTTS } from '../utils';
 import { t } from '../i18n';
 import HiWordsPlugin from '../../main';
 import { renderWordCard } from './word-card-renderer';
@@ -140,8 +140,8 @@ export class DefinitionPopover extends Component {
         this.registerDomEvent(activeDocument, 'mousedown', this.eventHandlers.mousedown);
         this.registerDomEvent(activeDocument, 'keydown', this.eventHandlers.keydown);
         // 滚动或窗口尺寸变化时，直接关闭 tooltip，避免频繁重定位
-        this.registerDomEvent(window, 'scroll', this.eventHandlers.scroll as EventListener, { passive: true });
-        this.registerDomEvent(window, 'resize', this.eventHandlers.resize as EventListener);
+        this.registerDomEvent(window, 'scroll', this.eventHandlers.scroll, { passive: true });
+        this.registerDomEvent(window, 'resize', this.eventHandlers.resize);
     }
 
     /**
@@ -194,10 +194,10 @@ export class DefinitionPopover extends Component {
 
     private handleDocumentMouseDown(event: MouseEvent): void {
         if (!this.activeTooltip?.hasClass('is-subview')) return;
-        const target = event.target;
-        if (!(target instanceof Node)) return;
+        const target = event.target as Node | null;
+        if (!target || !target.instanceOf(Node)) return;
         if (this.activeTooltip.contains(target)) return;
-        if (target instanceof HTMLElement && target.closest('.hi-words-highlight')) return;
+        if (target.instanceOf(HTMLElement) && target.closest('.hi-words-highlight')) return;
         this.removeTooltip();
     }
 
@@ -286,7 +286,7 @@ export class DefinitionPopover extends Component {
     private async createTooltip(target: HTMLElement, word: string, definition: string) {
         this.removeTooltip();
 
-        const tooltip = activeDocument.createElement('div');
+        const tooltip = createDiv();
         tooltip.className = 'hi-words-tooltip';
         const wordDef = this.vocabularyManager?.getDefinition(word);
         if (wordDef?.card) {
@@ -294,14 +294,14 @@ export class DefinitionPopover extends Component {
         }
 
         // 标题容器
-        const titleContainer = activeDocument.createElement('div');
+        const titleContainer = createDiv();
         titleContainer.className = 'hi-words-tooltip-title-container';
 
-        const headingEl = activeDocument.createElement('div');
+        const headingEl = createDiv();
         headingEl.className = 'hi-words-tooltip-heading';
 
         // 标题文本
-        const titleEl = activeDocument.createElement('div');
+        const titleEl = createDiv();
         titleEl.className = 'hi-words-tooltip-title';
         titleEl.textContent = word;
         headingEl.appendChild(titleEl);
@@ -322,11 +322,11 @@ export class DefinitionPopover extends Component {
         const enableSectionTabs = this.plugin.settings.enableSectionTabs ?? true;
 
         if (sections && sections.length > 1 && enableSectionTabs) {
-            const tabsContainer = activeDocument.createElement('div');
+            const tabsContainer = createDiv();
             tabsContainer.className = 'hi-words-tooltip-tabs';
 
             sections.forEach((section, index) => {
-                const tab = activeDocument.createElement('div');
+                const tab = createDiv();
                 tab.className = 'hi-words-tooltip-tab';
                 if (index === 0) {
                     tab.classList.add('active');
@@ -344,7 +344,7 @@ export class DefinitionPopover extends Component {
         }
 
         // 内容
-        const contentEl = activeDocument.createElement('div');
+        const contentEl = createDiv();
         contentEl.className = 'hi-words-tooltip-content';
 
         // 如果启用了模糊效果，为内容添加模糊样式
@@ -395,7 +395,7 @@ export class DefinitionPopover extends Component {
             if (detailDef && detailDef.source) {
                 // 已掌握按钮（添加到标题容器中）
                 if (this.masteredService && this.masteredService.isEnabled) {
-                    const buttonContainer = activeDocument.createElement('div');
+                    const buttonContainer = createDiv();
                     buttonContainer.className = 'hi-words-card-action hi-words-tooltip-title-mastered-button hi-words-mastered-toggle';
                     buttonContainer.setAttribute('role', 'button');
                     buttonContainer.setAttribute('tabindex', '0');

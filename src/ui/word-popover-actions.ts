@@ -291,7 +291,7 @@ export class WordPopoverActions {
 
     private setNoteFormBusy(container: HTMLElement, busy: boolean): void {
         container.querySelectorAll('button').forEach(button => {
-            (button as HTMLButtonElement).disabled = busy;
+            button.disabled = busy;
         });
     }
 
@@ -314,14 +314,14 @@ export class WordPopoverActions {
             cls: 'hi-words-tooltip-context-summary',
             attr: { 'aria-live': 'polite' },
         });
-        summary.style.display = 'none';
+        summary.toggleClass('hi-words-hidden', true);
         const list = contentEl.createDiv({ cls: 'hi-words-tooltip-context-list' });
         const controls = contentEl.createDiv({ cls: 'hi-words-tooltip-context-controls' });
         const loadMore = controls.createEl('button', {
             cls: 'hi-words-tooltip-context-more',
             attr: { type: 'button' },
         });
-        controls.style.display = 'none';
+        controls.toggleClass('hi-words-hidden', true);
 
         const groups = new Map<string, { element: HTMLElement; count: number; countEl: HTMLElement }>();
         const displayedFiles = new Set<string>();
@@ -332,10 +332,10 @@ export class WordPopoverActions {
 
         const updateSummary = () => {
             if (displayedContexts === 0) {
-                summary.style.display = 'none';
+                summary.toggleClass('hi-words-hidden', true);
                 return;
             }
-            summary.style.display = '';
+            summary.toggleClass('hi-words-hidden', false);
             summary.setText(this.localized('popover.context_found', '{0} contexts from {1} notes')
                 .replace('{0}', String(displayedContexts))
                 .replace('{1}', String(displayedFiles.size)));
@@ -371,7 +371,7 @@ export class WordPopoverActions {
         const loadPage = async (reset = false) => {
             empty?.remove();
             empty = null;
-            controls.style.display = '';
+            controls.toggleClass('hi-words-hidden', false);
             loadMore.disabled = true;
             loadMore.setText(this.localized('popover.loading_more_context', 'Loading…'));
 
@@ -389,7 +389,7 @@ export class WordPopoverActions {
 
             if (page.hasMore) {
                 nextAction = 'load';
-                controls.style.display = '';
+                controls.toggleClass('hi-words-hidden', false);
                 loadMore.disabled = false;
                 loadMore.setText(this.localized('popover.load_more_context', 'Load more'));
                 return;
@@ -397,7 +397,7 @@ export class WordPopoverActions {
 
             if (page.canSearchWholeVault && !searchWholeVault) {
                 nextAction = 'search-vault';
-                controls.style.display = '';
+                controls.toggleClass('hi-words-hidden', false);
                 loadMore.disabled = false;
                 loadMore.setText(this.localized('popover.search_whole_vault', 'Search entire vault'));
                 if (displayedContexts === 0) {
@@ -411,7 +411,7 @@ export class WordPopoverActions {
             }
 
             nextAction = null;
-            controls.style.display = 'none';
+            controls.toggleClass('hi-words-hidden', true);
             if (displayedContexts === 0) {
                 empty = this.renderEmpty(contentEl, this.localized(
                     'popover.no_context',

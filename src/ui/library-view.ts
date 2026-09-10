@@ -300,7 +300,7 @@ export class HiWordsLibraryView extends ItemView {
     private async render() {
         const token = ++this.renderToken;
         const content = this.containerEl.children[1] as HTMLElement;
-        const root = activeDocument.createElement('div');
+        const root = createDiv();
         this.removeTooltip();
         root.addClass('hi-words-library');
         this.wordListEl = null;
@@ -760,7 +760,7 @@ export class HiWordsLibraryView extends ItemView {
     private async showDefinitionTooltip(target: HTMLElement, definition: WordDefinition) {
         this.removeTooltip();
 
-        const tooltip = activeDocument.createElement('div');
+        const tooltip = createDiv();
         tooltip.className = 'hi-words-tooltip hi-words-library-tooltip';
         if (definition.card) {
             tooltip.classList.add('hi-words-tooltip-structured');

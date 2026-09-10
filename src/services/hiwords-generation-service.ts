@@ -183,7 +183,7 @@ function fillArray<K extends 'sentences' | 'forms' | 'derivedWords' | 'phrases' 
     key: K,
     generated: NonNullable<HiWordsWordCard['data'][K]> | undefined,
 ): void {
-    if (!(card.data[key]?.length) && generated?.length) card.data[key] = generated as HiWordsWordCard['data'][K];
+    if (!(card.data[key]?.length) && generated?.length) card.data[key] = generated;
 }
 
 function mergePhonetics(current: HiWordsWordCard['data']['phonetics'], generated: HiWordsWordCard['data']['phonetics']): HiWordsWordCard['data']['phonetics'] {

@@ -49,7 +49,7 @@ const SAME_FOLDER_FILE_LIMIT = 160;
 const QUICK_SCOPE_FILE_LIMIT = 400;
 const READ_BATCH_SIZE = 8;
 const MAX_SEARCHABLE_FILE_SIZE = 2 * 1024 * 1024;
-const EXCLUDED_PATH_SEGMENTS = new Set(['.git', '.obsidian', 'node_modules']);
+const EXCLUDED_PATH_SEGMENTS = new Set(['.git', 'node_modules']);
 
 export class VaultContextService {
     private session: SearchSession | null = null;
@@ -263,6 +263,8 @@ export class VaultContextService {
     private shouldSearchFile(file: TFile): boolean {
         if (file.extension.toLocaleLowerCase() !== 'md') return false;
         if (file.stat.size > MAX_SEARCHABLE_FILE_SIZE) return false;
+        const configDir = this.app.vault.configDir.replace(/\/+$/, '');
+        if (file.path === configDir || file.path.startsWith(`${configDir}/`)) return false;
         return !file.path.split('/').some(segment => EXCLUDED_PATH_SEGMENTS.has(segment) || segment.startsWith('.'));
     }
 

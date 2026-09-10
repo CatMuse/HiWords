@@ -82,13 +82,13 @@ export function registerReadingModeHighlighter(plugin: {
       }
       if (filtered.length === 0) continue;
 
-      const frag = activeDocument.createDocumentFragment();
+      const frag = createFragment();
       let last = 0;
       for (const m of filtered) {
         if (m.from > last) frag.appendChild(activeDocument.createTextNode(text.slice(last, m.from)));
         const def = m.payload;
         const color = mapCanvasColorToCSSVar(def?.color, 'var(--color-base-60)');
-        const span = activeDocument.createElement('span');
+        const span = createSpan();
         span.className = 'hi-words-highlight';
         span.setAttribute('data-word', m.word);
         if (def?.definition) span.setAttribute('data-definition', def.definition);

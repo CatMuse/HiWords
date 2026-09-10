@@ -1,4 +1,5 @@
 import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, SecretComponent, setIcon, TextComponent } from 'obsidian';
+import type { SettingDefinitionItem } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle, AIProvider } from '../utils';
 import { CanvasParser } from '../canvas';
@@ -16,6 +17,32 @@ export class HiWordsSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
+    getSettingDefinitions(): SettingDefinitionItem[] {
+        return [
+            this.defineSection('settings.vocabulary_books', ['settings.add_vocabulary_book', 'settings.remove_vocabulary_book', 'settings.statistics'], container => this.addVocabularyBooksSection(container)),
+            this.defineSection('settings.file_node_parse_mode', [], container => this.addFileNodeParseModeSettings(container)),
+            this.defineSection('settings.enable_auto_highlight', ['settings.show_definition_on_hover', 'settings.highlight_style', 'settings.highlight_mode', 'settings.highlight_paths', 'settings.sidebar_default_display_mode'], container => this.addHighlightingSection(container)),
+            this.defineSection('settings.enable_mastered_feature', ['settings.blur_definitions', 'settings.tts_template', 'settings.pronunciation_variant'], container => this.addLearningFeaturesSection(container)),
+            this.defineSection('settings.ai_service', ['settings.ai_provider', 'settings.ai_api_url', 'settings.ai_api_key', 'settings.ai_model', 'settings.ai_extra_params'], container => this.addAIServiceSection(container)),
+            this.defineSection('settings.ai_definition', ['settings.enable_ai_definition', 'settings.ai_prompt'], container => this.addAIDefinitionSection(container)),
+            this.defineSection('settings.selection_translate', ['settings.enable_selection_translate', 'settings.translate_target_lang', 'settings.translate_prompt'], container => this.addSelectionTranslateSection(container)),
+            this.defineSection('settings.auto_layout', ['settings.enable_auto_layout', 'settings.card_size'], container => this.addAutoLayoutSettings(container)),
+        ];
+    }
+
+    private defineSection(name: string, aliases: string[], render: (container: HTMLElement) => void): SettingDefinitionItem {
+        return {
+            name: t(name),
+            aliases: aliases.map(key => t(key)),
+            render: setting => {
+                // Reuse existing controls and persistence in both supported APIs.
+                setting.settingEl.empty();
+                setting.settingEl.removeClass('setting-item');
+                render(setting.settingEl);
+            },
+        };
+    }
+
     private runAsync(action: () => Promise<void>, context: string): void {
         void action().catch(error => {
             console.error(context, error);
@@ -25,8 +52,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     /**
      * 添加高亮范围设置（作为高亮设置的子部分）
      */
-    private addHighlightScopeSettings() {
-        const { containerEl } = this;
+    private addHighlightScopeSettings(containerEl = this.containerEl) {
 
         // 高亮模式选择
         new Setting(containerEl)
@@ -75,8 +101,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     /**
      * 添加文件节点解析模式设置
      */
-    private addFileNodeParseModeSettings() {
-        const { containerEl } = this;
+    private addFileNodeParseModeSettings(containerEl = this.containerEl) {
 
         new Setting(containerEl)
             .setName(t('settings.file_node_parse_mode'))
@@ -99,8 +124,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     /**
      * 添加自动布局设置
      */
-    private addAutoLayoutSettings() {
-        const { containerEl } = this;
+    private addAutoLayoutSettings(containerEl = this.containerEl) {
 
         new Setting(containerEl)
             .setName(t('settings.auto_layout'))
@@ -149,32 +173,41 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 }));
     }
 
+    // Compatibility fallback for Obsidian 1.11.5–1.12.x.
     display(): void {
+        this.renderLegacySettings();
+    }
+
+    private refreshSettings(): void {
+        if (typeof this.update === 'function') this.update();
+        else this.renderLegacySettings();
+    }
+
+    private renderLegacySettings(): void {
         const { containerEl } = this;
         containerEl.empty();
 
         // 1. 生词本管理
-        this.addVocabularyBooksSection();
-        this.addFileNodeParseModeSettings();
+        this.addVocabularyBooksSection(containerEl);
+        this.addFileNodeParseModeSettings(containerEl);
 
         // 2. 高亮设置
-        this.addHighlightingSection();
+        this.addHighlightingSection(containerEl);
 
         // 3. 学习功能
-        this.addLearningFeaturesSection();
+        this.addLearningFeaturesSection(containerEl);
 
         // 4. AI 设置
-        this.addAISettingsSection();
+        this.addAISettingsSection(containerEl);
 
         // 5. Canvas 设置
-        this.addAutoLayoutSettings();
+        this.addAutoLayoutSettings(containerEl);
     }
 
     /**
      * 2. 添加高亮设置
      */
-    private addHighlightingSection() {
-        const { containerEl } = this;
+    private addHighlightingSection(containerEl = this.containerEl) {
 
         new Setting(containerEl)
             .setName(t('settings.enable_auto_highlight') || 'Highlighting')
@@ -256,7 +289,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 }));
 
         // 高亮范围设置
-        this.addHighlightScopeSettings();
+        this.addHighlightScopeSettings(containerEl);
     }
 
     /**
@@ -320,6 +353,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     private addPromptTextArea(
+        containerEl: HTMLElement,
         name: string,
         desc: string,
         value: string,
@@ -328,7 +362,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
         onBlur: (value: string) => Promise<void>,
         onReset?: () => Promise<void>
     ) {
-        const { containerEl } = this;
         const promptSetting = new Setting(containerEl)
             .setName(name)
             .setDesc(desc);
@@ -356,7 +389,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
             resetButton.addEventListener('click', () => {
                 void (async () => {
                     await onReset();
-                    this.display();
+                    this.refreshSettings();
                 })().catch(error => {
                     console.error('HiWords 重置文本设置失败:', error);
                 });
@@ -364,14 +397,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
         }
     }
 
-    private addAISettingsSection() {
-        this.addAIServiceSection();
-        this.addAIDefinitionSection();
-        this.addSelectionTranslateSection();
+    private addAISettingsSection(containerEl = this.containerEl) {
+        this.addAIServiceSection(containerEl);
+        this.addAIDefinitionSection(containerEl);
+        this.addSelectionTranslateSection(containerEl);
     }
 
-    private addAIServiceSection() {
-        const { containerEl } = this;
+    private addAIServiceSection(containerEl = this.containerEl) {
         let apiUrlText: TextComponent | undefined;
         let modelText: TextComponent | undefined;
         const currentDefaults = this.getProviderDefaults(this.plugin.settings.aiService.provider);
@@ -468,11 +500,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     }, 'HiWords 测试 AI 连接失败:');
                 }));
 
-        this.addAIExtraParamsSetting();
+        this.addAIExtraParamsSetting(containerEl);
     }
 
-    private addAIDefinitionSection() {
-        const { containerEl } = this;
+    private addAIDefinitionSection(containerEl = this.containerEl) {
 
         new Setting(containerEl)
             .setName(t('settings.ai_definition') || 'AI definition')
@@ -487,13 +518,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.runAsync(async () => {
                         this.plugin.settings.aiDefinition.enabled = value;
                         await this.plugin.saveSettings();
-                        this.display();
+                        this.refreshSettings();
                     }, 'HiWords 保存 AI 释义设置失败:');
                 }));
 
         if (!this.plugin.settings.aiDefinition.enabled) return;
 
         this.addPromptTextArea(
+            containerEl,
             t('settings.ai_prompt') || 'Definition prompt',
             t('settings.ai_prompt_desc') || 'Use {{word}} and {{sentence}} as placeholders.',
             this.plugin.settings.aiDefinition.prompt,
@@ -510,8 +542,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         );
     }
 
-    private addSelectionTranslateSection() {
-        const { containerEl } = this;
+    private addSelectionTranslateSection(containerEl = this.containerEl) {
 
         new Setting(containerEl)
             .setName(t('settings.selection_translate'))
@@ -526,7 +557,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.runAsync(async () => {
                         this.plugin.settings.selectionTranslate.enabled = value;
                         await this.plugin.saveSettings();
-                        this.display();
+                        this.refreshSettings();
                     }, 'HiWords 保存划词翻译设置失败:');
                 }));
 
@@ -546,6 +577,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 }));
 
         this.addPromptTextArea(
+            containerEl,
             t('settings.translate_prompt'),
             t('settings.translate_prompt_desc'),
             this.plugin.settings.selectionTranslate.prompt,
@@ -562,8 +594,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         );
     }
 
-    private addAIExtraParamsSetting() {
-        const { containerEl } = this;
+    private addAIExtraParamsSetting(containerEl = this.containerEl) {
 
         const extraParamsSetting = new Setting(containerEl)
             .setName(t('settings.ai_extra_params') || 'Extra request parameters')
@@ -600,8 +631,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     /**
      * 3. 添加学习功能设置
      */
-    private addLearningFeaturesSection() {
-        const { containerEl } = this;
+    private addLearningFeaturesSection(containerEl = this.containerEl) {
 
         new Setting(containerEl)
             .setName(t('settings.enable_mastered_feature') || 'Learning Features')
@@ -622,7 +652,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                         this.plugin.refreshHighlighter();
                         // 触发侧边栏更新
                         this.plugin.app.workspace.trigger('hi-words:mastered-changed');
-                        this.display();
+                        this.refreshSettings();
                     }, 'HiWords 保存已掌握功能设置失败:');
                 }));
 
@@ -668,7 +698,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                         this.plugin.app.workspace.trigger('hi-words:settings-changed');
                         this.plugin.refreshHighlighter();
-                        this.display();
+                        this.refreshSettings();
                     }, 'HiWords 保存发音偏好失败:');
                 }));
 
@@ -677,8 +707,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     /**
      * 添加生词本管理部分
      */
-    private addVocabularyBooksSection() {
-        const { containerEl } = this;
+    private addVocabularyBooksSection(containerEl = this.containerEl) {
 
         // 添加生词本图标按钮
         const addBookContainer = containerEl.createDiv({ cls: 'hi-words-add-book-container' });
@@ -698,10 +727,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         addBookIcon.setAttribute('aria-label', t('settings.add_vocabulary_book'));
 
         // 显示现有生词本
-        this.displayVocabularyBooks();
+        this.displayVocabularyBooks(containerEl);
 
         // 统计信息
-        this.displayStats();
+        this.displayStats(containerEl);
     }
 
     /**
@@ -760,14 +789,13 @@ export class HiWordsSettingTab extends PluginSettingTab {
         this.plugin.refreshHighlighter();
 
         new Notice(t('notices.book_added').replace('{0}', newBook.name));
-        this.display(); // 刷新设置页面
+        this.refreshSettings(); // 刷新设置页面
     }
 
     /**
      * 显示现有生词本
      */
-    private displayVocabularyBooks() {
-        const { containerEl } = this;
+    private displayVocabularyBooks(containerEl = this.containerEl) {
 
         if (this.plugin.settings.vocabularyBooks.length === 0) {
             containerEl.createEl('p', {
@@ -815,7 +843,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     await this.plugin.vocabularyManager.loadAllVocabularyBooks();
                     this.plugin.refreshHighlighter();
                     new Notice(t('notices.book_removed').replace('{0}', book.name));
-                    this.display(); // 刷新设置页面
+                    this.refreshSettings(); // 刷新设置页面
                 })().catch(error => {
                     console.error('HiWords 删除词库失败:', error);
                 });
@@ -942,26 +970,25 @@ export class HiWordsSettingTab extends PluginSettingTab {
     /**
      * 显示统计信息
      */
-    private displayStats() {
-        const { containerEl } = this;
+    private displayStats(containerEl = this.containerEl) {
         const stats = this.plugin.vocabularyManager.getStats();
 
-        const statsEl = containerEl.createEl('div', { cls: 'hi-words-stats' });
+        const statsEl = containerEl.createDiv({ cls: 'hi-words-stats' });
 
         // 总单词本数量
-        const totalBooksItem = statsEl.createEl('div', { cls: 'stat-item' });
-        totalBooksItem.createEl('div', { cls: 'stat-value', text: stats.totalBooks.toString() });
-        totalBooksItem.createEl('div', { cls: 'stat-label', text: t('settings.total_books').split(':')[0] });
+        const totalBooksItem = statsEl.createDiv({ cls: 'stat-item' });
+        totalBooksItem.createDiv({ cls: 'stat-value', text: stats.totalBooks.toString() });
+        totalBooksItem.createDiv({ cls: 'stat-label', text: t('settings.total_books').split(':')[0] });
 
         // 已启用单词本
-        const enabledBooksItem = statsEl.createEl('div', { cls: 'stat-item' });
-        enabledBooksItem.createEl('div', { cls: 'stat-value', text: stats.enabledBooks.toString() });
-        enabledBooksItem.createEl('div', { cls: 'stat-label', text: t('settings.enabled_books').split(':')[0] });
+        const enabledBooksItem = statsEl.createDiv({ cls: 'stat-item' });
+        enabledBooksItem.createDiv({ cls: 'stat-value', text: stats.enabledBooks.toString() });
+        enabledBooksItem.createDiv({ cls: 'stat-label', text: t('settings.enabled_books').split(':')[0] });
 
         // 总单词数
-        const totalWordsItem = statsEl.createEl('div', { cls: 'stat-item' });
-        totalWordsItem.createEl('div', { cls: 'stat-value', text: stats.totalWords.toString() });
-        totalWordsItem.createEl('div', { cls: 'stat-label', text: t('settings.total_words').split(':')[0] });
+        const totalWordsItem = statsEl.createDiv({ cls: 'stat-item' });
+        totalWordsItem.createDiv({ cls: 'stat-value', text: stats.totalWords.toString() });
+        totalWordsItem.createDiv({ cls: 'stat-label', text: t('settings.total_words').split(':')[0] });
     }
 }
 

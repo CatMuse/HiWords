@@ -118,7 +118,7 @@ export function serializeHiWordsPack(pack: HiWordsPack): string {
 }
 
 export function createStableId(prefix: string): string {
-    const cryptoApi = globalThis.crypto as Crypto | undefined;
+    const cryptoApi = window.crypto;
     const random = cryptoApi?.randomUUID?.() || `${Date.now().toString(36)}-${createShortId()}`;
     return `${prefix}-${random.toLowerCase()}`;
 }

@@ -394,22 +394,22 @@ export class HiWordsSidebarView extends ItemView {
      * 创建 Tab 导航
      */
     private createTabNavigation(container: HTMLElement, learningCount: number, masteredCount: number) {
-        const tabNav = container.createEl('div', { cls: 'hi-words-tab-nav' });
+        const tabNav = container.createDiv({ cls: 'hi-words-tab-nav' });
         
         // 待学习 Tab
-        const learningTab = tabNav.createEl('div', { 
+        const learningTab = tabNav.createDiv({
             cls: `hi-words-tab ${this.activeTab === 'learning' ? 'active' : ''}`,
             attr: { 'data-tab': 'learning' }
         });
-        learningTab.createEl('span', { text: `${t('sidebar.vocabulary_book')} (${learningCount})` });
+        learningTab.createSpan({ text: `${t('sidebar.vocabulary_book')} (${learningCount})` });
         
         // 已掌握 Tab (只有在启用功能时显示)
         if (this.plugin.settings.enableMasteredFeature) {
-            const masteredTab = tabNav.createEl('div', { 
+            const masteredTab = tabNav.createDiv({
                 cls: `hi-words-tab ${this.activeTab === 'mastered' ? 'active' : ''}`,
                 attr: { 'data-tab': 'mastered' }
             });
-            masteredTab.createEl('span', { text: `${t('sidebar.mastered')} (${masteredCount})` });
+            masteredTab.createSpan({ text: `${t('sidebar.mastered')} (${masteredCount})` });
         }
         
         // 注意：Tab 点击事件由 bindDelegatedHandlers 中的事件委托统一处理，无需在此添加监听器
@@ -450,7 +450,7 @@ export class HiWordsSidebarView extends ItemView {
      * 创建单词列表
      */
     private async createWordList(container: HTMLElement, words: WordDefinition[], isMastered: boolean) {
-        const wordList = container.createEl('div', { cls: 'hi-words-word-list' });
+        const wordList = container.createDiv({ cls: 'hi-words-word-list' });
         
         for (const wordDef of words) {
             await this.createWordCard(wordList, wordDef, isMastered);
@@ -466,7 +466,7 @@ export class HiWordsSidebarView extends ItemView {
     private async createWordCard(container: HTMLElement, wordDef: WordDefinition, isMastered = false) {
         const wordKey = this.getWordStateKey(wordDef);
         const isExpanded = this.getWordExpandedState(wordDef);
-        const card = container.createEl('div', {
+        const card = container.createDiv({
             cls: `hi-words-word-card ${isExpanded ? 'is-expanded' : 'is-collapsed'}`,
             attr: { 'data-word-key': wordKey }
         });
@@ -481,8 +481,8 @@ export class HiWordsSidebarView extends ItemView {
         }
 
         // 词汇标题
-        const wordTitle = card.createEl('div', { cls: 'hi-words-word-title' });
-        const wordTextEl = wordTitle.createEl('span', {
+        const wordTitle = card.createDiv({ cls: 'hi-words-word-title' });
+        const wordTextEl = wordTitle.createSpan({
             text: wordDef.word,
             cls: 'hi-words-word-text'
         });
@@ -497,7 +497,7 @@ export class HiWordsSidebarView extends ItemView {
             });
         });
 
-        wordTitle.createEl('div', {
+        wordTitle.createDiv({
             cls: 'hi-words-card-toggle-spacer',
             attr: {
                 'aria-label': isExpanded ? t('actions.collapse') : t('actions.expand'),
@@ -507,7 +507,7 @@ export class HiWordsSidebarView extends ItemView {
         
         // 已掌握按钮（如果启用了功能）
         if (this.plugin.settings.enableMasteredFeature && this.plugin.masteredService) {
-            const buttonContainer = wordTitle.createEl('div', { 
+            const buttonContainer = wordTitle.createDiv({
                 cls: 'hi-words-card-action hi-words-title-mastered-button hi-words-mastered-toggle',
                 attr: {
                     role: 'button',
@@ -536,10 +536,10 @@ export class HiWordsSidebarView extends ItemView {
         const activeSectionIndex = sections && sections.length > savedSectionIndex ? savedSectionIndex : 0;
 
         if (isExpanded && !wordDef.card && sections && sections.length > 1 && enableSectionTabs) {
-            const tabsContainer = card.createEl('div', { cls: 'hi-words-card-tabs' });
+            const tabsContainer = card.createDiv({ cls: 'hi-words-card-tabs' });
 
             sections.forEach((section, index) => {
-                tabsContainer.createEl('div', {
+                tabsContainer.createDiv({
                     cls: `hi-words-card-tab ${index === activeSectionIndex ? 'active' : ''}`,
                     text: section.title,
                     attr: { 'data-section-index': index.toString() }
@@ -553,8 +553,8 @@ export class HiWordsSidebarView extends ItemView {
         
         // 定义内容
         if (isExpanded && wordDef.card) {
-            const definition = card.createEl('div', { cls: 'hi-words-word-definition hi-words-word-definition-structured' });
-            const defContainer = definition.createEl('div', {
+            const definition = card.createDiv({ cls: 'hi-words-word-definition hi-words-word-definition-structured' });
+            const defContainer = definition.createDiv({
                 cls: this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition'
             });
             renderWordCard(defContainer, wordDef, {
@@ -566,10 +566,10 @@ export class HiWordsSidebarView extends ItemView {
                 display: this.plugin.getVocabularyBookDisplaySettings(wordDef.source),
             });
         } else if (isExpanded && contentToRender && contentToRender.trim()) {
-            const definition = card.createEl('div', { cls: 'hi-words-word-definition' });
+            const definition = card.createDiv({ cls: 'hi-words-word-definition' });
 
             // 真正的 Markdown 内容容器
-            const defContainer = definition.createEl('div', {
+            const defContainer = definition.createDiv({
                 cls: this.plugin.settings.blurDefinitions ? 'hi-words-definition blur-enabled' : 'hi-words-definition'
             });
 
@@ -579,9 +579,9 @@ export class HiWordsSidebarView extends ItemView {
 
         // 来源信息
         if (isExpanded && !wordDef.source.endsWith('.hiwords')) {
-            const source = card.createEl('div', { cls: 'hi-words-word-source' });
+            const source = card.createDiv({ cls: 'hi-words-word-source' });
             const bookName = this.getBookNameFromPath(wordDef.source);
-            source.createEl('span', { text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
+            source.createSpan({ text: `${t('sidebar.source_prefix')}${bookName}`, cls: 'hi-words-source-text' });
 
             // 添加点击事件到来源信息：导航到源文件
             source.addEventListener('click', (e) => {
@@ -643,8 +643,8 @@ export class HiWordsSidebarView extends ItemView {
      * 在容器中创建空状态（不清空Tab导航）
      */
     private createEmptyState(container: HTMLElement, message: string) {
-        const emptyState = container.createEl('div', { cls: 'hi-words-empty-state' });
-        emptyState.createEl('div', { text: message, cls: 'hi-words-empty-text' });
+        const emptyState = container.createDiv({ cls: 'hi-words-empty-state' });
+        emptyState.createDiv({ text: message, cls: 'hi-words-empty-text' });
     }
 
     /**
@@ -655,8 +655,8 @@ export class HiWordsSidebarView extends ItemView {
         if (!container) return;
 
         container.empty();
-        const emptyState = container.createEl('div', { cls: 'hi-words-empty-state' });
-        emptyState.createEl('div', { text: message, cls: 'hi-words-empty-text' });
+        const emptyState = container.createDiv({ cls: 'hi-words-empty-state' });
+        emptyState.createDiv({ text: message, cls: 'hi-words-empty-text' });
     }
 
     /**

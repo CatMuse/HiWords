@@ -93,7 +93,7 @@ export class CanvasEditor {
                 const masteredGroup = canvasData.nodes.find(
                     (n) => n.type === 'group' && (n.label === 'Mastered' || n.label === '已掌握')
                 );
-                const g = masteredGroup ? rectOf(masteredGroup as Partial<CanvasNode>) : undefined;
+                const g = masteredGroup ? rectOf(masteredGroup) : undefined;
 
                 // 计算位置：默认 (0,0)。优先选择“最后一个不在 Mastered 分组内的普通节点”作为参考
                 let x = 0;

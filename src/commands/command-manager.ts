@@ -43,7 +43,7 @@ export function registerCommands(plugin: HiWordsPlugin) {
 
     plugin.addCommand({
         id: 'create-hiwords-vocabulary',
-        name: 'Create HiWords vocabulary',
+        name: 'Create vocabulary',
         callback: () => {
             void createAndOpenHiWordsFile(plugin)
                 .then(file => new Notice(`Created ${file.name}`))

@@ -38,7 +38,7 @@ export class SelectionTranslatePopover extends Component {
         });
 
         // 滚动和窗口变化时关闭浮窗
-        this.registerDomEvent(window, 'scroll', () => this.removePopover(), { passive: true } as AddEventListenerOptions);
+        this.registerDomEvent(window, 'scroll', () => this.removePopover(), { passive: true });
         this.registerDomEvent(window, 'resize', () => this.removePopover());
 
         // 按 Escape 关闭浮窗
@@ -156,7 +156,7 @@ export class SelectionTranslatePopover extends Component {
     private showPopover(text: string, rect: DOMRect, event: MouseEvent) {
         this.removePopover();
 
-        const popover = activeDocument.createElement('div');
+        const popover = createDiv();
         popover.className = 'hi-words-translate-popover';
 
         // 标题栏：选中文本 + 操作按钮

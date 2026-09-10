@@ -294,7 +294,7 @@ function clearAllPDFHighlights(): void {
 function highlightPDFTextSpans(textLayer: HTMLElement, trie: Trie<WordDefinition>, highlightStyle: string): void {
   bindPDFOverlayHover(textLayer);
 
-  const overlayFragment = activeDocument.createDocumentFragment();
+  const overlayFragment = createFragment();
   let hasHighlights = false;
   const textSpans = textLayer.querySelectorAll('span[role="presentation"]');
   
@@ -362,13 +362,12 @@ function createPDFHighlightOverlay(
   const scaleX = layerRect.width && textLayer.offsetWidth ? layerRect.width / textLayer.offsetWidth : 1;
   const scaleY = layerRect.height && textLayer.offsetHeight ? layerRect.height / textLayer.offsetHeight : 1;
   const rects = Array.from(range.getClientRects());
-  range.detach();
 
   let created = false;
   rects.forEach(rect => {
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    const overlay = activeDocument.createElement('span');
+    const overlay = createSpan();
     overlay.className = 'hi-words-highlight hi-words-pdf-highlight';
     overlay.setAttribute('data-word', data.word);
     if (data.definition) overlay.setAttribute('data-definition', data.definition);

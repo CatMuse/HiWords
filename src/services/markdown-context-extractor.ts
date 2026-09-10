@@ -94,7 +94,7 @@ export function extractMarkdownContexts(
             if (heading && looksLikeMachineGeneratedLog(heading)) continue;
             seen.add(dedupeKey);
 
-            const blockType = section.type as SearchableMarkdownBlockType;
+            const blockType = section.type;
             results.push({
                 sentence,
                 offset: absoluteOffset,
@@ -323,7 +323,7 @@ function isUsefulSentence(sentence: string, word: string): boolean {
     if (/^\s*(?:\{|\[)/.test(sentence) || /^\s*["'][^"']+["']\s*:/.test(sentence)) return false;
     if ((sentence.match(/["'][^"']+["']\s*:/g) || []).length >= 1) return false;
     const letters = sentence.match(/[\p{L}\p{N}]/gu)?.length || 0;
-    const markdownNoise = sentence.match(/[{}\[\]<>:=|`]/g)?.length || 0;
+    const markdownNoise = sentence.match(/[{}[\]<>:=|`]/g)?.length || 0;
     return letters >= Math.max(6, word.length + 2) && markdownNoise / sentence.length < 0.12;
 }
 
