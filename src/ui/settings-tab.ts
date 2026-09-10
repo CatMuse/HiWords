@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, SecretComponent, setIcon, TextComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, SecretComponent, setIcon, TextComponent, requireApiVersion } from 'obsidian';
 import type { SettingDefinitionItem } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, HighlightStyle, AIProvider } from '../utils';
@@ -179,7 +179,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     private refreshSettings(): void {
-        if (typeof this.update === 'function') this.update();
+        if (requireApiVersion('1.13.0')) this.update();
         else this.renderLegacySettings();
     }
 
