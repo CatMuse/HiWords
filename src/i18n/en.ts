@@ -6,6 +6,7 @@ export default {
 
     // Settings
     settings: {
+        prompt_default_hint: 'Leave blank to use the default prompt shown below.',
         group_books: "Word books",
         group_display: "Highlighting and display",
         group_learning: "Learning and pronunciation",

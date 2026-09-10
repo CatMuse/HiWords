@@ -1,3 +1,4 @@
+import { DEFAULT_AI_DEFINITION_PROMPT, resolvePrompt } from '../settings';
 import { App, Modal, Notice, setIcon } from 'obsidian';
 import type { WordDefinition } from '../utils';
 import HiWordsPlugin from '../../main';
@@ -206,7 +207,7 @@ export class AddWordModal extends Modal {
                         const dictionaryService = new DictionaryService({
                             service: this.plugin.settings.aiService,
                             apiKey: this.plugin.getAIAPIKey(),
-                            prompt: this.plugin.settings.aiDefinition.prompt
+                            prompt: resolvePrompt(this.plugin.settings.aiDefinition.prompt, DEFAULT_AI_DEFINITION_PROMPT)
                         });
                         const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
                         definitionInput.value = definition;

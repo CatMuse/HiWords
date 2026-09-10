@@ -28,9 +28,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const group = (heading: string, items: SettingDefinition[]): SettingDefinitionItem => ({
             type: 'group', heading: t(`settings.${heading}`), cls: 'hi-words-settings-group', items,
         });
-        const prompt = (key: string, label: string, enabled: () => boolean): SettingDefinition => ({
+        const prompt = (key: string, label: string, defaultPrompt: string, enabled: () => boolean): SettingDefinition => ({
             ...field(key, label, 'textarea'),
-            control: { type: 'textarea', key, rows: 8 },
+            desc: `${t(`settings.${label}_desc`)} ${t('settings.prompt_default_hint')}`,
+            control: { type: 'textarea', key, rows: 8, placeholder: defaultPrompt },
             visible: enabled,
         });
         return [
@@ -79,12 +80,10 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     validate: value => { try { const parsed = JSON.parse(value || '{}'); if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return t('settings.json_object_required'); } catch { return t('settings.json_object_required'); } },
                 } },
                 field('aiDefinition.enabled', 'enable_ai_definition'),
-                prompt('aiDefinition.prompt', 'ai_prompt', () => this.plugin.settings.aiDefinition.enabled),
-                { name: t('settings.restore_default_prompt'), visible: () => this.plugin.settings.aiDefinition.enabled, render: setting => { setting.addButton(button => button.setButtonText(t('settings.restore_default_prompt')).onClick(() => this.runAsync(() => this.setControlValue('aiDefinition.prompt', DEFAULT_AI_DEFINITION_PROMPT), 'HiWords prompt reset failed:'))); } },
+                prompt('aiDefinition.prompt', 'ai_prompt', DEFAULT_AI_DEFINITION_PROMPT, () => this.plugin.settings.aiDefinition.enabled),
                 field('selectionTranslate.enabled', 'enable_selection_translate'),
                 { ...field('selectionTranslate.targetLang', 'translate_target_lang', 'text'), visible: () => this.plugin.settings.selectionTranslate.enabled },
-                prompt('selectionTranslate.prompt', 'translate_prompt', () => this.plugin.settings.selectionTranslate.enabled),
-                { name: t('settings.restore_default_prompt'), visible: () => this.plugin.settings.selectionTranslate.enabled, render: setting => { setting.addButton(button => button.setButtonText(t('settings.restore_default_prompt')).onClick(() => this.runAsync(() => this.setControlValue('selectionTranslate.prompt', DEFAULT_TRANSLATE_PROMPT), 'HiWords prompt reset failed:'))); } },
+                prompt('selectionTranslate.prompt', 'translate_prompt', DEFAULT_TRANSLATE_PROMPT, () => this.plugin.settings.selectionTranslate.enabled),
             ]),
             group('group_canvas', [
                 field('autoLayoutEnabled', 'enable_auto_layout'),
@@ -99,7 +98,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
     getControlValue(key: string): unknown {
         const [section, property] = key.split('.');
         const settings = this.plugin.settings as unknown as Record<string, unknown>;
-        return property ? (settings[section] as Record<string, unknown>)?.[property] : settings[section];
+        const value = property ? (settings[section] as Record<string, unknown>)?.[property] : settings[section];
+        const defaultPrompt = key === 'aiDefinition.prompt' ? DEFAULT_AI_DEFINITION_PROMPT
+            : key === 'selectionTranslate.prompt' ? DEFAULT_TRANSLATE_PROMPT : undefined;
+        if (defaultPrompt && (typeof value !== 'string' || !value.trim() || value === defaultPrompt)) return '';
+        return value;
     }
 
     async setControlValue(key: string, value: unknown): Promise<void> {
@@ -119,7 +122,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
         if (['enableAutoHighlight', 'highlightStyle', 'highlightMode', 'highlightPaths', 'enableMasteredFeature', 'pronunciationVariant', 'fileNodeParseMode'].includes(key)) this.plugin.refreshHighlighter();
         this.app.workspace.trigger(key === 'enableMasteredFeature' ? 'hi-words:mastered-changed' : 'hi-words:settings-changed');
         if (key === 'highlightMode') this.refreshDomState();
-        if (key.endsWith('.enabled') || key === 'aiService.provider' || key.endsWith('.prompt')) this.update();
+        if (key.endsWith('.enabled') || key === 'aiService.provider') this.update();
     }
 
     private runAsync(action: () => Promise<void>, context: string): void {

@@ -1,3 +1,4 @@
+import { DEFAULT_TRANSLATE_PROMPT, resolvePrompt } from '../settings';
 import { requestUrl } from 'obsidian';
 import { t } from '../i18n';
 import type { AIProvider, HiWordsSettings } from '../utils';
@@ -97,8 +98,7 @@ export class TranslationService {
         }
 
         const targetLang = this.settings.selectionTranslate.targetLang || 'zh-CN';
-        const promptTemplate = this.settings.selectionTranslate.prompt || 
-            'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}';
+        const promptTemplate = resolvePrompt(this.settings.selectionTranslate.prompt, DEFAULT_TRANSLATE_PROMPT);
         
         const prompt = promptTemplate
             .replace(/\{\{text\}\}/g, text)

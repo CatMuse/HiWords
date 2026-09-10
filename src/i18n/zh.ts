@@ -6,6 +6,7 @@ export default {
 
     // 设置
     settings: {
+        prompt_default_hint: '留空时使用下方浅色文字显示的默认提示词。',
         group_books: "词库管理",
         group_display: "高亮与显示",
         group_learning: "学习与发音",

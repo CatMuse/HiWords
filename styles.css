@@ -5254,3 +5254,8 @@ body .hi-words-hidden.hi-words-hidden {
 .hi-words-settings-group .setting-item-control textarea[rows="8"] {
     min-height: 200px;
 }
+
+.hi-words-settings-group .setting-item-control textarea::placeholder {
+    color: var(--text-faint);
+    opacity: 1;
+}

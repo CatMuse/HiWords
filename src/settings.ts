@@ -4,6 +4,10 @@ export const DEFAULT_AI_DEFINITION_PROMPT = 'Please provide a concise definition
 
 export const DEFAULT_TRANSLATE_PROMPT = 'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}';
 
+export function resolvePrompt(value: string | undefined, defaultPrompt: string): string {
+    return value?.trim() ? value : defaultPrompt;
+}
+
 /**
  * 插件默认设置
  */
@@ -31,7 +35,7 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     // AI 释义配置
     aiDefinition: {
         enabled: true,
-        prompt: DEFAULT_AI_DEFINITION_PROMPT
+        prompt: ''
     },
     // 自动布局（简化版，使用固定参数）
     autoLayoutEnabled: true,
@@ -54,6 +58,6 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     selectionTranslate: {
         enabled: false,
         targetLang: 'zh-CN',
-        prompt: DEFAULT_TRANSLATE_PROMPT
+        prompt: ''
     },
 };

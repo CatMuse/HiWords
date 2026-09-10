@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { build } from 'esbuild';
 const result = await build({
-    stdin: { contents: "export { HiWordsSettingTab } from './src/ui/settings-tab'; export { DEFAULT_SETTINGS } from './src/settings';", resolveDir: process.cwd() },
+    stdin: { contents: "export { HiWordsSettingTab } from './src/ui/settings-tab'; export { DEFAULT_SETTINGS, DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT, resolvePrompt } from './src/settings';", resolveDir: process.cwd() },
     bundle: true, write: false, platform: 'node', format: 'esm',
     plugins: [{ name: 'settings-boundary', setup(b) {
         b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'mock' }));
@@ -60,4 +60,28 @@ test('native validators reject invalid card sizes and non-object extra parameter
     assert.ok(size.validate(-1)); assert.ok(size.validate(1.5)); assert.equal(size.validate(360), undefined);
     const json = rows.find(row => row.control?.key === 'aiService.extraParams').control;
     assert.ok(json.validate('[]')); assert.ok(json.validate('{')); assert.equal(json.validate('{}'), undefined);
+});
+
+test('blank prompts use defaults and custom prompts remain unchanged', async () => {
+    const { tab, plugin, rows } = fixture();
+    for (const [key, fallback] of [
+        ['aiDefinition.prompt', api.DEFAULT_AI_DEFINITION_PROMPT],
+        ['selectionTranslate.prompt', api.DEFAULT_TRANSLATE_PROMPT],
+    ]) {
+        const control = rows.find(row => row.control?.key === key).control;
+        assert.equal(control.placeholder, fallback);
+        assert.equal(tab.getControlValue(key), '');
+        await tab.setControlValue(key, fallback);
+        assert.equal(tab.getControlValue(key), '', 'old stored defaults should appear as placeholders');
+        await tab.setControlValue(key, 'Custom {{word}} {{text}}');
+        assert.equal(tab.getControlValue(key), 'Custom {{word}} {{text}}');
+        assert.equal(api.resolvePrompt(tab.getControlValue(key), fallback), 'Custom {{word}} {{text}}');
+        await tab.setControlValue(key, '  ');
+        assert.equal(tab.getControlValue(key), '');
+        const [section, property] = key.split('.');
+        assert.equal(api.resolvePrompt(plugin.settings[section][property], fallback), fallback);
+        await tab.setControlValue(key, '');
+        assert.equal(api.resolvePrompt(plugin.settings[section][property], fallback), fallback);
+    }
+    assert.ok(rows.every(row => row.name !== 'Restore default prompt'));
 });
