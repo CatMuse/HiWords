@@ -5207,3 +5207,21 @@ button.hi-words-file-empty-state svg {
 body .hi-words-hidden.hi-words-hidden {
     display: none;
 }
+
+/* Native settings groups: keep spacing scoped to this plugin. */
+.hi-words-settings-group + .hi-words-settings-group {
+    margin-top: 24px;
+}
+
+.hi-words-settings-group .hi-words-settings-statistics {
+    display: block;
+}
+
+.hi-words-settings-group .hi-words-settings-statistics .setting-item-control {
+    width: 100%;
+}
+
+.hi-words-settings-group .hi-words-stats {
+    width: 100%;
+    margin: 8px 0 0;
+}

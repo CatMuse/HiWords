@@ -127,7 +127,7 @@ Select any text and right-click to quickly add it to your vocabulary book, or us
 ### AI Assistant Settings
 
 - **API URL**: Your AI service endpoint
-- **API Key**: Select an authentication key stored in Obsidian SecretStorage (Obsidian 1.11.5 or newer). HiWords stores only the secret ID in its settings. Legacy plaintext keys are removed on upgrade; select a secret again to resume AI features.
+- **API Key**: Select an authentication key stored in Obsidian SecretStorage (Obsidian 1.13.0 or newer). HiWords stores only the secret ID in its settings. Legacy plaintext keys are removed on upgrade; select a secret again to resume AI features.
 - **Model**: AI model to use (e.g., gpt-4o-mini)
 - **Custom Prompt**: Design your prompt with `{{word}}` and `{{sentence}}` placeholders
 

@@ -6,6 +6,16 @@ export default {
 
     // 设置
     settings: {
+        group_books: "词库管理",
+        group_display: "高亮与显示",
+        group_learning: "学习与发音",
+        group_ai: "AI 与翻译",
+        group_canvas: "Canvas 布局",
+        card_width: "卡片宽度",
+        card_height: "卡片高度",
+        json_object_required: "请输入 JSON 对象。",
+        positive_integer_required: "请输入正整数。",
+
         vocabulary_books: "单词本",
         add_vocabulary_book: "添加单词本",
         remove_vocabulary_book: "移除",

@@ -6,6 +6,16 @@ export default {
 
     // Settings
     settings: {
+        group_books: "Word books",
+        group_display: "Highlighting and display",
+        group_learning: "Learning and pronunciation",
+        group_ai: "AI and translation",
+        group_canvas: "Canvas layout",
+        card_width: "Card width",
+        card_height: "Card height",
+        json_object_required: "Enter a JSON object.",
+        positive_integer_required: "Enter a positive whole number.",
+
         vocabulary_books: "Word books",
         add_vocabulary_book: "Add word book",
         remove_vocabulary_book: "Remove",
