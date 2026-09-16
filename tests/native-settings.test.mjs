@@ -29,7 +29,7 @@ test('settings use five native groups with independently indexed controls', () =
     assert.equal(tab.getSettingDefinitions().length, 5);
     assert.ok(tab.getSettingDefinitions().every(group => group.type === 'group' && group.heading));
     const keys = rows.filter(row => row.control).map(row => row.control.key);
-    assert.equal(keys.length, 20);
+    assert.equal(keys.length, 21);
     assert.equal(new Set(keys).size, keys.length);
     assert.equal(typeof tab.display, 'undefined');
 });

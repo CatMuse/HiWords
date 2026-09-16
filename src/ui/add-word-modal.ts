@@ -1,3 +1,4 @@
+import { addVocabularyWord, getAddableVocabularyBooks } from '../services/add-vocabulary-word';
 import { DEFAULT_AI_DEFINITION_PROMPT, resolvePrompt } from '../settings';
 import { App, Modal, Notice, setIcon } from 'obsidian';
 import type { WordDefinition } from '../utils';
@@ -86,33 +87,21 @@ export class AddWordModal extends Modal {
         bookSelectContainer.createEl('label', { text: t('modals.book_label'), cls: 'hiwords-form-item-label' });
 
         const bookSelect = bookSelectContainer.createEl('select', { cls: 'dropdown' });
-        bookSelect.createEl('option', { text: t('modals.select_book'), value: '' });
+        const placeholder = bookSelect.createEl('option', { text: t('modals.select_book'), value: '' });
+        placeholder.disabled = true;
+        placeholder.hidden = true;
+        placeholder.selected = true;
 
-        const enabledBooks = this.plugin.settings.vocabularyBooks
-            .filter(book => book.enabled && book.path.endsWith('.canvas'));
-        let defaultBookSelected = false;
-        enabledBooks.forEach((book, index) => {
-            const option = bookSelect.createEl('option', { text: book.name, value: book.path });
-
-            // 如果是编辑模式且当前词汇来自此生词本，则选中该选项
-            if (this.isEditMode && this.definition && this.definition.source === book.path) {
-                option.selected = true;
-                defaultBookSelected = true;
-            }
-            // 如果是添加模式，优先选择上次使用的生词本
-            else if (!this.isEditMode && !defaultBookSelected) {
-                // 优先选择上次使用的生词本
-                if (AddWordModal.lastSelectedBookPath && book.path === AddWordModal.lastSelectedBookPath) {
-                    option.selected = true;
-                    defaultBookSelected = true;
-                }
-                // 如果没有缓存或缓存的生词本不可用，选择第一个
-                else if (!AddWordModal.lastSelectedBookPath && index === 0) {
-                    option.selected = true;
-                    defaultBookSelected = true;
-                }
-            }
-        });
+        bookSelect.disabled = true;
+        void getAddableVocabularyBooks(this.plugin).then(books => {
+            if (!bookSelect.isConnected) return;
+            const available = this.isEditMode ? books.filter(book => book.path.endsWith('.canvas')) : books;
+            for (const book of available) bookSelect.createEl('option', { text: book.name, value: book.path });
+            const preferred = this.isEditMode ? this.definition?.source : AddWordModal.lastSelectedBookPath;
+            bookSelect.value = available.some(book => book.path === preferred) ? preferred! : available[0]?.path || '';
+            bookSelect.disabled = this.isEditMode || available.length === 0;
+            colorSelectContainer.hidden = bookSelect.value.endsWith('.hiwords');
+        }).catch(error => console.error('HiWords failed to load destination books:', error));
 
         // 如果是编辑模式，禁用生词本选择（不允许更改词汇所在的生词本）
         if (this.isEditMode && this.definition) {
@@ -121,6 +110,7 @@ export class AddWordModal extends Modal {
 
         // 颜色选择
         const colorSelectContainer = contentEl.createDiv({ cls: 'hiwords-form-item' });
+        bookSelect.addEventListener('change', () => { colorSelectContainer.hidden = bookSelect.value.endsWith('.hiwords'); });
         colorSelectContainer.createEl('label', { text: t('modals.color_label'), cls: 'hiwords-form-item-label' });
 
         const colorSelect = colorSelectContainer.createEl('select', { cls: 'dropdown setting-item-select' });
@@ -312,6 +302,7 @@ export class AddWordModal extends Modal {
         const buttonTextKey = this.isEditMode ? 'modals.save_button' : 'modals.add_button';
         const actionButton = rightButtonGroup.createEl('button', { text: t(buttonTextKey), cls: 'mod-cta' });
         actionButton.onclick = () => {
+            if (actionButton.disabled) return;
             void (async () => {
                 // 在添加模式下，从输入框获取单词
                 let finalWord = this.word;
@@ -345,6 +336,7 @@ export class AddWordModal extends Modal {
                     return;
                 }
 
+                actionButton.disabled = true;
                 // 显示加载中提示
                 const loadingNotice = this.isEditMode ?
                     new Notice(t('notices.updating_word'), 0) :
@@ -380,13 +372,9 @@ export class AddWordModal extends Modal {
                         }
                     } else {
                         // 添加模式：调用添加词汇到 Canvas 的方法
-                        success = await this.plugin.vocabularyManager.addWordToCanvas(
-                            selectedBook,
-                            finalWord,
-                            definition,
-                            colorValue,
-                            aliases
-                        );
+                        success = await addVocabularyWord(this.plugin, selectedBook, {
+                            word: finalWord, definition, aliases,
+                        }, colorValue);
 
                         // 关闭加载提示
                         loadingNotice.hide();
@@ -409,7 +397,9 @@ export class AddWordModal extends Modal {
                 } catch (error) {
                     loadingNotice.hide();
                     console.error('Failed to add/update word:', error);
-                    new Notice(t('notices.error_processing_word'));
+                    new Notice(error instanceof Error ? error.message : t('notices.error_processing_word'));
+                } finally {
+                    actionButton.disabled = false;
                 }
             })();
         };

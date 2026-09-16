@@ -4,6 +4,7 @@ import { WordDefinition, mapCanvasColorToCSSVar, getColorWithOpacity, playWordTT
 import { t } from '../i18n';
 import { findPatternMatches } from '../utils/pattern-matcher';
 import { renderWordCard } from './word-card-renderer';
+import type { SidebarWordOrigin, WebWordSource } from './sidebar-word-origin';
 import { isWordCard } from '../schema/hiwords';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
@@ -42,6 +43,10 @@ export class HiWordsSidebarView extends ItemView {
     private normalDefinitionsCache: WordDefinition[] = []; // 缓存普通单词列表
     private sectionTabStates: Map<string, number> = new Map(); // 记录每个单词当前激活的分区 Tab
     private expandedWordStates: Map<string, boolean> = new Map(); // 记录用户手动展开/收起的词卡状态
+    private webSummaryRevision = -2;
+    private webUpdateTimer: number | null = null;
+    private webSource: WebWordSource | null = null;
+    private detailRevision = 0;
     private manualDetailMode = false; // 单词管理页打开详情时，不跟随当前文档扫描结果
 
     constructor(leaf: WorkspaceLeaf, plugin: HiWordsPlugin) {
@@ -75,6 +80,8 @@ export class HiWordsSidebarView extends ItemView {
             this.app.workspace.on('file-open', (file: TFile | null) => {
                 if (this.isSupportedDocumentFile(file)) {
                     this.manualDetailMode = false;
+                    this.webSource = null;
+                    this.detailRevision++;
                 }
                 this.scheduleUpdate(120);
             })
@@ -84,8 +91,16 @@ export class HiWordsSidebarView extends ItemView {
         // 这里只响应真实的 Markdown/PDF 文档 leaf，避免激活侧边栏自身时误刷新。
         this.registerEvent(
             this.app.workspace.on('active-leaf-change', (leaf: WorkspaceLeaf | null) => {
+                if (leaf?.view.getViewType() === 'webviewer') {
+                    this.manualDetailMode = false;
+                    this.lastInteractionTime = 0;
+                    this.refreshWebWords();
+                    return;
+                }
                 const file = this.getSupportedDocumentFileFromLeaf(leaf);
                 if (!file) return;
+                this.webSource = null;
+                this.detailRevision++;
 
                 this.manualDetailMode = false;
                 this.lastInteractionTime = 0;
@@ -128,17 +143,35 @@ export class HiWordsSidebarView extends ItemView {
     }
 
     async onClose() {
-        // 清理资源
+        if (this.webUpdateTimer !== null) window.clearTimeout(this.webUpdateTimer);
+        this.detailRevision++;
+        if (this.updateTimer !== null) window.clearTimeout(this.updateTimer);
+        this.webSource = null;
     }
 
-    async focusWord(wordDef: WordDefinition, origin: 'document' | 'library' = 'document') {
+    async focusWord(wordDef: WordDefinition, origin: SidebarWordOrigin = 'document') {
         if (this.updateTimer !== null) {
             window.clearTimeout(this.updateTimer);
             this.updateTimer = null;
         }
 
+        this.detailRevision++;
+        this.webSource = typeof origin === 'object' ? origin : null;
         const key = this.getWordStateKey(wordDef);
 
+        if (this.webSource) {
+            const snapshot = this.plugin.getWebPageWords(this.webSource.leaf);
+            this.manualDetailMode = false;
+            this.currentFile = null;
+            this.currentWords = snapshot?.words || [];
+            this.webSummaryRevision = snapshot?.revision ?? -1;
+            if (!this.currentWords.some(item => this.getWordStateKey(item) === key)) this.currentWords.push(wordDef);
+            this.activeTab = wordDef.mastered ? 'mastered' : 'learning';
+            this.expandedWordStates.set(key, true);
+            await this.renderWordList();
+            this.scrollWordCardIntoView(key);
+            return;
+        }
         if (origin === 'library') {
             this.manualDetailMode = true;
             this.currentFile = null;
@@ -172,6 +205,41 @@ export class HiWordsSidebarView extends ItemView {
         this.scrollWordCardIntoView(key);
     }
 
+    public refreshWebWords(): void {
+        if (this.webUpdateTimer !== null) return;
+        this.webUpdateTimer = window.setTimeout(() => {
+            this.webUpdateTimer = null;
+            void this.updateWebWords().catch(error => console.error('HiWords web word list failed:', error));
+        }, 100);
+    }
+
+    private async updateWebWords(): Promise<void> {
+        const snapshot = this.plugin.getWebPageWords();
+        if (!snapshot) return;
+        const changedPage = this.webSource?.leaf !== snapshot.leaf || this.webSource.url !== snapshot.url;
+        if (!changedPage && this.webSummaryRevision === snapshot.revision) return;
+        this.detailRevision++;
+        this.manualDetailMode = false;
+        this.currentFile = null;
+        this.webSource = { type: 'web', leaf: snapshot.leaf, url: snapshot.url };
+        this.webSummaryRevision = snapshot.revision;
+        this.currentWords = snapshot.words;
+        if (changedPage) { this.activeTab = 'learning'; this.firstLoadForFile = true; }
+        await this.renderWordList();
+    }
+
+    public clearWebSource(leaf: WorkspaceLeaf): void {
+        if (this.webSource?.leaf !== leaf) return;
+        this.detailRevision++;
+        this.webSource = null;
+        this.currentWords = [];
+        this.currentFile = null;
+        this.manualDetailMode = false;
+        this.webSummaryRevision = -2;
+        if (this.updateTimer !== null) { window.clearTimeout(this.updateTimer); this.updateTimer = null; }
+        this.showEmptyState(t('sidebar.web_empty'));
+    }
+
     public applyDefaultDisplayMode() {
         this.expandedWordStates.clear();
         void this.renderWordList();
@@ -193,9 +261,11 @@ export class HiWordsSidebarView extends ItemView {
      * 更新侧边栏视图
      */
     private async updateView() {
-        if (this.manualDetailMode) {
+        if (this.plugin.getWebPageWords() && !this.manualDetailMode) {
+            await this.updateWebWords();
             return;
         }
+        if (this.manualDetailMode) return;
 
         const activeFile = this.app.workspace.getActiveFile();
         
@@ -367,13 +437,17 @@ export class HiWordsSidebarView extends ItemView {
         this.bindDelegatedHandlers(container as HTMLElement);
 
         if (this.currentWords.length === 0) {
-            this.showEmptyState(t('sidebar.empty_state'));
+            this.showEmptyState(t(this.webSource ? 'sidebar.web_empty' : 'sidebar.empty_state'));
             return;
         }
 
+        if (this.webSource) {
+            (container as HTMLElement).createDiv({ cls: 'hi-words-web-detail-label', text: t('sidebar.web_words') });
+        }
+
         // 分组单词：未掌握和已掌握
-        const unmasteredWords = this.currentWords.filter(word => !word.mastered);
-        const masteredWords = this.currentWords.filter(word => word.mastered);
+        const unmasteredWords = this.currentWords.filter(word => !this.plugin.settings.enableMasteredFeature || !word.mastered);
+        const masteredWords = this.currentWords.filter(word => this.plugin.settings.enableMasteredFeature && word.mastered);
         
 
         // 智能初始标签页选择：仅在切换到新文件后的首次加载时进行
@@ -524,7 +598,7 @@ export class HiWordsSidebarView extends ItemView {
                 if (event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();
                 event.stopPropagation();
-                buttonContainer.click();
+                buttonContainer.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
             });
             
             // 注意：点击事件由事件委托统一处理（bindDelegatedHandlers），无需在此添加监听器
@@ -975,6 +1049,11 @@ export class HiWordsSidebarView extends ItemView {
      * 强制刷新视图
      */
     public refresh() {
+        if (this.plugin.getWebPageWords()) {
+            this.webSummaryRevision = -2;
+            this.refreshWebWords();
+            return;
+        }
         this.currentFile = null; // 强制重新扫描
         this.scheduleUpdate(0);
     }

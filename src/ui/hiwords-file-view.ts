@@ -1,3 +1,5 @@
+import { appendWordCard } from '../services/add-vocabulary-word';
+import type { NewVocabularyWord } from '../services/add-vocabulary-word';
 import { Menu, Modal, normalizePath, Notice, setIcon, TextFileView, TFile, WorkspaceLeaf } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import {
@@ -83,6 +85,18 @@ export class HiWordsFileView extends TextFileView {
         this.selectedModule = card ? getHiWordsEditorModules(this.document.pack.cardKind, this.document.pack.fields)[0]?.id || 'identity' : 'identity';
         this.renderCardList();
         this.renderSelectedCard();
+    }
+
+    async appendVocabularyWord(input: NewVocabularyWord): Promise<boolean> {
+        if (this.document.kind !== 'hiwords') return false;
+        const card = appendWordCard(this.document.pack, input);
+        this.markChanged(card);
+        this.renderCardList();
+        this.renderValidation();
+        await this.save();
+        if (this.refreshTimer !== null) { window.clearTimeout(this.refreshTimer); this.refreshTimer = null; }
+        await this.refreshVocabularyAfterSave();
+        return true;
     }
 
     async mutateHiWordsCard(

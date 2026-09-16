@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: HiWordsSettings = {
     masteredMigrationVersion: 0,
     showDefinitionOnHover: true,
     enableAutoHighlight: true,
+    enableWebHighlight: false,
     highlightStyle: 'underline', // 默认使用下划线样式
     enableMasteredFeature: true, // 默认启用已掌握功能
     showMasteredInSidebar: true,  // 跟随 enableMasteredFeature 的值

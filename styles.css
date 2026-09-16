@@ -4945,3 +4945,9 @@ body .hi-words-hidden.hi-words-hidden {
     color: var(--text-faint);
     opacity: 1;
 }
+
+.hi-words-web-detail-label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    margin: 0 0 var(--size-4-2);
+}

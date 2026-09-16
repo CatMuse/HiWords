@@ -26,6 +26,8 @@ export default {
         show_definition_on_hover_desc: "鼠标悬停在高亮词汇上时显示定义",
         enable_auto_highlight: "启用自动高亮",
         enable_auto_highlight_desc: "在阅读时自动高亮生词本中的词汇",
+        enable_web_highlight: "网页高亮",
+        enable_web_highlight_desc: "在桌面端 Web viewer 中高亮生词，点击查看侧边栏详情。匹配仅在本地进行。",
         highlight_style: "高亮样式",
         highlight_style_desc: "选择单词在文本中的高亮显示方式",
         enable_section_tabs: "启用分区 Tab 显示",
@@ -126,6 +128,8 @@ export default {
 
     // 侧边栏
     sidebar: {
+        web_words: "当前网页生词",
+        web_empty: "当前网页未匹配到生词。请确认网页高亮已开启，且生词本已加载。",
         title: "HiWords",
         empty_state: "未找到单词。添加单词到您的生词本以在此处查看。",
         source_prefix: "来自: ",

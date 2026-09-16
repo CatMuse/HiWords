@@ -137,6 +137,7 @@ export interface HiWordsSettings {
     masteredMigrationVersion?: number;
     showDefinitionOnHover: boolean;
     enableAutoHighlight: boolean;
+    enableWebHighlight: boolean;
     highlightStyle: HighlightStyle; // 高亮样式
     enableMasteredFeature: boolean; // 启用已掌握功能
     showMasteredInSidebar: boolean; // 在侧边栏显示已掌握单词

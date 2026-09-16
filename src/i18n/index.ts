@@ -20,6 +20,8 @@ export interface LanguagePack {
         show_definition_on_hover_desc: string;
         enable_auto_highlight: string;
         enable_auto_highlight_desc: string;
+        enable_web_highlight?: string;
+        enable_web_highlight_desc?: string;
         highlight_style: string;
         highlight_style_desc: string;
         enable_section_tabs?: string;
@@ -96,6 +98,8 @@ export interface LanguagePack {
         mode_filename_with_alias?: string;
     };
     sidebar: {
+        web_words?: string;
+        web_empty?: string;
         title: string;
         empty_state: string;
         source_prefix: string;

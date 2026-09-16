@@ -1,3 +1,4 @@
+import type { PopoverContext } from './popover-context';
 import { Component, MarkdownView, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { TranslationService } from '../services/translation-service';
@@ -11,6 +12,9 @@ import { extractSentenceFromEditorMultiline, extractSentenceFromSelection } from
 export class SelectionTranslatePopover extends Component {
     private plugin: HiWordsPlugin;
     private translationService: TranslationService;
+    private externalContext?: PopoverContext;
+    private requestRevision = 0;
+    private externalListeners?: Component;
     private activePopover: HTMLElement | null = null;
     private debounceTimer: number | null = null;
     private currentTranslateText = '';
@@ -54,6 +58,19 @@ export class SelectionTranslatePopover extends Component {
      */
     updateSettings() {
         this.translationService.updateSettings(this.plugin.settings);
+        if (!this.plugin.settings.selectionTranslate.enabled) this.removePopover();
+    }
+
+    showSelection(text: string, context: PopoverContext): void {
+        if (!this.plugin.settings.selectionTranslate.enabled || !context.isCurrent()) return;
+        if (!text.trim() || text.length > 500) return;
+        if (this.externalContext?.owner === context.owner && this.externalContext.sourcePath === context.sourcePath
+            && this.currentTranslateText === text.trim() && this.activePopover) return;
+        this.showPopover(text.trim(), context.rect, context);
+    }
+
+    closeForOwner(owner: object): void {
+        if (this.externalContext?.owner === owner) this.removePopover();
     }
 
     /**
@@ -114,7 +131,7 @@ export class SelectionTranslatePopover extends Component {
         if (rect.width < 2 && rect.height < 2) return;
 
         // 创建并显示浮窗
-        this.showPopover(selectedText, rect, event);
+        this.showPopover(selectedText, rect);
     }
 
     /**
@@ -153,10 +170,15 @@ export class SelectionTranslatePopover extends Component {
     /**
      * 显示翻译浮窗
      */
-    private showPopover(text: string, rect: DOMRect, event: MouseEvent) {
+    private showPopover(text: string, rect: PopoverContext['rect'], context?: PopoverContext) {
         this.removePopover();
 
-        const popover = createDiv();
+        this.externalContext = context;
+        this.currentTranslateText = text;
+        const sentence = context?.sentence ?? this.getSentence();
+        const doc = context?.document || activeDocument;
+        const win = doc.defaultView!;
+        const popover = doc.createElement('div');
         popover.className = 'hi-words-translate-popover';
 
         // 标题栏：选中文本 + 操作按钮
@@ -172,7 +194,7 @@ export class SelectionTranslatePopover extends Component {
         setIcon(addBtn, 'book-plus');
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const sentence = this.getSentence();
+            if (context && !context.isCurrent()) return;
             const translationResult = contentEl.querySelector('.hi-words-translate-result')?.textContent || '';
             this.removePopover();
             this.plugin.addOrEditWord(text, sentence, translationResult);
@@ -203,14 +225,20 @@ export class SelectionTranslatePopover extends Component {
         // 阻止浮窗内的 mousedown 冒泡（防止关闭）
         popover.addEventListener('mousedown', (e) => e.stopPropagation());
 
-        activeDocument.body.appendChild(popover);
+        doc.body.appendChild(popover);
+        if (context) {
+            const listeners = new Component(); this.addChild(listeners); this.externalListeners = listeners;
+            listeners.registerDomEvent(doc, 'mousedown', event => { if (!popover.contains(event.target as Node)) this.removePopover(); });
+            listeners.registerDomEvent(doc, 'keydown', event => { if (event.key === 'Escape') this.removePopover(); });
+            listeners.registerDomEvent(win, 'resize', () => this.removePopover());
+        }
 
         // 定位浮窗
         window.requestAnimationFrame(() => {
-            const scrollTop = window.scrollY || activeDocument.documentElement.scrollTop;
-            const scrollLeft = window.scrollX || activeDocument.documentElement.scrollLeft;
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
+            const scrollTop = win.scrollY || doc.documentElement.scrollTop;
+            const scrollLeft = win.scrollX || doc.documentElement.scrollLeft;
+            const viewportWidth = win.innerWidth;
+            const viewportHeight = win.innerHeight;
 
             let left = rect.left + scrollLeft;
             let top = rect.bottom + scrollTop + 6;
@@ -251,21 +279,24 @@ export class SelectionTranslatePopover extends Component {
         }
 
         this.isTranslating = true;
-
+        const revision = ++this.requestRevision;
+        const context = this.externalContext;
+        const current = () => revision === this.requestRevision && contentEl.isConnected && (!context || context.isCurrent());
         try {
             const result = await this.translationService.translate(text);
 
-            // 直接更新 contentEl（即使浮窗已被移除也无副作用）
+            if (!current()) return;
             contentEl.empty();
             contentEl.createDiv({ cls: 'hi-words-translate-result', text: result });
         } catch (error) {
+            if (!current()) return;
             contentEl.empty();
             const errorEl = contentEl.createDiv({ cls: 'hi-words-translate-error' });
             const errorIconEl = errorEl.createDiv({ cls: 'hi-words-translate-error-icon' });
             setIcon(errorIconEl, 'alert-circle');
             errorEl.createSpan({ text: error instanceof Error ? error.message : t('translate.failed') });
         } finally {
-            this.isTranslating = false;
+            if (revision === this.requestRevision) this.isTranslating = false;
         }
     }
 
@@ -273,6 +304,12 @@ export class SelectionTranslatePopover extends Component {
      * 移除浮窗
      */
     private removePopover() {
+        this.requestRevision++;
+        if (this.externalListeners) { this.removeChild(this.externalListeners); this.externalListeners = undefined; }
+        if (this.debounceTimer !== null) { window.clearTimeout(this.debounceTimer); this.debounceTimer = null; }
+        this.externalContext = undefined;
+        this.translationService.abort();
+        this.isTranslating = false;
         if (this.activePopover && this.activePopover.parentNode) {
             this.activePopover.parentNode.removeChild(this.activePopover);
         }

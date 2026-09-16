@@ -17,11 +17,29 @@ An intelligent Obsidian plugin that transforms your reading into an immersive vo
 
 ---
 
+The add-word dialog accepts enabled Canvas books and valid word-type `.hiwords` books. Person, concept, custom-type, and invalid files are excluded. For `.hiwords`, words, aliases, and definitions are saved using the existing card format; colors follow the book display settings. Duplicate words are rejected without replacing existing cards.
+
 ## 📚 Canvas-Based Vocabulary Management
 
 Manage your vocabulary books using Obsidian's powerful Canvas feature. You can freely arrange vocabulary cards on Canvas with drag-and-drop, create multiple independent vocabulary books for different topics, languages, or learning goals, and use node colors to categorize words by difficulty, topic, or mastery level. All changes to your vocabulary books are automatically synced and reflected in your reading highlights.
 
 ![Vocabulary Management](docs/vocabulary_management.jpg)
+
+---
+
+## Web page vocabulary highlighting
+
+Enable the **Web viewer** core plugin on desktop, then turn on **Settings → HiWords → Highlighting and display → Web page highlighting**, with **Enable auto highlight** also on. Web highlighting is off by default. Once enabled, it processes existing and newly opened HTTP/HTTPS pages in Web viewer.
+
+- Uses your vocabulary, aliases, colors, and mastery filtering. Vault folder inclusion/exclusion rules do not apply to web pages.
+- Handles ordinary page text, dynamically added text, navigation, reloads, and vocabulary updates. Work is batched locally without changing the page's text nodes.
+- Supports underline, dotted, wavy, and background styles. Bold falls back to a background on web pages.
+- Opening the HiWords sidebar while browsing a page lists all matched vocabulary in the loaded page text, deduplicated across occurrences and aliases, with learning/mastered tabs. Dynamic content and page changes update the list. Clicking a highlighted word expands its card within the full list. Click the sidebar word to hear pronunciation, or mark/unmark it as mastered to update webpage highlights. Normal links keep their navigation; use Alt / Option + click to inspect highlighted words inside links. Switching web tabs or navigating replaces the previous page list. With web highlighting enabled, an open sidebar continues collecting words even when auto highlighting is off. Only text already loaded into the page is included; content loaded later appears as it arrives. Hover over a highlighted word to use the same definition popover as notes, including its sections, pronunciation, mastery, notes, sentences, and vault context. When selection translate is enabled, selecting up to 500 characters automatically opens the existing translation popover and translates using your configured AI service and target language. Its copy and add-to-vocabulary actions are unchanged; adding carries the selected context and translation into the existing editor. Reader view, Canvas web cards, mobile, nested iframes, Shadow DOM, and image text are not supported.
+- Skips code, form controls, editable regions, and hidden content. Matching is per text node, so words/phrases split across markup are not matched. Individual text nodes over 200,000 characters are skipped.
+
+Privacy: automatic highlighting and hover definitions stay local. With selection translate enabled, selecting text automatically sends the selected text (with your configured prompt/target language) to your configured AI provider. Surrounding page context is not sent by this translation action. Nothing is saved to the vault until you confirm the vocabulary editor. Pages receive only matching ranges and colors for their own text, plus opaque local word tokens, not the full vocabulary, definitions, file paths, or keys. Sidebar pronunciation uses your existing TTS service only when you click the pronunciation control. Turning off web highlighting, auto highlighting, or the plugin removes its page highlights and observers.
+
+This feature depends on the desktop Web viewer's internal web container and Chromium's CSS Custom Highlight API. Unsupported versions are skipped.
 
 ---
 

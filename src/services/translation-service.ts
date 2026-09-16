@@ -36,7 +36,8 @@ export class TranslationService {
     private readonly getAPIKey: () => string;
     private cache = new Map<string, CacheEntry>();
     private readonly CACHE_TTL = 30 * 60 * 1000; // 30 分钟缓存
-    private abortController: AbortController | null = null;
+    private revision = 0;
+    private configKey = '';
 
     constructor(settings: HiWordsSettings, getAPIKey: () => string) {
         this.settings = settings;
@@ -61,7 +62,11 @@ export class TranslationService {
         }
 
         const cleanText = text.trim();
-        const cacheKey = `ai:${cleanText}`;
+        // Settings are mutated in place; snapshot the effective configuration, including the selected secret value.
+        const configKey = JSON.stringify([this.settings.aiService, this.settings.selectionTranslate, this.getAPIKey()]);
+        if (configKey !== this.configKey) { this.cache.clear(); this.configKey = configKey; this.revision++; }
+        const revision = this.revision;
+        const cacheKey = cleanText;
 
         // 检查缓存
         const cached = this.cache.get(cacheKey);
@@ -71,6 +76,7 @@ export class TranslationService {
 
         const result = await this.translateWithAI(cleanText);
 
+        if (revision !== this.revision) throw new Error(t('translate.failed'));
         // 存入缓存
         this.cache.set(cacheKey, { content: result, timestamp: Date.now() });
 
@@ -81,10 +87,8 @@ export class TranslationService {
      * 取消正在进行的翻译请求
      */
     abort() {
-        if (this.abortController) {
-            this.abortController.abort();
-            this.abortController = null;
-        }
+        // Obsidian requestUrl cannot abort transport. Invalidate completion and cache writes instead.
+        this.revision++;
     }
 
     /**

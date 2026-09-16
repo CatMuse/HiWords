@@ -26,6 +26,8 @@ export default {
         show_definition_on_hover_desc: "Show word definition when hovering over highlighted words",
         enable_auto_highlight: "Enable auto highlight",
         enable_auto_highlight_desc: "Automatically highlight words from vocabulary books while reading",
+        enable_web_highlight: "Web page highlighting",
+        enable_web_highlight_desc: "Highlight vocabulary in desktop Web viewer and click for sidebar details. Matching stays local.",
         highlight_style: "Highlight style",
         highlight_style_desc: "Choose how words are highlighted in text",
         enable_section_tabs: "Enable section tabs",
@@ -126,6 +128,8 @@ export default {
 
     // Sidebar
     sidebar: {
+        web_words: "Words on this page",
+        web_empty: "No vocabulary matches on this page. Check that web highlighting is enabled and your vocabulary books are loaded.",
         title: "HiWords",
         empty_state: "No words found. Add words to your vocabulary books to see them here.",
         source_prefix: "From: ",

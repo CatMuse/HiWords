@@ -3,6 +3,8 @@ import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
 import { HiWordsSettings, VocabularyBookDisplaySettings, WordDefinition } from './src/utils';
 import { normalizeStoredSettings } from './src/settings-storage';
+import type { SidebarWordOrigin } from './src/ui/sidebar-word-origin';
+import { WebHighlighter } from './src/web/web-highlighter';
 import { registerReadingModeHighlighter } from './src/ui/reading-mode-highlighter';
 import { registerPDFHighlighter, cleanupPDFHighlighter } from './src/ui/pdf-highlighter';
 import { VocabularyManager, MasteredService, createWordHighlighterExtension, highlighterManager } from './src/core';
@@ -26,6 +28,7 @@ export default class HiWordsPlugin extends Plugin {
     editorExtensions: Extension[] = [];
     private isSidebarInitialized = false;
     private discardedLegacyAPIKey = false;
+    private webHighlighter?: WebHighlighter;
 
     async onload() {
         // 加载设置（快速完成）
@@ -85,6 +88,7 @@ export default class HiWordsPlugin extends Plugin {
         
         // 注册 PDF 高亮功能
         registerPDFHighlighter(this);
+        this.webHighlighter = new WebHighlighter(this);
         
         // 添加设置页面
         this.addSettingTab(new HiWordsSettingTab(this.app, this));
@@ -150,6 +154,7 @@ export default class HiWordsPlugin extends Plugin {
     refreshHighlighter() {
         // 始终刷新高亮器,让 WordHighlighter 内部根据设置决定是否高亮
         highlighterManager.refreshAll();
+        this.webHighlighter?.refresh();
         
         // 刷新阅读模式（只更新可见区域）
         const hooks = this as HiWordsPlugin & HiWordsRefreshHooks;
@@ -217,12 +222,30 @@ export default class HiWordsPlugin extends Plugin {
         }
     }
 
-    async showWordInSidebar(wordDef: WordDefinition, origin: 'document' | 'library' = 'document') {
+    async showWordInSidebar(wordDef: WordDefinition, origin: SidebarWordOrigin = 'document', isCurrent: () => boolean = () => true) {
+        if (!isCurrent()) return;
         await this.activateSidebarView();
+        if (!isCurrent()) return;
         const leaves = this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE);
         const view = leaves[0]?.view;
         if (view instanceof HiWordsSidebarView) {
             await view.focusWord(wordDef, origin);
+        }
+    }
+
+    getWebPageWords(leaf?: WorkspaceLeaf) {
+        return this.webHighlighter?.getPageWords(leaf) ?? null;
+    }
+
+    refreshWebSidebar(): void {
+        for (const leaf of this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE)) {
+            if (leaf.view instanceof HiWordsSidebarView) leaf.view.refreshWebWords();
+        }
+    }
+
+    clearWebWordInSidebar(leaf: WorkspaceLeaf) {
+        for (const item of this.app.workspace.getLeavesOfType(SIDEBAR_VIEW_TYPE)) {
+            if (item.view instanceof HiWordsSidebarView) item.view.clearWebSource(leaf);
         }
     }
 
