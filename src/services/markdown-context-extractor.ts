@@ -1,4 +1,5 @@
 import type { CachedMetadata } from 'obsidian';
+import { getSentenceRange as findSentenceRange } from '../utils/sentence-boundaries';
 
 export type SearchableMarkdownBlockType = 'paragraph' | 'blockquote' | 'callout' | 'list' | 'text';
 
@@ -23,16 +24,6 @@ interface SearchableSection {
         end: { offset: number };
     };
 }
-
-interface SegmentLike {
-    segment: string;
-    index: number;
-}
-
-type SegmenterConstructor = new (
-    locales?: string | string[],
-    options?: { granularity: 'sentence' }
-) => { segment(input: string): Iterable<SegmentLike> };
 
 const SEARCHABLE_BLOCK_TYPES = new Set<SearchableMarkdownBlockType>([
     'paragraph',
@@ -264,25 +255,8 @@ function getSentenceRange(source: string, matchOffset: number, listBlock: boolea
 
     const searchable = source.slice(searchableStart, searchableEnd);
     const relativeMatch = matchOffset - searchableStart;
-    const Segmenter = (Intl as unknown as { Segmenter?: SegmenterConstructor }).Segmenter;
-
-    if (Segmenter) {
-        const segments = new Segmenter(undefined, { granularity: 'sentence' }).segment(searchable);
-        for (const item of segments) {
-            const end = item.index + item.segment.length;
-            if (relativeMatch >= item.index && relativeMatch < end) {
-                return constrainRange(source, searchableStart + item.index, searchableStart + end, matchOffset);
-            }
-        }
-    }
-
-    const before = searchable.slice(0, relativeMatch);
-    const after = searchable.slice(relativeMatch);
-    const boundaryBefore = Math.max(before.lastIndexOf('.'), before.lastIndexOf('!'), before.lastIndexOf('?'), before.lastIndexOf('。'), before.lastIndexOf('！'), before.lastIndexOf('？'));
-    const boundaryAfter = after.search(/[.!?。！？]/);
-    const start = searchableStart + (boundaryBefore === -1 ? 0 : boundaryBefore + 1);
-    const end = searchableStart + (boundaryAfter === -1 ? searchable.length : relativeMatch + boundaryAfter + 1);
-    return constrainRange(source, start, end, matchOffset);
+    const { start, end } = findSentenceRange(searchable, relativeMatch, false);
+    return constrainRange(source, searchableStart + start, searchableStart + end, matchOffset);
 }
 
 function constrainRange(source: string, start: number, end: number, matchOffset: number): TextRange {

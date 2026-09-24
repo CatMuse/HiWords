@@ -1,6 +1,7 @@
 /**
  * 句子提取工具
  */
+import { getSentenceRange } from './sentence-boundaries';
 
 /**
  * 从文本中提取包含指定位置的句子
@@ -13,35 +14,8 @@ export function extractSentence(text: string, position: number): string {
         return '';
     }
 
-    // 句子结束标记
-    const sentenceEnders = /[.!?。！？\n]/;
-    
-    // 向前查找句子开始位置
-    let start = position;
-    while (start > 0) {
-        const char = text[start - 1];
-        if (sentenceEnders.test(char)) {
-            break;
-        }
-        start--;
-    }
-    
-    // 向后查找句子结束位置
-    let end = position;
-    while (end < text.length) {
-        const char = text[end];
-        if (sentenceEnders.test(char)) {
-            // 包含结束标点
-            end++;
-            break;
-        }
-        end++;
-    }
-    
-    // 提取句子并清理空白
-    const sentence = text.substring(start, end).trim();
-    
-    return sentence;
+    const { start, end } = getSentenceRange(text, position);
+    return text.substring(start, end).trim();
 }
 
 /**
