@@ -6,6 +6,7 @@ import { findPatternMatches } from '../utils/pattern-matcher';
 import { renderWordCard } from './word-card-renderer';
 import type { SidebarWordOrigin, WebWordSource } from './sidebar-word-origin';
 import { isWordCard } from '../schema/hiwords';
+import { zoomToCanvasNode } from '../canvas/canvas-navigation';
 
 export const SIDEBAR_VIEW_TYPE = 'hi-words-sidebar';
 
@@ -1018,7 +1019,10 @@ export class HiWordsSidebarView extends ItemView {
             if (file instanceof TFile) {
                 // 如果是 Canvas 文件，直接打开
                 if (file.extension === 'canvas') {
-                    await this.app.workspace.openLinkText(file.path, '');
+                    const located = await zoomToCanvasNode(this.app, file, wordDef.nodeId);
+                    if (!located) {
+                        await this.app.workspace.openLinkText(file.path, '');
+                    }
                 } else {
                     // 如果是 Markdown 文件，打开并尝试定位到单词
                     await this.app.workspace.openLinkText(file.path, '');
