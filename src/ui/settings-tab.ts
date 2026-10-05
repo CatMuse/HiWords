@@ -1,3 +1,4 @@
+import { hidictSetting } from './hidict-settings';
 import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, SecretComponent, setIcon } from 'obsidian';
 import type { SettingDefinitionItem, SettingDefinition, SettingDefinitionControl } from 'obsidian';
 import HiWordsPlugin from '../../main';
@@ -47,6 +48,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     this.displayStats(setting.controlEl);
                 } },
                 select('fileNodeParseMode', 'file_node_parse_mode', { 'filename-with-alias': t('settings.mode_filename_with_alias'), filename: t('settings.mode_filename'), content: t('settings.mode_content') }),
+                hidictSetting(this.plugin, () => this.update()),
             ]),
             group('group_display', [
                 field('enableAutoHighlight', 'enable_auto_highlight'),

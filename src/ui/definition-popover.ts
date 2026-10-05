@@ -1,3 +1,4 @@
+import { createWordPopoverShell, positionWordPopover } from './word-popover-shell';
 import type { PopoverContext } from './popover-context';
 import type { WordDefinition } from '../utils/types';
 import { App, MarkdownRenderer, MarkdownView, Notice, setIcon, Component } from 'obsidian';
@@ -288,37 +289,15 @@ export class DefinitionPopover extends Component {
         this.currentTargetEl = context ? null : target;
         const doc = context?.document || target.ownerDocument;
         const win = doc.defaultView!;
-        const tooltip = doc.createElement('div');
-        tooltip.className = 'hi-words-tooltip';
         const wordDef = suppliedDefinition || this.vocabularyManager?.getDefinition(word);
-        if (wordDef?.card) {
-            tooltip.classList.add('hi-words-tooltip-structured');
-        }
-
-        // 标题容器
-        const titleContainer = createDiv();
-        titleContainer.className = 'hi-words-tooltip-title-container';
-
-        const headingEl = createDiv();
-        headingEl.className = 'hi-words-tooltip-heading';
-
-        // 标题文本
-        const titleEl = createDiv();
-        titleEl.className = 'hi-words-tooltip-title';
-        titleEl.textContent = word;
-        headingEl.appendChild(titleEl);
-        titleContainer.appendChild(headingEl);
-        // 点击标题发音
-        titleEl.addEventListener('click', (e) => {
-            if (wordDef?.card && wordDef.cardKind && !isWordCard(wordDef.card, wordDef.cardKind)) return;
-            e.stopPropagation();
-            void playWordTTS(this.plugin, word).catch(error => {
-                console.error('HiWords 播放发音失败:', error);
+        const shell = createWordPopoverShell(doc, word, 'learning');
+        const { root: tooltip, heading: headingEl } = shell;
+        if (wordDef?.card) tooltip.classList.add('hi-words-tooltip-structured');
+        if (!wordDef?.card || !wordDef.cardKind || isWordCard(wordDef.card, wordDef.cardKind)) {
+            shell.setPronunciation(() => {
+                void playWordTTS(this.plugin, word).catch(error => console.error('HiWords pronunciation failed:', error));
             });
-        });
-
-        // 先添加标题容器
-        tooltip.appendChild(titleContainer);
+        }
 
         const sections = wordDef?.card ? undefined : wordDef?.sections;
         const enableSectionTabs = this.plugin.settings.enableSectionTabs ?? true;
@@ -346,8 +325,7 @@ export class DefinitionPopover extends Component {
         }
 
         // 内容
-        const contentEl = createDiv();
-        contentEl.className = 'hi-words-tooltip-content';
+        const contentEl = shell.content;
 
         // 如果启用了模糊效果，为内容添加模糊样式
         if (this.plugin.settings.blurDefinitions) {
@@ -377,6 +355,7 @@ export class DefinitionPopover extends Component {
             if (phoneticEl) {
                 phoneticEl.addClass('hi-words-tooltip-title-phonetic');
                 headingEl.appendChild(phoneticEl);
+                shell.bindPronunciation(phoneticEl);
             }
             metaEl?.remove();
         } else {
@@ -449,7 +428,7 @@ export class DefinitionPopover extends Component {
                     renderMasteredState();
 
                     // 添加到标题容器
-                    titleContainer.appendChild(buttonContainer);
+                    shell.actions.appendChild(buttonContainer);
                 }
 
             }
@@ -488,30 +467,7 @@ export class DefinitionPopover extends Component {
         }
         tooltip.addEventListener('mouseenter', () => window.clearTimeout(this.tooltipHideTimeout));
 
-        // 使用 rAF 统一完成定位与溢出修正，减少多次布局抖动
-        window.requestAnimationFrame(() => {
-            // 读：目标位置与视口
-            if (!tooltip.isConnected) return;
-            const rect = context?.rect || target.getBoundingClientRect();
-            const scrollTop = win.scrollY || doc.documentElement.scrollTop;
-            const scrollLeft = win.scrollX || doc.documentElement.scrollLeft;
-            const viewportWidth = win.innerWidth;
-
-            // 写：初始定位
-            const left = rect.left + scrollLeft;
-            const top = rect.bottom + scrollTop + 5;
-            tooltip.style.left = left + 'px';
-            tooltip.style.top = top + 'px';
-
-            // 读：tooltip 自身尺寸
-            const tooltipRect = tooltip.getBoundingClientRect();
-
-            // 写：右侧溢出修正
-            if (tooltipRect.right > viewportWidth - 10) {
-                const overflow = tooltipRect.right - viewportWidth + 10;
-                tooltip.style.left = (left - overflow) + 'px';
-            }
-        });
+        positionWordPopover(tooltip, context?.rect || target.getBoundingClientRect(), doc);
 
         // 只有 mouseleave 时真正关闭（不会一闪一闪了）
         tooltip.addEventListener('mouseleave', (e) => {

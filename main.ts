@@ -1,3 +1,4 @@
+import { HidictService } from './src/dictionary/hidict-service';
 import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
 // 使用新的模块化导入
@@ -25,6 +26,7 @@ export default class HiWordsPlugin extends Plugin {
     definitionPopover!: DefinitionPopover;
     masteredService!: MasteredService;
     selectionTranslatePopover!: SelectionTranslatePopover;
+    hidictService!: HidictService;
     editorExtensions: Extension[] = [];
     private isSidebarInitialized = false;
     private discardedLegacyAPIKey = false;
@@ -54,6 +56,8 @@ export default class HiWordsPlugin extends Plugin {
         this.definitionPopover.setMasteredService(this.masteredService);
         
         // 初始化划词翻译浮窗
+        this.hidictService = new HidictService(this.app, () => this.settings.hidictPath);
+        this.addChild(this.hidictService);
         this.selectionTranslatePopover = new SelectionTranslatePopover(this);
         this.addChild(this.selectionTranslatePopover);
         

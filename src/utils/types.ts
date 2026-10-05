@@ -133,6 +133,8 @@ export interface StudyProgressItem {
 // 插件设置
 export interface HiWordsSettings {
     vocabularyBooks: VocabularyBook[];
+    /** Vault-relative offline dictionary path; never a highlighting source. */
+    hidictPath: string;
     studyProgress?: Record<string, StudyProgressItem>;
     masteredMigrationVersion?: number;
     showDefinitionOnHover: boolean;

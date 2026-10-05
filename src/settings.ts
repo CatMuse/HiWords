@@ -13,6 +13,7 @@ export function resolvePrompt(value: string | undefined, defaultPrompt: string):
  */
 export const DEFAULT_SETTINGS: HiWordsSettings = {
     vocabularyBooks: [],
+    hidictPath: '',
     studyProgress: {},
     masteredMigrationVersion: 0,
     showDefinitionOnHover: true,

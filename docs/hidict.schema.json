@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HiDict v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schemaVersion", "id", "name", "version", "language", "definitionLanguage", "entryCount", "sources", "frequencyScale", "entries"],
+  "properties": {
+    "schema": {"const": "hidict"},
+    "schemaVersion": {"const": 1},
+    "id": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "language": {"const": "en"},
+    "definitionLanguage": {"const": "zh-CN"},
+    "entryCount": {"type": "integer", "minimum": 1},
+    "sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/source"}},
+    "frequencyScale": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "direction", "bands"],
+      "properties": {
+        "source": {"const": "ecdict.frq"},
+        "direction": {"const": "higher-level-more-frequent"},
+        "bands": {"type": "array", "minItems": 5, "maxItems": 5, "items": {
+          "type": "object", "additionalProperties": false, "required": ["level", "minRank", "maxRank"],
+          "properties": {"level": {"type": "integer", "minimum": 1, "maximum": 5}, "minRank": {"type": "integer", "minimum": 1}, "maxRank": {"type": ["integer", "null"], "minimum": 1}}
+        }}
+      }
+    },
+    "entries": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/entry"}}
+  },
+  "$defs": {
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "url", "revision", "revisionDate", "sha256", "license", "licenseFile"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1}, "name": {"type": "string", "minLength": 1},
+        "url": {"type": "string", "format": "uri"}, "revision": {"type": "string", "minLength": 1},
+        "revisionDate": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "license": {"type": "string"}, "licenseFile": {"type": "string"}
+      }
+    },
+    "entry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "word", "meanings", "phonetics", "frequency", "forms", "sourceId"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1}, "word": {"type": "string", "minLength": 1},
+        "sourceId": {"type": "string", "minLength": 1},
+        "meanings": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "additionalProperties": false, "required": ["partsOfSpeech", "sourceLabels", "definitions"],
+          "properties": {
+            "partsOfSpeech": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "determiner", "interjection", "numeral", "auxiliary", "modal", "phrase", "unknown"]}},
+            "sourceLabels": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+            "definitions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+          }
+        }},
+        "phonetics": {
+          "type": "object", "additionalProperties": false, "required": ["uk", "us", "unclassified"],
+          "properties": {"uk": {"type": ["string", "null"], "minLength": 1}, "us": {"type": ["string", "null"], "minLength": 1}, "unclassified": {"type": ["string", "null"], "minLength": 1}}
+        },
+        "frequency": {
+          "type": "object", "additionalProperties": false, "required": ["source", "rank", "level"],
+          "properties": {"source": {"const": "ecdict.frq"}, "rank": {"type": ["integer", "null"], "minimum": 1}, "level": {"type": ["integer", "null"], "minimum": 1, "maximum": 5}}
+        },
+        "forms": {"type": "array", "uniqueItems": true, "items": {
+          "type": "object", "additionalProperties": false, "required": ["word", "types"],
+          "properties": {"word": {"type": "string", "minLength": 1}, "types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["past", "pastParticiple", "presentParticiple", "thirdPersonSingular", "plural", "comparative", "superlative"]}}}
+        }}
+      }
+    }
+  }
+}

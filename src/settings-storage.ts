@@ -33,6 +33,7 @@ export function normalizeStoredSettings(data: unknown): NormalizedSettings {
         settings: {
             ...DEFAULT_SETTINGS,
             ...stored,
+            hidictPath: typeof stored.hidictPath === 'string' ? stored.hidictPath : '',
             aiService: {
                 ...DEFAULT_SETTINGS.aiService,
                 ...safeAIService,
