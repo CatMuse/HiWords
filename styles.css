@@ -2117,31 +2117,39 @@
     flex-shrink: 0;
 }
 
-.hi-words-translate-btn {
+/* Selection actions share the original add-word button styling. */
+button.hi-words-translate-btn {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: 0 0 24px;
+    box-sizing: border-box;
     width: 24px;
+    min-width: 24px;
     height: 24px;
+    min-height: 24px;
+    padding: 0;
+    border: 0;
     border-radius: 4px;
     color: var(--text-faint);
+    background: transparent;
+    box-shadow: none;
     cursor: pointer;
     transition: color 0.15s ease, background 0.15s ease;
 }
-
 .hi-words-translate-btn svg {
     width: 16px;
     height: 16px;
 }
-
-.hi-words-translate-btn:hover {
-    color: var(--text-normal);
+button.hi-words-translate-btn:not(:disabled):hover {
+    color: var(--interactive-accent);
     background: var(--background-modifier-hover);
 }
-
-.hi-words-translate-btn-add:hover {
-    color: var(--interactive-accent);
+.hi-words-translate-btn:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
 }
+.hi-words-translate-btn:disabled { opacity: .4; cursor: default; }
 
 /* Library view */
 .hi-words-library {
@@ -4957,8 +4965,6 @@ body .hi-words-hidden.hi-words-hidden {
 }
 
 /* Offline dictionary selection results. Scoped to keep learning/AI cards unchanged. */
-.hi-words-translate-btn:disabled { opacity: .4; cursor: default; }
-button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; background: transparent; }
 .hi-words-translate-content { max-height: 60vh; overflow-y: auto; }
 .hi-words-word-popover { font-family: var(--font-interface); }
 .hi-words-word-popover[data-mode="dictionary"] {
@@ -4977,6 +4983,7 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
 .hi-words-word-popover .hi-words-hidict-transcription[role="button"]:focus-visible, .hi-words-word-popover .hi-words-tooltip-title-phonetic[role="button"]:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; border-radius: 3px; }
 .hi-words-word-popover[data-mode="translation"] .hi-words-tooltip-title { font-size: 16px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hi-words-word-popover-actions .hi-words-card-action { --hi-words-card-action-size: 32px; border-radius: 50%; color: var(--text-muted); background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary)); }
+.hi-words-word-popover-actions .hi-words-card-action:disabled { opacity: .4; cursor: default; }
 .hi-words-word-popover-actions .hi-words-card-action svg { color: inherit; stroke: currentColor; }
 .hi-words-word-popover-actions .hi-words-card-action:not(:disabled):hover { background: color-mix(in srgb, var(--interactive-accent) 22%, var(--background-primary)); color: var(--text-accent); }
 .hi-words-hidict-phonetics { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; white-space: normal; }
@@ -4985,10 +4992,10 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
 .hi-words-hidict-accent { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 .hi-words-hidict-transcription { font-family: var(--font-monospace); font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
 .hi-words-hidict-popover .hi-words-hidict-meanings { font-weight: 400; font-size: 14px; line-height: 1.5; white-space: normal; }
-.hi-words-hidict-meaning { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: baseline; }
-.hi-words-hidict-meaning + .hi-words-hidict-meaning { margin-top: 4px; }
+.hi-words-hidict-meanings { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 6px; }
+.hi-words-hidict-meaning { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; }
 .hi-words-hidict-pos { color: var(--text-accent); font-size: 12px; overflow-wrap: anywhere; }
-.hi-words-hidict-definition { white-space: pre-wrap; overflow-wrap: anywhere; }
+.hi-words-hidict-definition { white-space: normal; overflow-wrap: anywhere; }
 .hi-words-hidict-forms { margin-top: 10px; color: var(--text-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .hi-words-hidict-frequency { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 16px; font-size: 11px; color: var(--text-muted); }
 .hi-words-hidict-frequency-marks { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; padding: 4px 0; }
@@ -5027,7 +5034,6 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
 .hi-words-ai-example-translation { color: var(--text-muted); margin-top: 4px; }
 
 /* On-demand AI details float over the right edge of the reading pane. */
-.hi-words-ai-detail-button { font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 .hi-words-ai-detail-panel {
     position: fixed;
     z-index: var(--layer-popover, 30);
@@ -5042,11 +5048,10 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
     font-family: var(--font-interface);
 }
 .hi-words-ai-detail-panel, .hi-words-ai-detail-panel * { box-sizing: border-box; }
-.hi-words-ai-detail-header { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px 6px; cursor: grab; touch-action: none; }
+.hi-words-ai-detail-header { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--background-modifier-border); cursor: grab; touch-action: none; }
 .hi-words-ai-detail-heading { flex: 1; min-width: 0; }
-.hi-words-ai-detail-kicker { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-.hi-words-ai-detail-title { font-size: 13px; line-height: 1.5; font-weight: 450; color: var(--text-muted); overflow-wrap: anywhere; max-height: 78px; overflow: auto; }
-.hi-words-ai-detail-disclosure { flex: 0 0 auto; padding: 0 14px 9px; font-size: 10px; color: var(--text-faint); border-bottom: 1px solid var(--background-modifier-border); }
+.hi-words-ai-detail-title { font-size: 15px; line-height: 1.4; font-weight: 600; color: var(--text-normal); }
+.hi-words-ai-detail-source { flex: 0 0 auto; min-height: 0; max-height: 25%; overflow-y: auto; margin: 12px 14px 0; padding: 10px 12px; border-radius: 8px; background: var(--background-secondary); color: var(--text-muted); font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .hi-words-ai-detail-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 16px; }
 .hi-words-ai-detail-body .hi-words-ai-result { font-size: 13px; line-height: 1.65; }
 .hi-words-ai-detail-panel.is-dragging, .hi-words-ai-detail-panel.is-dragging .hi-words-ai-detail-header { cursor: grabbing; user-select: none; }
@@ -5063,15 +5068,15 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
 .hi-words-ai-detail-body .hi-words-ai-definition { font-weight: 550; }
 
 /* Field-based learning cards share theme colors and a compact reading rhythm. */
-.hi-words-ai-detail-body .hi-words-ai-type {
-    display: inline-flex; margin-bottom: 8px; padding: 1px 6px; border-radius: 5px;
-    background: var(--background-secondary); color: var(--text-muted); font-size: 11px; font-weight: 600;
-}
 .hi-words-ai-detail-body .hi-words-ai-section {
-    margin: 0 0 12px; padding: 0; border: 0;
+    margin: 0 0 20px; padding: 0; border: 0;
 }
 .hi-words-ai-detail-body .hi-words-ai-section-label {
-    margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 600;
+    margin-bottom: 8px; color: var(--text-normal); font-size: 12px; font-weight: 600;
+}
+.hi-words-ai-detail-body .hi-words-ai-section[data-field="structure"],
+.hi-words-ai-detail-body .hi-words-ai-section[data-field="explanation"] {
+    padding: 12px; border: 1px solid var(--background-modifier-border); border-radius: 8px;
 }
 .hi-words-ai-detail-body .hi-words-ai-section[data-field="meanings"],
 .hi-words-ai-detail-body .hi-words-ai-section[data-field="translation"] {
@@ -5101,6 +5106,87 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
 .hi-words-ai-detail-body .hi-words-ai-section[data-field="pitfalls"] {
     padding: 8px 10px; border: 1px solid var(--background-modifier-border); border-radius: 8px;
 }
-/* The selected source already appears in the panel heading. */
-.hi-words-ai-detail-body .hi-words-ai-source { display: none; }
 .hi-words-ai-detail-body .hi-words-ai-section:last-child { margin-bottom: 0; }
+
+/* AI setup: prioritize the model and test, with low-frequency options on native sub-pages. */
+.hi-words-ai-service .setting-item-info {
+    min-width: 0;
+}
+.hi-words-ai-service .hi-words-ai-model {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+.hi-words-ai-service .hi-words-ai-model > .setting-item-info,
+.hi-words-ai-service .hi-words-ai-model > .setting-item-control {
+    width: 100%;
+    margin-inline: 0;
+}
+.hi-words-ai-model > .setting-item-control {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+}
+.hi-words-ai-model input[type="text"] {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+.hi-words-ai-model-feedback {
+    flex: 1 0 100%;
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+.hi-words-ai-model-feedback:empty {
+    display: none;
+}
+.hi-words-ai-status {
+    display: table;
+    margin-top: 8px;
+    padding: 4px 8px;
+    border-radius: var(--radius-s);
+    background: var(--background-modifier-hover);
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    overflow-wrap: anywhere;
+}
+.hi-words-ai-status[data-state="loading"] { color: var(--text-accent); }
+.hi-words-ai-status[data-state="success"] { color: var(--text-success); }
+.hi-words-ai-status[data-state="error"] { color: var(--text-error); }
+.hi-words-ai-advanced input[type="text"] {
+    width: 100%;
+    min-width: 0;
+}
+.hi-words-ai-advanced .setting-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+.hi-words-ai-advanced .setting-item-info,
+.hi-words-ai-advanced .setting-item-control {
+    width: 100%;
+    margin-inline: 0;
+}
+.hi-words-ai-service input[type="text"] {
+    width: min(280px, 100%);
+}
+@media (max-width: 600px) {
+    .hi-words-ai-model input[type="text"] { flex-basis: 100%; }
+    .hi-words-ai-test { flex-wrap: wrap; gap: 12px; }
+    .hi-words-ai-test > .setting-item-control { margin-inline-start: 0; }
+}
+
+/* Shared lexical editors allow multiple POS and inflection labels. */
+.hi-words-file-enum-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+}
+.hi-words-file-enum-list legend { color: var(--text-muted); font-size: var(--font-ui-small); }
+.hi-words-file-enum-list label { display: inline-flex; align-items: center; gap: 4px; font-size: var(--font-ui-small); }

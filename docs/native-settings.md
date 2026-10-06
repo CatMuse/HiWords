@@ -1,19 +1,18 @@
 # Native settings
 
-HiWords now requires Obsidian 1.13.0 or newer. `manifest.json` and the current `versions.json` entry declare that requirement.
+HiWords requires Obsidian 1.13.0 or newer. Settings use six native `SettingDefinitionGroup` sections:
 
-The settings tab uses five native `SettingDefinitionGroup` sections:
-
-1. Word books: collection operations, statistics and Canvas file-node parsing.
+1. Word books: collection operations, statistics, parsing and offline dictionary.
 2. Highlighting and display: highlights, popovers, sidebar presentation and scope.
 3. Learning and pronunciation: mastery, recall blur, TTS and accent.
-4. AI and translation: provider, secret selection, request parameters, definitions and translation.
-5. Canvas layout: auto layout and card dimensions.
+4. AI service: provider, secret selection, model selection, connection test and advanced options.
+5. AI features: definition and selection-translation switches, target language and prompt pages.
+6. Canvas layout: auto layout and card dimensions.
 
-Twenty-four ordinary settings use declarative controls with individual searchable names and descriptions. Book operations, statistics, SecretStorage selection and action buttons use individual native render rows. No whole-section renderer, legacy `display()` fallback or runtime API-version guard remains.
+AI model input, model picker and refresh belong to one searchable native render row. Connection testing has a separate primary button and an accessible status badge; loading, success and errors use text as well as color. Controls wrap when the settings column is narrow.
 
-Existing setting keys and stored data are retained. Nested AI/translation keys resolve through `getControlValue` and `setControlValue`. Provider changes preserve custom endpoints. Mastery retains the sidebar linkage and workspace event. Card dimensions require positive integers; extra API parameters require a JSON object. Hidden AI/translation fields follow their enable toggles.
+Advanced options use a native declarative sub-page for the API base URL and JSON request parameters. Custom services show the protocol and URL directly on the main screen; their advanced page contains only request parameters. Definition and translation prompts use their own native sub-pages, visible when the respective feature is enabled. Multiline fields span the page width and retain validation and default placeholders.
 
-Validation: 13 automated tests and the production build pass. The targeted official ESLint rules pass. The local Obsidian 1.14.1 accessibility state shows the five new groups, native controls and existing values after hot reload. Computer-use screenshots remained stale and scroll actions intermittently failed, so complete visual verification and real settings-search interactions remain unconfirmed.
+Existing keys and stored data are retained. Nested keys resolve through `getControlValue` and `setControlValue`. Each AI provider retains an independent configuration. Card dimensions require positive integers and extra parameters require a JSON object. No legacy `display()` or whole-section imperative renderer is used.
 
-This supersedes the 1.11.5 compatibility notes in the earlier review records. No release tag is created by this change.
+Validation: automated settings, AI transport and stale-response tests plus the production build. The current UI was hot reloaded in the HiWordsDev vault and inspected using live DOM and screenshots, including the advanced sub-page. No real AI requests were made during verification.

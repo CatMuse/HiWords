@@ -1,6 +1,35 @@
 // Deutsch (German) language pack
 
 export default {
+    ai_connection: {
+        service_heading: "AI service",
+        features_heading: "AI features",
+        advanced: "Advanced options",
+        advanced_desc: "Custom API address and extra request parameters.",
+        advanced_custom_desc: "Extra request parameters for this service.",
+        prompt_page_desc: "Customize the prompt. Leave blank to use the default.",
+        prompt_heading: "Custom prompt",
+        test_model: "Test current model",
+        test_model_desc: "Sends a short test without note content. The provider may charge for this request.",
+
+        "protocol": "API protocol",
+        "protocol_desc": "Select the protocol supported by your custom endpoint.",
+        "connection": "Models and connection",
+        "test_desc": "Refresh models or test the current model. Testing sends a short prompt without note content and may incur a charge.",
+        "refresh_models": "Refresh models",
+        "choose_model": "Choose model",
+        "not_tested": "Not tested",
+        "loading": "Loading models…",
+        "models_found": "Models found",
+        "manual_hint": "You can still enter a model ID manually.",
+        "refresh_hint": "Refresh models first. You can always enter a model ID manually.",
+        "testing": "Testing…",
+        "connected": "Connected",
+        "invalid_url": "Use an HTTP(S) API base URL without credentials, query parameters or fragments.",
+        "timeout": "Connection timeout. The provider may still finish processing the request.",
+        "truncated": "AI response was truncated. Increase the output token limit.",
+        "pagination_error": "Could not load the complete model list. Enter a model ID manually."
+},
     // General
     plugin_name: "HiWords",
 

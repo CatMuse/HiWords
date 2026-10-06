@@ -1,3 +1,5 @@
+import { isLexicalContent, validateLexicalContent } from '../lexical/validation';
+import { lexicalContentOf, LexicalEntry } from '../lexical/types';
 import { TFile } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { createEmptyWordCard, parseHiWordsEditorDocument, serializeHiWordsPack } from '../editor/hiwords-document';
@@ -5,7 +7,7 @@ import { WORD_CARD_KIND } from '../schema/hiwords';
 import type { HiWordsPack, HiWordsWordCard } from '../schema/hiwords';
 
 
-export interface NewVocabularyWord { word: string; definition: string; aliases?: string[] }
+export interface NewVocabularyWord { word: string; definition: string; aliases?: string[]; lexical?: LexicalEntry }
 
 export function appendWordCard(pack: HiWordsPack, input: NewVocabularyWord): HiWordsWordCard {
     if (pack.cardKind !== WORD_CARD_KIND) throw new Error('Choose a word vocabulary book.');
@@ -19,10 +21,16 @@ export function appendWordCard(pack: HiWordsPack, input: NewVocabularyWord): HiW
     const card = createEmptyWordCard();
     card.title = word;
     card.aliases = [...new Set((input.aliases || []).map(alias => alias.trim()).filter(Boolean))];
-    card.data.language = /[\u4e00-\u9fff]/.test(word) ? 'zh' : 'en';
-    card.data.itemType = /[\s-]/.test(word) ? 'phrase' : 'word';
-    // Preserve the supplied free-form text using the existing word-card defaults.
-    card.data.meanings[0].definition = input.definition;
+    if (input.lexical && input.lexical.text === word) {
+        card.data = JSON.parse(JSON.stringify(lexicalContentOf(input.lexical)));
+    } else {
+        card.data.language = /[\u4e00-\u9fff]/.test(word) ? 'zh' : 'en';
+        card.data.itemType = /\s/.test(word) ? 'phrase' : 'word';
+        card.data.meanings[0].translation = input.definition.trim() || undefined;
+    }
+    if (!isLexicalContent(card.data)) throw new Error('Invalid vocabulary content.');
+    const issues = validateLexicalContent(card.data);
+    if (issues.length) throw new Error(issues[0].message);
     pack.cards.push(card);
     return card;
 }

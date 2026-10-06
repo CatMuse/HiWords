@@ -1,3 +1,4 @@
+import { compactLexicalValue } from '../lexical/ai-content';
 import {
     HIWORDS_SCHEMA,
     HIWORDS_SCHEMA_VERSION,
@@ -15,7 +16,6 @@ import {
     PERSON_CARD_KIND,
     WORD_CARD_KIND,
     isHiWordsPack,
-    normalizeHiWordsPack,
     validateHiWordsPack,
 } from '../schema/hiwords';
 
@@ -25,7 +25,7 @@ export type HiWordsEditorDocument =
 
 export function parseHiWordsEditorDocument(data: string): HiWordsEditorDocument {
     try {
-        const parsed = normalizeHiWordsPack(JSON.parse(data) as unknown);
+        const parsed = JSON.parse(data) as unknown;
         if (!isHiWordsPack(parsed)) {
             return {
                 kind: 'invalid',
@@ -86,6 +86,7 @@ export function createEmptyWordCard(): HiWordsWordCard {
         title: '',
         data: {
             language: 'en',
+            translationLanguage: 'zh-CN',
             itemType: 'word',
             meanings: [createEmptyMeaning(cardId)],
         },
@@ -107,14 +108,12 @@ export function createEmptyCustomCard(): HiWordsCustomCard {
 export function createEmptyMeaning(cardId: string): HiWordsMeaning {
     return {
         id: `${cardId}-meaning-${createShortId()}`,
-        partOfSpeech: 'noun',
-        translation: '',
-        definition: '',
+        partsOfSpeech: ['unknown'],
     };
 }
 
 export function serializeHiWordsPack(pack: HiWordsPack): string {
-    return `${JSON.stringify(pack, null, 2)}\n`;
+    return `${JSON.stringify({ ...pack, cards: pack.cards.map(card => pack.cardKind === WORD_CARD_KIND ? { ...card, data: compactLexicalValue(card.data) } : card) }, null, 2)}\n`;
 }
 
 export function createStableId(prefix: string): string {

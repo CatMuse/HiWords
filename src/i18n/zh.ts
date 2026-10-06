@@ -1,6 +1,35 @@
 // 中文语言包
 
 export default {
+    ai_connection: {
+        service_heading: "AI 服务",
+        features_heading: "AI 功能",
+        advanced: "高级选项",
+        advanced_desc: "自定义 API 地址和额外请求参数。",
+        advanced_custom_desc: "设置此服务的额外请求参数。",
+        prompt_page_desc: "自定义提示词，留空使用默认值。",
+        prompt_heading: "自定义提示词",
+        test_model: "测试当前模型",
+        test_model_desc: "发送简短测试，不包含笔记内容。服务商可能收取费用。",
+
+        "protocol": "API 协议",
+        "protocol_desc": "选择自定义服务支持的协议。",
+        "connection": "模型与连接",
+        "test_desc": "获取模型列表或测试当前模型。测试仅发送简短提示，不包含笔记内容，可能产生费用。",
+        "refresh_models": "刷新模型",
+        "choose_model": "选择模型",
+        "not_tested": "尚未测试",
+        "loading": "正在获取模型…",
+        "models_found": "找到模型",
+        "manual_hint": "你仍可手动填写模型 ID。",
+        "refresh_hint": "请先刷新模型，也可手动填写模型 ID。",
+        "testing": "正在测试…",
+        "connected": "连接成功",
+        "invalid_url": "请填写 HTTP(S) API 地址，不包含账号、查询参数或片段。",
+        "timeout": "连接超时。服务商可能仍在处理请求。",
+        "truncated": "AI 输出被截断，请提高输出 token 上限。",
+        "pagination_error": "无法获取完整模型列表，请手动填写模型 ID。"
+},
     // 通用
     plugin_name: "HiWords",
 
@@ -66,7 +95,7 @@ export default {
         ai_service: "AI 服务",
         ai_service_privacy_desc: "AI 释义和划词翻译共用这套服务。使用时会将单词、选中文本或上下文发送到你配置的服务商。",
         ai_provider: "服务商",
-        ai_provider_desc: "选择服务商预设。自定义模式会继续根据 API 地址自动判断请求格式",
+        ai_provider_desc: '各服务独立保存配置。自定义服务可选择 API 协议。',
         ai_provider_openai_compatible: "OpenAI 兼容",
         ai_provider_anthropic: "Anthropic Claude",
         ai_provider_gemini: "Google Gemini",
@@ -76,7 +105,7 @@ export default {
         ai_api_key: "API Key",
         ai_api_key_desc: "从 Obsidian 密钥存储中选择 API Key",
         ai_model: "模型 ID",
-        ai_model_desc: "AI 模型标识符 (例如: gpt-4o-mini, deepseek-chat)",
+        ai_model_desc: '手动填写模型 ID，或刷新并选择可用模型。',
         ai_definition: "AI 释义",
         enable_ai_definition: "启用 AI 释义",
         enable_ai_definition_desc: "在添加或编辑单词时显示 AI 自动填充释义按钮",

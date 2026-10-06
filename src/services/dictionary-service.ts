@@ -1,107 +1,12 @@
-import { requestUrl } from 'obsidian';
+import { AIClient } from './ai-client';
 import { t } from '../i18n';
-import type { AIProvider, AIServiceSettings } from '../utils';
+import type { AIServiceSettings } from '../utils';
 
 interface AIConfig {
     service: AIServiceSettings;
     apiKey: string;
     prompt: string;
     maxTokens?: number;
-}
-
-type APIType = 'openai' | 'claude' | 'gemini';
-type JsonObject = Record<string, unknown>;
-type JsonPath = Array<string | number>;
-
-/**
- * API 配置接口
- */
-interface APIAdapter {
-    buildRequest: (model: string, prompt: string, maxTokens: number) => JsonObject;
-    buildHeaders: (apiKey: string) => Record<string, string>;
-    extractResponse: (data: unknown) => string | undefined;
-    buildUrl?: (baseUrl: string, model: string, apiKey: string) => string;
-}
-
-function readPath(data: unknown, path: JsonPath): unknown {
-    let current = data;
-    for (const segment of path) {
-        if (typeof segment === 'number') {
-            if (!Array.isArray(current)) return undefined;
-            current = current[segment];
-            continue;
-        }
-        if (!current || typeof current !== 'object') return undefined;
-        current = (current as Record<string, unknown>)[segment];
-    }
-    return current;
-}
-
-function readStringPath(data: unknown, path: JsonPath): string | undefined {
-    const current = readPath(data, path);
-    return typeof current === 'string' ? current : undefined;
-}
-
-function textFromParts(value: unknown): string | undefined {
-    if (!Array.isArray(value)) return undefined;
-    const text = value.flatMap(item => {
-        if (typeof item === 'string') return [item];
-        if (!item || typeof item !== 'object') return [];
-        const part = item as Record<string, unknown>;
-        if (typeof part.text === 'string') return [part.text];
-        if (typeof part.content === 'string') return [part.content];
-        return [];
-    }).join('\n').trim();
-    return text || undefined;
-}
-
-function extractOpenAIResponse(data: unknown): string | undefined {
-    if (typeof data === 'string' && data.trim()) return data;
-    const content = readPath(data, ['choices', 0, 'message', 'content']);
-    if (typeof content === 'string' && content.trim()) return content;
-    const contentParts = textFromParts(content);
-    if (contentParts) return contentParts;
-    return readStringPath(data, ['choices', 0, 'text'])
-        || readStringPath(data, ['output_text'])
-        || textFromParts(readPath(data, ['output', 0, 'content']));
-}
-
-function extractClaudeResponse(data: unknown): string | undefined {
-    if (typeof data === 'string' && data.trim()) return data;
-    return textFromParts(readPath(data, ['content'])) || readStringPath(data, ['completion']);
-}
-
-function extractGeminiResponse(data: unknown): string | undefined {
-    if (typeof data === 'string' && data.trim()) return data;
-    return textFromParts(readPath(data, ['candidates', 0, 'content', 'parts']));
-}
-
-function unwrapResponse(data: unknown): unknown {
-    if (typeof data === 'string') {
-        try {
-            return unwrapResponse(JSON.parse(data) as unknown);
-        } catch {
-            return data;
-        }
-    }
-    if (!data || typeof data !== 'object') return data;
-    const wrapped = (data as Record<string, unknown>).data;
-    return wrapped && typeof wrapped === 'object' ? wrapped : data;
-}
-
-function responseErrorMessage(data: unknown): string | undefined {
-    const candidates = [
-        readStringPath(data, ['error', 'message']),
-        readStringPath(data, ['message']),
-        readStringPath(data, ['detail']),
-    ];
-    return candidates.find(Boolean);
-}
-
-function responseFinishReason(data: unknown): string | undefined {
-    return readStringPath(data, ['choices', 0, 'finish_reason'])
-        || readStringPath(data, ['candidates', 0, 'finishReason'])
-        || readStringPath(data, ['stop_reason']);
 }
 
 /**
@@ -119,96 +24,8 @@ export class DictionaryService {
     private config: AIConfig;
     private cache = new Map<string, CacheEntry>();
     private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24小时
-    private readonly MAX_RETRIES = 3;
-
-    /**
-     * API 适配器配置表
-     */
-    private readonly API_ADAPTERS: Record<APIType, APIAdapter> = {
-        openai: {
-            buildRequest: (model: string, prompt: string, maxTokens: number) => ({
-                model,
-                messages: [{ role: 'user', content: prompt }],
-                temperature: 0.3,
-                max_tokens: maxTokens
-            }),
-            buildHeaders: (apiKey: string) => ({
-                'Authorization': `Bearer ${apiKey}`
-            }),
-            extractResponse: (data: unknown) => extractOpenAIResponse(unwrapResponse(data)),
-            buildUrl: (baseUrl: string) => {
-                const normalized = baseUrl.replace(/\/$/, '');
-                if (normalized.endsWith('/chat/completions')) {
-                    return normalized;
-                }
-                return `${normalized}/chat/completions`;
-            }
-        },
-        claude: {
-            buildRequest: (model: string, prompt: string, maxTokens: number) => ({
-                model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: maxTokens
-            }),
-            buildHeaders: (apiKey: string) => ({
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            }),
-            extractResponse: (data: unknown) => extractClaudeResponse(unwrapResponse(data)),
-            buildUrl: (baseUrl: string) => {
-                const normalized = baseUrl.replace(/\/$/, '');
-                if (normalized.endsWith('/messages')) {
-                    return normalized;
-                }
-                return `${normalized}/v1/messages`;
-            }
-        },
-        gemini: {
-            buildRequest: (_model: string, prompt: string, maxTokens: number) => ({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 }
-            }),
-            buildHeaders: () => ({}),
-            extractResponse: (data: unknown) => extractGeminiResponse(unwrapResponse(data)),
-            buildUrl: (baseUrl: string, model: string, apiKey: string) => {
-                let url = baseUrl;
-                if (!url.includes(':generateContent')) {
-                    url = `${url.replace(/\/$/, '')}/models/${model}:generateContent`;
-                }
-                return `${url}?key=${apiKey}`;
-            }
-        }
-    };
-
     constructor(config: AIConfig) {
         this.config = config;
-    }
-
-    /**
-     * 自动检测 API 类型
-     */
-    private detectAPIType(): APIType {
-        if (this.config.service.provider !== 'custom') {
-            const providerMap: Record<Exclude<AIProvider, 'custom'>, APIType> = {
-                'openai-compatible': 'openai',
-                anthropic: 'claude',
-                gemini: 'gemini'
-            };
-            return providerMap[this.config.service.provider];
-        }
-
-        const url = this.config.service.apiUrl.toLowerCase();
-        
-        if (url.includes('anthropic')) {
-            return 'claude';
-        }
-        
-        if (url.includes('googleapis') || url.includes('generativelanguage')) {
-            return 'gemini';
-        }
-        
-        // 默认使用 OpenAI 兼容格式（支持大部分 API）
-        return 'openai';
     }
 
     /**
@@ -256,60 +73,6 @@ export class DictionaryService {
     }
 
     /**
-     * 检查值是否为对象（非数组、非 null）
-     */
-    private isObject(item: unknown): item is JsonObject {
-        return !!item && typeof item === 'object' && !Array.isArray(item);
-    }
-
-    /**
-     * 深度合并两个对象
-     * @param target 目标对象
-     * @param source 源对象
-     */
-    private deepMerge(target: JsonObject, source: JsonObject): JsonObject {
-        const output = { ...target };
-
-        if (this.isObject(target) && this.isObject(source)) {
-            Object.keys(source).forEach(key => {
-                const sourceValue = source[key];
-                const targetValue = target[key];
-                if (this.isObject(sourceValue)) {
-                    if (!(key in target) || !this.isObject(targetValue)) {
-                        Object.assign(output, { [key]: sourceValue });
-                    } else {
-                        output[key] = this.deepMerge(targetValue, sourceValue);
-                    }
-                } else {
-                    Object.assign(output, { [key]: sourceValue });
-                }
-            });
-        }
-
-        return output;
-    }
-
-    /**
-     * 合并用户自定义的额外参数到请求体
-     */
-    private mergeExtraParams(baseBody: JsonObject): JsonObject {
-        const extraParamsJson = this.config.service.extraParams?.trim();
-
-        if (!extraParamsJson || extraParamsJson === '{}' || extraParamsJson === '') {
-            return baseBody;
-        }
-
-        try {
-            const extraParams = JSON.parse(extraParamsJson) as unknown;
-            if (!this.isObject(extraParams)) return baseBody;
-            return this.deepMerge(baseBody, extraParams);
-        } catch (error) {
-            console.warn('Invalid JSON in extraParams, ignoring:', error);
-            return baseBody;
-        }
-    }
-
-    /**
      * 获取单词释义
      * @param word 要查询的单词
      * @param sentence 单词所在的句子（可选）
@@ -336,126 +99,10 @@ export class DictionaryService {
             return cached.content;
         }
 
-        try {
-            // 检测 API 类型并获取适配器
-            const apiType = this.detectAPIType();
-            const adapter = this.API_ADAPTERS[apiType];
-            const prompt = this.replacePlaceholders(cleanWord, sentence);
-
-            // 构建请求参数
-            const url = adapter.buildUrl
-                ? adapter.buildUrl(this.config.service.apiUrl, this.config.service.model, this.config.apiKey)
-                : this.config.service.apiUrl;
-            const headers = adapter.buildHeaders(this.config.apiKey);
-            let body = adapter.buildRequest(this.config.service.model, prompt, this.config.maxTokens || 500);
-
-            // 合并额外参数
-            body = this.mergeExtraParams(body);
-
-            // 网络错误由底层重试。已成功返回但没有正文时不隐式重发，避免重复计费。
-            const data = await this.makeRequestWithRetry(url, headers, body);
-            const content = adapter.extractResponse(data);
-            if (!content?.trim()) {
-                const unwrapped = unwrapResponse(data);
-                const apiError = responseErrorMessage(unwrapped);
-                if (apiError) throw new Error(apiError);
-                const finishReason = responseFinishReason(unwrapped);
-                if (finishReason === 'length' || finishReason === 'MAX_TOKENS') {
-                    throw new Error('AI response was truncated before content was returned. Try again or increase the output token limit.');
-                }
-                throw new Error(t('ai_errors.invalid_response'));
-            }
-
-            const result = content.trim();
-            
-            // 存入缓存
-            this.cache.set(cacheKey, { content: result, timestamp: Date.now() });
-            
-            return result;
-        } catch (error) {
-            throw this.handleError(error);
-        }
-    }
-
-    /**
-     * 发送 HTTP 请求(带重试)
-     */
-    private async makeRequestWithRetry(
-        url: string,
-        headers: Record<string, string>,
-        body: JsonObject
-    ): Promise<unknown> {
-        let lastError: unknown;
-
-        for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
-            try {
-                const response = await requestUrl({
-                    url,
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...headers
-                    },
-                    body: JSON.stringify(body)
-                });
-
-                if (response.status >= 400) {
-                    throw new Error(`HTTP ${response.status}: ${response.text}`);
-                }
-
-                return response.json;
-            } catch (error) {
-                lastError = error;
-                
-                // 如果是客户端错误(4xx),不重试
-                const errorMsg = String(error);
-                if (errorMsg.includes('400') || errorMsg.includes('401') || 
-                    errorMsg.includes('403') || errorMsg.includes('404')) {
-                    break;
-                }
-
-                // 最后一次尝试,不等待
-                if (attempt < this.MAX_RETRIES - 1) {
-                    // 指数退避: 1s, 2s, 4s
-                    const delay = 1000 * Math.pow(2, attempt);
-                    await new Promise(resolve => window.setTimeout(resolve, delay));
-                }
-            }
-        }
-
-        throw lastError;
-    }
-
-    /**
-     * 错误处理 - 转换为用户友好的错误信息
-     */
-    private handleError(error: unknown): Error {
-        const message = error instanceof Error ? error.message : String(error);
-        
-        // API Key 相关错误
-        if (message.includes('401') || message.includes('403')) {
-            return new Error(t('ai_errors.api_key_invalid'));
-        }
-        
-        // 速率限制
-        if (message.includes('429')) {
-            return new Error(t('ai_errors.rate_limit'));
-        }
-        
-        // 服务器错误
-        if (message.includes('500') || message.includes('502') || 
-            message.includes('503') || message.includes('504')) {
-            return new Error(t('ai_errors.server_error'));
-        }
-        
-        // 网络错误
-        if (message.includes('network') || message.includes('timeout')) {
-            return new Error(t('ai_errors.network_error'));
-        }
-        
-        // 其他错误
-        console.error('AI Dictionary Error:', error);
-        return new Error(`${t('ai_errors.request_failed')}: ${message}`);
+        const content = await new AIClient(this.config.service, this.config.apiKey)
+            .generate(this.replacePlaceholders(cleanWord, sentence), this.config.maxTokens || 500);
+        this.cache.set(cacheKey, { content, timestamp: Date.now() });
+        return content;
     }
 
     /**

@@ -1,14 +1,14 @@
+import { PARTS_OF_SPEECH } from '../lexical/types';
+import type { LexicalContent, LexicalMeaning, LexicalExample, LexicalForm, LexicalDerivedWord, LexicalPhonetics, LexicalPhrase, LexicalUsage } from '../lexical/types';
+import { isLexicalContent, validateLexicalContent } from '../lexical/validation';
 export const HIWORDS_SCHEMA = 'hiwords' as const;
-export const HIWORDS_SCHEMA_VERSION = 2 as const;
+export const HIWORDS_SCHEMA_VERSION = 3 as const;
 export const WORD_CARD_KIND = 'language.word' as const;
 export const PERSON_CARD_KIND = 'knowledge.person' as const;
 export const CONCEPT_CARD_KIND = 'knowledge.concept' as const;
 export const CUSTOM_CARD_KIND = 'knowledge.custom' as const;
 
-export const HIWORDS_PARTS_OF_SPEECH = [
-    'noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition',
-    'conjunction', 'determiner', 'interjection', 'auxiliary', 'modal', 'phrase',
-] as const;
+export const HIWORDS_PARTS_OF_SPEECH = PARTS_OF_SPEECH;
 
 export type HiWordsCardKind = typeof WORD_CARD_KIND | typeof PERSON_CARD_KIND | typeof CONCEPT_CARD_KIND | typeof CUSTOM_CARD_KIND;
 
@@ -65,32 +65,21 @@ export interface HiWordsCardBase {
     fieldValues?: Record<string, HiWordsFieldValue>;
 }
 
-export interface HiWordsPhonetics { us?: string; uk?: string; }
+export type HiWordsPhonetics = LexicalPhonetics;
+export type HiWordsExample = LexicalExample;
+/** Local reading examples, including Canvas source paths, are separate from shared content. */
 export interface HiWordsSentence { id: string; text: string; translation?: string; source?: string; }
-export interface HiWordsMeaning { id: string; partOfSpeech: string; translation: string; definition: string; }
-export interface HiWordsForm { form: string; type: string; }
-export interface HiWordsDerivedWord { word: string; partOfSpeech?: string; meaning?: string; }
+export type HiWordsMeaning = LexicalMeaning;
+export type HiWordsForm = LexicalForm;
+export type HiWordsDerivedWord = LexicalDerivedWord;
 export interface HiWordsMorphologyComponent { type: string; form: string; meaning?: string; }
 export interface HiWordsMorphology { components?: HiWordsMorphologyComponent[]; explanation?: string; }
-export interface HiWordsPhrase { id: string; text: string; translation?: string; sentence?: string; }
-export interface HiWordsUsage { register?: string[]; patterns?: string[]; notes?: string[]; commonMistakes?: string[]; }
+export type HiWordsPhrase = LexicalPhrase;
+export type HiWordsUsage = LexicalUsage;
 export interface HiWordsRelation { type: string; target: string; note?: string; }
 export interface HiWordsMemoryItem { type: string; text: string; }
 
-export interface HiWordsWordCardData {
-    language: string;
-    itemType: 'word' | 'phrase' | 'term';
-    phonetics?: HiWordsPhonetics;
-    meanings: HiWordsMeaning[];
-    sentences?: HiWordsSentence[];
-    forms?: HiWordsForm[];
-    derivedWords?: HiWordsDerivedWord[];
-    morphology?: HiWordsMorphology;
-    phrases?: HiWordsPhrase[];
-    usage?: HiWordsUsage;
-    relations?: HiWordsRelation[];
-    memory?: HiWordsMemoryItem[];
-}
+export interface HiWordsWordCardData extends LexicalContent {}
 
 export interface HiWordsWordCard extends HiWordsCardBase {
     data: HiWordsWordCardData;
@@ -145,53 +134,6 @@ export type HiWordsCard = HiWordsWordCard | HiWordsPersonCard | HiWordsConceptCa
 
 export interface HiWordsValidationIssue { cardId?: string; path: string; message: string; }
 
-export function normalizeHiWordsPartOfSpeech(value: string): string {
-    const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ');
-    const aliases: Record<string, string> = {
-        'noun phrase': 'noun',
-        'verb phrase': 'verb',
-        'phrasal verb': 'verb',
-        'modal verb': 'modal',
-        'auxiliary verb': 'auxiliary',
-        article: 'determiner',
-        'n.': 'noun',
-        'v.': 'verb',
-        'adj.': 'adjective',
-        'adv.': 'adverb',
-        'pron.': 'pronoun',
-        'prep.': 'preposition',
-        'conj.': 'conjunction',
-        'det.': 'determiner',
-        'interj.': 'interjection',
-        'aux.': 'auxiliary',
-        'phr.': 'phrase',
-    };
-    const candidate = aliases[normalized] || normalized;
-    return (HIWORDS_PARTS_OF_SPEECH as readonly string[]).includes(candidate) ? candidate : 'phrase';
-}
-
-export function normalizeHiWordsPack(value: unknown): unknown {
-    if (!isRecord(value) || !Array.isArray(value.cards)) return value;
-    value.cards.forEach(card => {
-        if (!isRecord(card) || !isRecord(card.data)) return;
-        delete card.data.highlightable;
-        if (value.cardKind !== WORD_CARD_KIND) return;
-        if (Array.isArray(card.data.meanings)) {
-            card.data.meanings.forEach(meaning => {
-                if (!isRecord(meaning) || typeof meaning.partOfSpeech !== 'string') return;
-                meaning.partOfSpeech = normalizeHiWordsPartOfSpeech(meaning.partOfSpeech);
-            });
-        }
-        if (Array.isArray(card.data.derivedWords)) {
-            card.data.derivedWords.forEach(derivedWord => {
-                if (!isRecord(derivedWord) || typeof derivedWord.partOfSpeech !== 'string' || !derivedWord.partOfSpeech.trim()) return;
-                derivedWord.partOfSpeech = normalizeHiWordsPartOfSpeech(derivedWord.partOfSpeech);
-            });
-        }
-    });
-    return value;
-}
-
 export function isHiWordsPack(value: unknown): value is HiWordsPack {
     return isRecord(value) && value.schema === HIWORDS_SCHEMA && value.schemaVersion === HIWORDS_SCHEMA_VERSION &&
         typeof value.id === 'string' && typeof value.title === 'string' && isHiWordsCardKind(value.cardKind) && value.cardKindVersion === 1 &&
@@ -245,8 +187,8 @@ export function validateHiWordsPack(pack: HiWordsPack): HiWordsValidationIssue[]
         if (!card.id.trim() || ids.has(card.id)) issues.push({ cardId: card.id, path: `${base}.id`, message: 'Each card needs a unique stable ID.' });
         else ids.add(card.id);
         if (!card.title.trim()) issues.push({ cardId: card.id, path: `${base}.title`, message: 'The card title cannot be empty.' });
-        if (isWordCard(card, pack.cardKind) && (!card.data.meanings.length || !card.data.meanings.some(item => item.translation.trim() || item.definition.trim()))) {
-            issues.push({ cardId: card.id, path: `${base}.data.meanings`, message: 'Add at least one meaning.' });
+        if (isWordCard(card, pack.cardKind)) {
+            for (const issue of validateLexicalContent(card.data)) issues.push({ cardId: card.id, path: `${base}.data.${issue.path}`, message: issue.message });
         }
         if (isPersonCard(card, pack.cardKind) && !card.data.summary.trim()) issues.push({ cardId: card.id, path: `${base}.data.summary`, message: 'Add a short person summary.' });
         if (isConceptCard(card, pack.cardKind) && !card.data.definition.trim()) issues.push({ cardId: card.id, path: `${base}.data.definition`, message: 'Add a concept definition.' });
@@ -268,16 +210,7 @@ function isCardBase(value: Record<string, unknown>): boolean {
 }
 
 function isWordData(value: Record<string, unknown>): boolean {
-    return typeof value.language === 'string' && (value.itemType === 'word' || value.itemType === 'phrase' || value.itemType === 'term') &&
-        isOptionalStringRecord(value.phonetics) && Array.isArray(value.meanings) && value.meanings.every(isMeaning) &&
-        isOptionalRecordArray(value.sentences, item => typeof item.id === 'string' && typeof item.text === 'string' && isOptionalString(item.translation) && isOptionalString(item.source)) &&
-        isOptionalRecordArray(value.forms, item => typeof item.form === 'string' && typeof item.type === 'string') &&
-        isOptionalRecordArray(value.derivedWords, item => typeof item.word === 'string' && isOptionalString(item.partOfSpeech) && isOptionalString(item.meaning)) &&
-        isOptionalMorphology(value.morphology) &&
-        isOptionalRecordArray(value.phrases, item => typeof item.id === 'string' && typeof item.text === 'string' && isOptionalString(item.translation) && isOptionalString(item.sentence)) &&
-        isOptionalUsage(value.usage) &&
-        isOptionalRecordArray(value.relations, item => typeof item.type === 'string' && typeof item.target === 'string' && isOptionalString(item.note)) &&
-        isOptionalRecordArray(value.memory, item => typeof item.type === 'string' && typeof item.text === 'string');
+    return isLexicalContent(value);
 }
 
 function isPersonData(value: Record<string, unknown>): boolean {
@@ -298,13 +231,8 @@ function isConceptData(value: Record<string, unknown>): boolean {
 
 function isCustomData(_value: Record<string, unknown>): boolean { return true; }
 
-function isMeaning(value: unknown): boolean {
-    return isRecord(value) && typeof value.id === 'string' && typeof value.partOfSpeech === 'string' && typeof value.translation === 'string' && typeof value.definition === 'string';
-}
 function isImage(value: Record<string, unknown>): boolean { return typeof value.path === 'string' && isOptionalString(value.alt) && isOptionalString(value.caption) && isOptionalString(value.source); }
 function isReference(value: Record<string, unknown>): boolean { return typeof value.id === 'string' && typeof value.target === 'string' && isOptionalString(value.note); }
-function isOptionalMorphology(value: unknown): boolean { return value === undefined || (isRecord(value) && isOptionalString(value.explanation) && isOptionalRecordArray(value.components, item => typeof item.type === 'string' && typeof item.form === 'string' && isOptionalString(item.meaning))); }
-function isOptionalUsage(value: unknown): boolean { return value === undefined || (isRecord(value) && isOptionalStringArray(value.register) && isOptionalStringArray(value.patterns) && isOptionalStringArray(value.notes) && isOptionalStringArray(value.commonMistakes)); }
 function isOptionalNote(value: unknown): boolean { return value === undefined || (isRecord(value) && typeof value.text === 'string'); }
 function isOptionalPackDisplay(value: unknown): boolean { return value === undefined || (isRecord(value) && (value.moduleOrder === undefined || (Array.isArray(value.moduleOrder) && value.moduleOrder.every(entry => typeof entry === 'string')))); }
 function isOptionalFieldDefinitions(value: unknown): boolean {

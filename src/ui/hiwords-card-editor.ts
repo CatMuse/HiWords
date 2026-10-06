@@ -1,3 +1,6 @@
+import { dictText } from '../dictionary/text';
+import { renderHiWordsSources, renderHiWordsFrequency } from './hiwords-card-sections';
+import { FORM_TYPES, PartOfSpeech } from '../lexical/types';
 import { setIcon } from 'obsidian';
 import { createEmptyMeaning, createStableId, normalizeLearningItemType } from '../editor/hiwords-document';
 import type {
@@ -21,7 +24,7 @@ import type {
     HiWordsAchievement,
     HiWordsPhrase,
     HiWordsRelation,
-    HiWordsSentence,
+    HiWordsExample,
 } from '../schema/hiwords';
 import {
     HIWORDS_PARTS_OF_SPEECH,
@@ -29,12 +32,11 @@ import {
     isCustomCard,
     isPersonCard,
     isWordCard,
-    normalizeHiWordsPartOfSpeech,
 } from '../schema/hiwords';
 import { cardTypeRegistry } from '../knowledge';
 
 export type HiWordsEditorModule =
-    | 'word' | 'meanings' | 'sentences' | 'forms' | 'derivedWords' | 'morphology'
+    | 'frequency' | 'sources' | 'word' | 'meanings' | 'examples' | 'forms' | 'derivedWords' | 'morphology'
     | 'phrases' | 'usage' | 'relations' | 'memory' | 'identity' | 'biography'
     | 'timeline' | 'achievements' | 'works' | 'personRelations' | 'definition'
     | 'principles' | 'examples' | 'misconceptions' | 'prerequisites'
@@ -96,7 +98,9 @@ export function renderHiWordsCardEditor(
     switch (module) {
         case 'word': renderWord(container, pack, card, callbacks); break;
         case 'meanings': renderMeanings(container, card, callbacks); break;
-        case 'sentences': renderSentences(container, card, callbacks); break;
+        case 'sources': renderHiWordsSources(container, card); break;
+        case 'frequency': renderHiWordsFrequency(container, card); break;
+        case 'examples': renderSentences(container, card, callbacks); break;
         case 'forms': renderForms(container, card, callbacks); break;
         case 'derivedWords': renderDerivedWords(container, card, callbacks); break;
         case 'morphology': renderMorphology(container, card, callbacks); break;
@@ -297,7 +301,7 @@ function renderWord(container: HTMLElement, pack: HiWordsPack, card: HiWordsWord
     const section = createSection(container, 'Basic');
     const grid = section.createDiv({ cls: 'hi-words-file-form-grid' });
     textField(grid, 'Headword', card.title, value => { card.title = value; callbacks.onWordChange(); }, '', 'Enter a word or phrase.');
-    selectField(grid, 'Type', card.data.itemType, ['word', 'phrase', 'concept', 'term'], value => {
+    selectField(grid, 'Type', card.data.itemType, ['word', 'phrase', 'term'], value => {
         card.data.itemType = normalizeLearningItemType(value);
         callbacks.onChange();
     });
@@ -305,19 +309,21 @@ function renderWord(container: HTMLElement, pack: HiWordsPack, card: HiWordsWord
         card.data.language = value.trim();
         callbacks.onChange();
     }, 'en');
+    textField(grid, 'Translation language', card.data.translationLanguage, value => { card.data.translationLanguage = value.trim(); callbacks.onChange(); }, 'zh-CN');
     textField(grid, 'Aliases', (card.aliases || []).join(', '), value => { card.aliases = splitCommaValues(value); callbacks.onChange(); }, 'Spelling variants only');
     textField(grid, 'US pronunciation', card.data.phonetics?.us || '', value => {
-        card.data.phonetics = { ...(card.data.phonetics || {}), us: value };
+        card.data.phonetics = { ...(card.data.phonetics || {}), us: value, sourceIds: undefined };
         callbacks.onChange();
     });
     textField(grid, 'UK pronunciation', card.data.phonetics?.uk || '', value => {
-        card.data.phonetics = { ...(card.data.phonetics || {}), uk: value };
+        card.data.phonetics = { ...(card.data.phonetics || {}), uk: value, sourceIds: undefined };
         callbacks.onChange();
     });
+    textField(grid, 'Pronunciation (unspecified accent)', card.data.phonetics?.unclassified || '', value => { card.data.phonetics = { ...(card.data.phonetics || {}), unclassified: value, sourceIds: undefined }; callbacks.onChange(); });
 }
 
 function renderMeanings(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
-    const section = createSection(container, 'Definitions', 'Add meaning', () => {
+    const section = createSection(container, dictText('definition'), 'Add meaning', () => {
         card.data.meanings.push(createEmptyMeaning(card.id));
         callbacks.onStructureChange();
     });
@@ -331,14 +337,15 @@ function renderMeanings(container: HTMLElement, card: HiWordsWordCard, callbacks
         setIcon(toggle.createSpan({ cls: 'hi-words-file-sense-chevron' }), 'chevron-down');
         const summary = toggle.createEl('strong');
         const updateSummary = () => summary.setText(
-            `${abbreviatePartOfSpeech(meaning.partOfSpeech)} ${meaning.translation}`.trim()
+            `${meaning.partsOfSpeech.map(abbreviatePartOfSpeech).join("/")} ${meaning.translation || meaning.definition || ""}`.trim()
         );
         updateSummary();
         const remove = iconButton(header, 'trash-2', 'Delete meaning');
         remove.disabled = card.data.meanings.length <= 1;
         remove.onclick = () => {
             if (card.data.meanings.length <= 1) return;
-            card.data.meanings.splice(meaningIndex, 1);
+            const removed = card.data.meanings.splice(meaningIndex, 1)[0];
+            for (const example of [...(card.data.examples || []), ...(card.data.phrases || []).flatMap(phrase => phrase.examples || [])]) { if (example.meaningId === removed.id) example.meaningId = undefined; }
             callbacks.onStructureChange();
         };
         const content = item.createDiv({ cls: 'hi-words-file-sense-content' });
@@ -356,51 +363,59 @@ function renderMeanings(container: HTMLElement, card: HiWordsWordCard, callbacks
             toggleSense();
         };
         const grid = content.createDiv({ cls: 'hi-words-file-form-grid' });
-        meaning.partOfSpeech = normalizeHiWordsPartOfSpeech(meaning.partOfSpeech);
-        selectField(grid, 'Part of speech', meaning.partOfSpeech, partOfSpeechOptions(), value => {
-            meaning.partOfSpeech = value;
+        const hint = content.createDiv({ cls: 'hi-words-file-field-message', text: 'Add a translation or an original-language definition.' });
+        const updateValidity = () => { hint.hidden = !!(meaning.translation?.trim() || meaning.definition?.trim()); };
+        updateValidity();
+        enumListField(grid, 'Part of speech', meaning.partsOfSpeech, partOfSpeechOptions(), values => {
+            meaning.partsOfSpeech = values.length ? values as PartOfSpeech[] : ['unknown'];
+            meaning.sourceIds = undefined;
+            meaning.sourceLabels = undefined;
+            updateSummary(); callbacks.onChange();
+        });
+        translationField(grid, meaning.translation || '', value => {
+            meaning.translation = value;
+            meaning.sourceIds = undefined;
             updateSummary();
+            updateValidity();
             callbacks.onChange();
         });
-        translationField(grid, meaning.translation, value => {
-            meaning.translation = value;
-            updateSummary();
-            callbacks.onChange();
-        }, 'Add a translation.');
-        textareaField(content, 'Definition', meaning.definition, value => { meaning.definition = value; callbacks.onChange(); }, '', 'Add a definition.');
+        textareaField(content, 'Definition', meaning.definition || '', value => { meaning.definition = value; meaning.sourceIds = undefined; updateValidity(); callbacks.onChange(); });
     });
 }
 
 function renderSentences(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
-    const items = card.data.sentences || [];
-    renderCollection(container, 'Examples', 'Add sentence', items, callbacks, (): HiWordsSentence => ({
-        id: createStableId('sentence'),
+    const items = card.data.examples || [];
+    renderCollection(container, dictText('example'), 'Add example', items, callbacks, (): HiWordsExample => ({
+        id: createStableId('example'),
         text: '',
         translation: '',
     }), (row, item) => {
         row.addClass('hi-words-file-sentence-fields');
-        textareaField(row, 'Sentence', item.text, value => item.text = value);
-        textareaField(row, 'Translation', item.translation || '', value => item.translation = value);
-        textField(row, 'Source', item.source || '', value => item.source = value, 'Optional vault path or source');
-    }, item => joinSummary(item.text, item.translation), () => card.data.sentences = items);
+        textareaField(row, 'Example', item.text, value => { item.text = value; item.sourceIds = undefined; });
+        textareaField(row, 'Translation', item.translation || '', value => { item.translation = value; item.sourceIds = undefined; });
+        const selector = row.createEl('label', { text: 'Meaning' }).createEl('select');
+        selector.createEl('option', { value: '', text: 'General example' });
+        for (const meaning of card.data.meanings) selector.createEl('option', { value: meaning.id, text: meaning.translation || meaning.definition || 'New meaning' });
+        selector.value = item.meaningId || '';
+        selector.onchange = () => item.meaningId = selector.value || undefined;
+    }, item => joinSummary(item.text, item.translation), () => card.data.examples = items);
 }
 
 function renderForms(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
     const items = card.data.forms || [];
-    renderCollection(container, 'Word forms', 'Add form', items, callbacks, (): HiWordsForm => ({ form: '', type: '' }), (row, item) => {
-        textField(row, 'Form', item.form, value => item.form = value);
-        textField(row, 'Type', item.type, value => item.type = value, 'past, plural…');
-    }, item => joinSummary(item.form, item.type), () => card.data.forms = items);
+    renderCollection(container, 'Word forms', 'Add form', items, callbacks, (): HiWordsForm => ({ text: '', types: [] }), (row, item) => {
+        textField(row, 'Form', item.text, value => { item.text = value; item.sourceIds = undefined; });
+        enumListField(row, 'Types', item.types, [...FORM_TYPES], values => { item.types = values as HiWordsForm['types']; item.sourceIds = undefined; });
+    }, item => joinSummary(item.text, item.types.join(', ')), () => card.data.forms = items);
 }
 
 function renderDerivedWords(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
     const items = card.data.derivedWords || [];
-    renderCollection(container, 'Derived words', 'Add derived word', items, callbacks, (): HiWordsDerivedWord => ({ word: '' }), (row, item) => {
-        textField(row, 'Word', item.word, value => item.word = value);
-        if (item.partOfSpeech) item.partOfSpeech = normalizeHiWordsPartOfSpeech(item.partOfSpeech);
-        selectField(row, 'Part of speech', item.partOfSpeech || 'noun', partOfSpeechOptions(), value => item.partOfSpeech = value);
-        textField(row, 'Meaning', item.meaning || '', value => item.meaning = value);
-    }, item => joinSummary(item.word, abbreviatePartOfSpeech(item.partOfSpeech || ''), item.meaning), () => card.data.derivedWords = items);
+    renderCollection(container, 'Derived words', 'Add derived word', items, callbacks, (): HiWordsDerivedWord => ({ text: '' }), (row, item) => {
+        textField(row, 'Word', item.text, value => { item.text = value; item.sourceIds = undefined; });
+        enumListField(row, 'Part of speech', item.partsOfSpeech || [], partOfSpeechOptions(), values => { item.partsOfSpeech = values.length ? values as PartOfSpeech[] : undefined; item.sourceIds = undefined; });
+        textField(row, 'Translation', item.translation || '', value => { item.translation = value; item.sourceIds = undefined; });
+    }, item => joinSummary(item.text, item.partsOfSpeech?.map(abbreviatePartOfSpeech).join('/'), item.translation), () => card.data.derivedWords = items);
 }
 
 function renderMorphology(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
@@ -427,16 +442,21 @@ function renderMorphology(container: HTMLElement, card: HiWordsWordCard, callbac
 
 function renderPhrases(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
     const items = card.data.phrases || [];
-    renderCollection(container, 'Phrases', 'Add phrase', items, callbacks, (): HiWordsPhrase => ({ id: createStableId('phrase'), text: '' }), (row, item) => {
+    renderCollection(container, dictText('collocations'), 'Add phrase', items, callbacks, (): HiWordsPhrase => ({ id: createStableId('phrase'), text: '', type: 'phrase' }), (row, item) => {
         row.addClass('hi-words-file-phrase-fields');
-        textField(row, 'Phrase', item.text, value => item.text = value);
-        translationField(row, item.translation || '', value => item.translation = value);
-        textareaField(row, 'Sentence', item.sentence || '', value => item.sentence = value);
+        textField(row, 'Phrase', item.text, value => { item.text = value; item.sourceIds = undefined; });
+        translationField(row, item.translation || '', value => { item.translation = value; item.sourceIds = undefined; });
+        selectField(row, 'Type', item.type, ['phrase', 'collocation'], value => { item.type = value === 'collocation' ? 'collocation' : 'phrase'; item.sourceIds = undefined; });
+        const examples = item.examples || [];
+        renderCollection(row, 'Examples', 'Add example', examples, callbacks, (): HiWordsExample => ({ id: createStableId('example'), text: '' }), (fields, example) => {
+            textareaField(fields, 'Example', example.text, value => { example.text = value; example.sourceIds = undefined; });
+            translationField(fields, example.translation || '', value => { example.translation = value; example.sourceIds = undefined; });
+        }, example => joinSummary(example.text, example.translation), () => item.examples = examples);
     }, item => joinSummary(item.text, item.translation), () => card.data.phrases = items);
 }
 
 function renderUsage(container: HTMLElement, card: HiWordsWordCard, callbacks: CardEditorCallbacks): void {
-    const section = createSection(container, 'Usage');
+    const section = createSection(container, dictText('usage'));
     textField(section, 'Register', (card.data.usage?.register || []).join(', '), value => { card.data.usage = { ...(card.data.usage || {}), register: splitCommaValues(value) }; callbacks.onChange(); }, 'neutral, formal, informal…');
     stringListField(section, 'Patterns', card.data.usage?.patterns || [], 'Add pattern', 'Example: be accessible to + person', values => {
         card.data.usage = { ...(card.data.usage || {}), patterns: values };
@@ -757,4 +777,27 @@ function partOfSpeechOptions(): string[] {
 
 function morphologyComponentTypes(current?: string): string[] {
     return Array.from(new Set([current || '', 'root', 'prefix', 'suffix', 'base', 'other'].filter(Boolean)));
+}
+
+function enumListField<T extends string>(container: HTMLElement, label: string, selected: T[], options: T[], change: (values: T[]) => void): void {
+    const field = container.createEl('fieldset', { cls: 'hi-words-file-enum-list' });
+    field.createEl('legend', { text: label });
+    const values = new Set(selected);
+    for (const option of options) {
+        const row = field.createEl('label');
+        const input = row.createEl('input', { type: 'checkbox' });
+        input.checked = values.has(option);
+        row.createSpan({ text: option.replace(/([a-z])([A-Z])/g, '$1 $2') });
+        input.onchange = () => {
+            if (input.checked) {
+                if (option === 'unknown') values.clear();
+                else values.delete('unknown' as T);
+                values.add(option);
+            } else values.delete(option);
+            if (!values.size && options.includes('unknown' as T)) values.add('unknown' as T);
+            for (const checkbox of Array.from(field.querySelectorAll<HTMLInputElement>('input'))) checkbox.checked = values.has(checkbox.value as T);
+            change([...values]);
+        };
+        input.value = option;
+    }
 }

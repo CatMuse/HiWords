@@ -1,3 +1,4 @@
+import type { LexicalEntry } from '../lexical/types';
 import { Component, setIcon } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { TranslationService } from '../services/translation-service';
@@ -42,18 +43,18 @@ export class AiDetailPanel extends Component {
         root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'false'); root.setAttribute('aria-label', dictText('aiDetail'));
         const header = root.createDiv({ cls: 'hi-words-ai-detail-header' });
         const heading = header.createDiv({ cls: 'hi-words-ai-detail-heading' });
-        heading.createDiv({ cls: 'hi-words-ai-detail-kicker', text: dictText('aiDetail') });
-        heading.createDiv({ cls: 'hi-words-ai-detail-title', text });
+        heading.createDiv({ cls: 'hi-words-ai-detail-title', text: dictText('aiDetail') });
         const actions = header.createDiv({ cls: 'hi-words-word-popover-actions' });
         const add = actions.createEl('button', { cls: 'hi-words-card-action', attr: { 'aria-label': dictText('add') } });
         add.disabled = true; setIcon(add, 'book-plus');
         const pin = actions.createEl('button', { cls: 'hi-words-card-action hi-words-ai-detail-pin' });
-        root.createDiv({ cls: 'hi-words-ai-detail-disclosure', text: dictText('aiContext') });
+        root.createDiv({ cls: 'hi-words-ai-detail-source', text });
         const summary = context.baseDefinition ? root.createDiv({ cls: 'hi-words-ai-detail-summary', text: context.baseDefinition }) : undefined;
         const body = root.createDiv({ cls: 'hi-words-ai-detail-body' });
         let definition = '', busy = false;
+        let lexical: LexicalEntry | undefined;
         add.addEventListener('click', () => {
-            if (definition && context.isCurrent()) this.plugin.addOrEditWord(text, context.sentence, definition);
+            if (definition && context.isCurrent()) this.plugin.addOrEditWord(text, context.sentence, definition, lexical);
         });
         root.addEventListener('mousedown', event => event.stopPropagation());
         doc.body.appendChild(root);
@@ -70,17 +71,18 @@ export class AiDetailPanel extends Component {
         listeners.registerDomEvent(doc, 'keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); this.close(); } });
         const load = async () => {
             if (busy || !context.isCurrent() || this.root !== root) return;
-            busy = true; definition = ''; add.disabled = true; body.empty();
-            body.createDiv({ cls: 'hi-words-ai-detail-loading', text: dictText('loading') });
+            busy = true; definition = ''; lexical = undefined; add.disabled = true; body.empty();
+            body.createDiv({ cls: 'hi-words-ai-detail-loading', text: dictText('aiGenerating') });
             const revision = ++this.revision;
             const current = () => this.revision === revision && this.root === root && context.isCurrent();
             try {
                 const raw = await this.service.translateDetailed(text, context.sentence);
                 if (!current()) return;
-                const result = parseDetailedTranslationResult(raw, text);
+                const result = parseDetailedTranslationResult(raw, text, { ...this.plugin.settings.aiService, translationLanguage: this.plugin.settings.selectionTranslate.targetLang });
                 if (!result) { this.service.clearCache(); throw new Error(dictText('aiInvalidDetails')); }
                 if (summary) summary.hidden = result.kind !== 'text';
                 renderAiTranslationResult(body, result);
+                lexical = result.kind === 'word' ? result : undefined;
                 definition = translationDefinition(result) || context.baseDefinition || ''; add.disabled = !definition;
             } catch (error) {
                 if (!current()) return;

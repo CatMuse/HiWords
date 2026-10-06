@@ -1,3 +1,4 @@
+import type { LexicalEntry } from './src/lexical/types';
 import { HidictService } from './src/dictionary/hidict-service';
 import { Notice, Plugin, TFile, WorkspaceLeaf } from 'obsidian';
 import { Extension } from '@codemirror/state';
@@ -325,7 +326,7 @@ export default class HiWordsPlugin extends Plugin {
      * @param sentence 单词所在的句子（可选）
      * @param prefilledDefinition 预填充的释义（可选，来自划词翻译）
      */
-    addOrEditWord(word: string, sentence = '', prefilledDefinition = '') {
+    addOrEditWord(word: string, sentence = '', prefilledDefinition = '', lexical?: LexicalEntry) {
         // 检查单词是否已存在
         const existingDefinition = this.vocabularyManager.getDefinition(word);
         
@@ -339,7 +340,7 @@ export default class HiWordsPlugin extends Plugin {
         } else {
             // 官方 .hiwords 词典保持只读；右键添加时预填官方释义到 Canvas 添加表单
             const definition = prefilledDefinition || this.getPrefilledDefinition(existingDefinition);
-            new AddWordModal(this.app, this, word, sentence, false, definition).open();
+            new AddWordModal(this.app, this, word, sentence, false, definition, undefined, lexical).open();
         }
     }
 

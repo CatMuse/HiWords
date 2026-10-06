@@ -29,7 +29,7 @@ test('translation sends the selected text, honors target/provider and invalidate
         assert.equal(await service.translate(' selected text '), 'translated');
         assert.equal(requests[0].url, 'https://translation.invalid/v1/chat/completions');
         assert.ok(JSON.parse(requests[0].body).messages[0].content.startsWith(`Translate selected text to ${config.selectionTranslate.targetLang}`));
-        assert.ok(!JSON.parse(requests[0].body).messages[0].content.includes('Return exactly one JSON object'));
+        assert.ok(JSON.parse(requests[0].body).messages[0].content.includes('Return exactly one JSON object'));
         await service.translate('selected text'); assert.equal(requests.length, 1);
         config.selectionTranslate.targetLang = 'fr';
         await service.translate('selected text'); assert.equal(requests.length, 2);
@@ -95,12 +95,12 @@ test('structured default supports existing OpenAI-compatible, Claude and Gemini 
             const prompt = provider === 'gemini' ? body.contents[0].parts[0].text : body.messages[0].content;
             assert.ok(prompt.includes('Return exactly one JSON object'));
             assert.ok(prompt.includes('Selection: "future"'));
-            assert.ok(prompt.includes('in zh-CN'));
+            assert.ok(prompt.includes('Target language: zh-CN'));
         }
     } finally { delete globalThis.__webTranslationRequest; }
 });
 
-test('simple translation stays plain and detailed requests cache separately by bounded context', async () => {
+test('simple translation uses shared fields and detailed requests cache separately by bounded context', async () => {
     const requests = [];
     globalThis.__webTranslationRequest = async request => {
         requests.push(request);
@@ -111,13 +111,13 @@ test('simple translation stays plain and detailed requests cache separately by b
         const service = new TranslationService(config, () => 'test-only-key');
         await service.translate('future');
         let prompt = JSON.parse(requests[0].body).messages[0].content;
-        assert.ok(prompt.includes('Only return the translation'));
-        assert.ok(!prompt.includes('Return exactly one JSON object'));
+        assert.ok(prompt.includes('Return exactly one JSON object'));
+        assert.ok(prompt.includes('partsOfSpeech'));
         await service.translateDetailed('future', 'Context one');
         await service.translateDetailed('future', 'Context one');
         assert.equal(requests.length, 2);
         prompt = JSON.parse(requests[1].body).messages[0].content;
-        assert.ok(prompt.includes('"collocations"')); assert.ok(prompt.includes('Context: "Context one"'));
+        assert.ok(prompt.includes('"phrases"')); assert.ok(prompt.includes('Context: "Context one"'));
         await service.translateDetailed('future', 'Context two'); assert.equal(requests.length, 3);
         await service.translateDetailed('future', 'x'.repeat(1000) + 'PRIVATE_TAIL');
         assert.ok(!JSON.parse(requests[3].body).messages[0].content.includes('PRIVATE_TAIL'));

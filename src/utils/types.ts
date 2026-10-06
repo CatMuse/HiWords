@@ -13,6 +13,8 @@ export interface WordSection {
 
 export type BuiltInCardDisplaySection =
     'definitions' |
+    'sources' |
+    'frequency' |
     'examples' |
     'memory' |
     'forms' |
@@ -103,7 +105,10 @@ export type HighlightStyle = 'underline' | 'background' | 'bold' | 'dotted' | 'w
 
 export type AIProvider = 'openai-compatible' | 'anthropic' | 'gemini' | 'custom';
 
+export type AIProtocol = 'openai' | 'anthropic' | 'gemini';
+
 export interface AIServiceSettings {
+    apiProtocol?: AIProtocol;
     provider: AIProvider;
     apiUrl: string;
     apiKeySecretId: string;
@@ -149,6 +154,7 @@ export interface HiWordsSettings {
     pronunciationVariant?: 'uk' | 'us';
     // AI 配置
     aiService: AIServiceSettings;
+    aiProfiles?: Partial<Record<AIProvider, AIServiceSettings>>;
     aiDefinition: AIDefinitionSettings;
     // 自动布局设置（简化版）
     autoLayoutEnabled?: boolean; // 是否启用自动布局（使用固定参数的简单网格）

@@ -1,6 +1,8 @@
 # HiWords card types
 
-HiWords schema version 2 stores one knowledge-card type per `.hiwords` collection.
+HiWords schema version 3 stores one knowledge-card type per `.hiwords` collection.
+
+Shared lexical fields for dictionary lookup, AI generation and language cards are documented in [词条字段统一规范](lexical-fields.md). Language cards use `partsOfSpeech[]`, separate `translation` from original-language `definition`, share `examples[]` with phrases, and preserve multi-type forms and content sources. A [complete v3 example](examples/lexical-v3.hiwords) is included.
 
 Older `.hiwords` schema versions are not automatically migrated. Unsupported files remain unchanged and need conversion before the structured editor can use them.
 

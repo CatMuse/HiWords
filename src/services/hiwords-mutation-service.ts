@@ -8,7 +8,7 @@ import {
     updateCanvasTextNodeSentences,
 } from '../canvas/canvas-note';
 import { createStableId } from '../editor/hiwords-document';
-import { isHiWordsPack, isWordCard, normalizeHiWordsPack, type HiWordsCard, type HiWordsPack, type HiWordsSentence } from '../schema/hiwords';
+import { isHiWordsPack, isWordCard, type HiWordsCard, type HiWordsPack, type HiWordsSentence } from '../schema/hiwords';
 import type { WordDefinition } from '../utils';
 
 type CardMutation = (card: HiWordsCard, pack: HiWordsPack) => void;
@@ -48,7 +48,7 @@ export class HiWordsMutationService {
     }
 
     getSavedSentences(wordDef: WordDefinition): HiWordsSentence[] {
-        return wordDef.card && wordDef.cardKind && isWordCard(wordDef.card, wordDef.cardKind) ? wordDef.card.data.sentences || [] : wordDef.savedSentences || [];
+        return wordDef.card && wordDef.cardKind && isWordCard(wordDef.card, wordDef.cardKind) ? wordDef.card.data.examples || [] : wordDef.savedSentences || [];
     }
 
     isSentenceSaved(wordDef: WordDefinition, text: string): boolean {
@@ -70,7 +70,7 @@ export class HiWordsMutationService {
         let saved = false;
         const success = await this.mutate(wordDef, (card, pack) => {
             if (!isWordCard(card, pack.cardKind)) return;
-            const sentences = card.data.sentences || [];
+            const sentences = card.data.examples || [];
             const existing = sentences.findIndex(item => normalizeSentence(item.text) === key);
             if (existing >= 0) {
                 sentences.splice(existing, 1);
@@ -80,11 +80,10 @@ export class HiWordsMutationService {
                     id: createStableId('sentence'),
                     text,
                     translation: sentence.translation?.trim() || undefined,
-                    source: sentence.source?.trim() || undefined,
-                });
+                    });
                 saved = true;
             }
-            card.data.sentences = sentences;
+            card.data.examples = sentences;
         });
         return { success, saved: success && saved };
     }
@@ -140,7 +139,7 @@ export class HiWordsMutationService {
             if (!(file instanceof TFile)) return false;
             let matched = false;
             await this.plugin.app.vault.process(file, data => {
-                const parsed = normalizeHiWordsPack(JSON.parse(data) as unknown);
+                const parsed = JSON.parse(data) as unknown;
                 if (!isHiWordsPack(parsed)) throw new Error('Unsupported .hiwords file.');
                 const card = parsed.cards.find(item => item.id === cardId);
                 if (!card) return data;

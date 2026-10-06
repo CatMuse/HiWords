@@ -1,65 +1,49 @@
-export interface AiMeaning { pos: string; definition: string }
-export interface AiExample { text: string; translation: string }
-export interface AiWordDetails { lexicalType?: 'phrase'; contextMeaning?: string | null; collocations?: AiExample[]; examples?: AiExample[]; scenarios?: string[]; pitfalls?: string[] }
-export type TranslationResult =
-    | ({ kind: 'word'; text: string; meanings: AiMeaning[]; usage: string | null; example: AiExample | null } & AiWordDetails)
-    | { kind: 'sentence'; text: string; translation: string; explanation: string | null; keyPhrases?: AiExample[]; structure?: string | null }
-    | { kind: 'text'; text: string; translation: string; definition: string | null };
+import type { LexicalEntry, LexicalExample } from '../lexical/types';
+import { lexicalDefinition, partOfSpeechLabel } from '../lexical/types';
+import { lexicalId, parseAiLexicalContent, withAiSource } from '../lexical/ai-content';
+import { record } from '../lexical/validation';
 
-const positions = new Set(['noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction', 'determiner', 'interjection', 'numeral', 'auxiliary', 'modal', 'phrase', 'unknown']);
-const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
-const nonempty = (value: unknown, max = 2000): value is string => typeof value === 'string' && !!value.trim() && value.length <= max;
-const optional = (value: unknown): value is string | null | undefined => value === null || value === undefined || nonempty(value);
-function detailFields(data: Record<string, unknown>): AiWordDetails {
-    const fields: AiWordDetails = {};
-    if (nonempty(data.contextMeaning)) fields.contextMeaning = data.contextMeaning.trim();
-    for (const key of ['collocations', 'examples'] as const) {
-        const value = data[key];
-        if (Array.isArray(value) && value.length <= (key === 'collocations' ? 5 : 3)
-            && value.every(item => record(item) && nonempty(item.text) && nonempty(item.translation))) {
-            fields[key] = value.map(item => ({ text: item.text.trim(), translation: item.translation.trim() }));
-        }
-    }
-    for (const key of ['scenarios', 'pitfalls'] as const) {
-        const value = data[key];
-        if (Array.isArray(value) && value.length <= 3 && value.every(item => nonempty(item))) fields[key] = value.map(item => item.trim());
-    }
-    return fields;
+export type TranslationResult =
+    | (LexicalEntry & { kind: 'word'; reading?: { contextMeaning?: string } })
+    | { kind: 'sentence'; text: string; translation: string; explanation?: string; keyPhrases?: LexicalExample[]; structure?: string }
+    | { kind: 'text'; text: string; translation: string; savable: boolean };
+export interface AiResultSource { provider: string; model: string; translationLanguage?: string }
+export const aiMeaningLabel = partOfSpeechLabel;
+export function translationDefinition(result: TranslationResult): string | null {
+    if (result.kind === 'word') return lexicalDefinition(result) || null;
+    return result.kind === 'sentence' || result.savable ? result.translation : null;
 }
 
-/** Provider/model output is untrusted; only verified fields become a card. */
-export function parseTranslationResult(raw: string, selection: string): TranslationResult {
+export function parseTranslationObject(data: unknown, selection: string, source?: AiResultSource): TranslationResult | null {
+    if (!record(data)) return null;
+    if (data.kind === 'word') {
+        const content = parseAiLexicalContent({ ...data, translationLanguage: data.translationLanguage || source?.translationLanguage });
+        if (!content) return null;
+        const sourced = source ? withAiSource(content, source.provider, source.model) : content;
+        const contextMeaning = record(data.reading) && typeof data.reading.contextMeaning === 'string' ? data.reading.contextMeaning.trim() : undefined;
+        return { ...sourced, kind: 'word', id: lexicalId('entry'), text: selection, ...(contextMeaning ? { reading: { contextMeaning } } : {}) };
+    }
+    if (data.kind === 'sentence' && typeof data.translation === 'string' && data.translation.trim()) {
+        const note = (value: unknown): string | undefined => {
+            if (typeof value === 'string') return value.trim() || undefined;
+            if (Array.isArray(value)) return value.filter(item => typeof item === 'string').join('\n').trim() || undefined;
+            return undefined;
+        };
+        const keyPhrases = Array.isArray(data.keyPhrases) ? data.keyPhrases.flatMap(item => record(item) && note(item.text) ? [{ id: lexicalId('phrase'), text: note(item.text)!, translation: note(item.translation) }] : []) : undefined;
+        return { kind: 'sentence', text: selection, translation: data.translation.trim(), explanation: note(data.explanation), structure: note(data.structure), ...(keyPhrases?.length ? { keyPhrases } : {}) };
+    }
+    return null;
+}
+
+/** Structured failures are never saved as raw JSON; ordinary translations remain usable. */
+export function parseTranslationResult(raw: string, selection: string, source?: AiResultSource): TranslationResult {
     const cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
     const candidate = cleaned.replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i, '$1').trim();
     let data: unknown;
-    try { data = JSON.parse(candidate); } catch { /* Plain text remains supported. */ }
-    if (record(data) && nonempty(data.text, 500) && data.text.trim() === selection) {
-        if (data.kind === 'word' && Array.isArray(data.meanings) && data.meanings.length >= 1 && data.meanings.length <= 4
-            && data.meanings.every(m => record(m) && typeof m.pos === 'string' && positions.has(m.pos) && nonempty(m.definition))
-            && optional(data.usage) && (data.example === null || data.example === undefined
-                || (record(data.example) && nonempty(data.example.text) && nonempty(data.example.translation)))) {
-            return { kind: 'word', text: selection,
-                meanings: data.meanings.map(m => ({ pos: m.pos as string, definition: (m.definition as string).trim() })),
-                usage: typeof data.usage === 'string' ? data.usage.trim() : null,
-                example: record(data.example) ? { text: (data.example.text as string).trim(), translation: (data.example.translation as string).trim() } : null,
-                ...detailFields(data) };
-        }
-        if (data.kind === 'sentence' && nonempty(data.translation, 5000) && optional(data.explanation)) {
-            return { kind: 'sentence', text: selection, translation: data.translation.trim(),
-                explanation: typeof data.explanation === 'string' ? data.explanation.trim() : null };
-        }
-    }
-    // A usable translation can survive schema errors, but never save raw JSON as a definition.
-    const fallback = record(data) && nonempty(data.translation, 5000) ? data.translation.trim() : null;
-    const looksStructured = /^[{[]/.test(candidate);
-    return { kind: 'text', text: selection, translation: fallback || cleaned,
-        definition: fallback || (looksStructured ? null : cleaned || null) };
-}
-
-const labels: Record<string, string> = { noun: 'n.', verb: 'v.', adjective: 'adj.', adverb: 'adv.', pronoun: 'pron.',
-    preposition: 'prep.', conjunction: 'conj.', determiner: 'det.', interjection: 'interj.', numeral: 'num.', auxiliary: 'aux.', modal: 'modal', phrase: 'phr.', unknown: '' };
-export function aiMeaningLabel(pos: string): string { return labels[pos] || ''; }
-export function translationDefinition(result: TranslationResult): string | null {
-    if (result.kind === 'word') return result.meanings.map(m => [aiMeaningLabel(m.pos), m.definition].filter(Boolean).join(' ')).join('\n');
-    return result.kind === 'sentence' ? result.translation : result.definition;
+    try { data = JSON.parse(candidate); } catch { /* Plain translation. */ }
+    const parsed = record(data) && data.text === selection ? parseTranslationObject(data, selection, source) : null;
+    if (parsed) return parsed;
+    const fallback = record(data) && typeof data.translation === 'string' ? data.translation.trim() : '';
+    const structured = /^[{[]/.test(candidate);
+    return { kind: 'text', text: selection, translation: fallback || (structured ? '' : cleaned), savable: !!fallback || !structured && !!cleaned };
 }

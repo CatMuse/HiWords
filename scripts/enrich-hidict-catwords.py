@@ -12,6 +12,19 @@ POS = {'n':'noun','v':'verb','vt':'verb','vi':'verb','adj':'adjective','adv':'ad
 FORMS = {'word_pl':'plural','word_third':'thirdPersonSingular','word_ing':'presentParticiple','word_done':'pastParticiple','word_past':'past'}
 WORD = re.compile(r"[a-z]+(?:['-][a-z]+)*")
 
+def parse_tagged_meanings(text):
+    """Read all adjacent POS tags on one line without treating tags as definitions."""
+    result = []
+    for line in text.splitlines():
+        match = re.match(r'^[ \t]*(?:-[ \t]*)?((?:#词性/[^\s#]+[ \t]*)+)(.*)$', line)
+        if not match:
+            continue
+        labels = tuple(dict.fromkeys(re.findall(r'#词性/([^\s#]+)', match[1])))
+        definition = match[2].strip()
+        if definition:
+            result.append((labels, definition))
+    return result
+
 def normalized(text):
     return re.sub(r'[\s，,；;。/（）()]', '', text)
 
@@ -25,6 +38,18 @@ def definition_parts(text):
             result.append(text[start:i].strip()); start = i+1
     result.append(text[start:].strip())
     return [part for part in result if part]
+
+def meaning_covers(candidate, meaning):
+    """A broader POS group covers another only when every gloss is already present."""
+    if not set(meaning['partsOfSpeech']) < set(candidate['partsOfSpeech']):
+        return False
+    hay = normalized('；'.join(candidate['definitions']))
+    atoms = [normalized(atom) for text in meaning['definitions'] for atom in definition_parts(text)]
+    return bool(atoms) and all(atom and atom in hay for atom in atoms)
+
+def remove_covered_meanings(meanings):
+    return [meaning for meaning in meanings
+            if not any(meaning_covers(candidate, meaning) for candidate in meanings)]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -50,23 +75,23 @@ def main():
         if word == "con'": word='con'
         if not WORD.fullmatch(word):
             counters['phrase_or_unsupported_title']+=1; continue
-        raw = re.findall(r'^\s*(?:-\s*)?#词性/(\S+)\s+(.+)$',text,re.M)
+        raw = parse_tagged_meanings(text)
         # All source names were lowercased: abbreviations can change the sense of a word.
-        if any(p=='abbr' for p,t in raw) or word in {'aids','us'}:
+        if any('abbr' in labels for labels, definition in raw) or word in {'aids','us'}:
             skipped.append({'word':word,'reason':'大小写/缩写含义需人工确认','file':str(path)}); continue
         if word not in existing and word in aliases:
             counters['already_resolves_as_form']+=1; continue
         local=[]
-        for label,definition in raw:
-            if label not in POS:
-                skipped.append({'word':word,'reason':'未自动映射的词性 '+label,'file':str(path)}); continue
+        for labels,definition in raw:
+            if any(label not in POS for label in labels):
+                skipped.append({'word':word,'reason':'未自动映射的词性 '+ '/'.join(labels),'file':str(path)}); continue
             parts=[]
             for part in re.split(r'[；;]',definition):
                 tags = re.findall(r'\[([^\]]+)\]|<([^>]+)>',part)
                 if any((a or b).strip() in domains for a,b in tags): continue
                 part=part.strip()
                 if part and part not in parts: parts.append(part)
-            if parts: local.append({'partsOfSpeech':[POS[label]],'sourceLabels':[label],'definitions':parts})
+            if parts: local.append({'partsOfSpeech':list(dict.fromkeys(POS[label] for label in labels)),'sourceLabels':list(labels),'definitions':parts})
         if not local:
             skipped.append({'word':word,'reason':'无可安全合并的词性释义','file':str(path)}); continue
         before=copy.deepcopy(existing.get(word)); entry=existing.get(word)
@@ -91,7 +116,7 @@ def main():
                 if extra:
                     target=next((m for m in candidates if m['sourceLabels']==old['sourceLabels']),candidates[0])
                     target['definitions'].extend(t for t in extra if t not in target['definitions'])
-            entry['meanings']=combined
+            entry['meanings']=remove_covered_meanings(combined)
         for key,label in [('uk','英'),('us','美')]:
             match=re.search(label+r'[：:]\s*/([^/\n]*)/',text)
             value=match[1].strip() if match else None

@@ -15,6 +15,8 @@ import {
     renderHiWordsRelations,
     renderHiWordsSentences,
     renderHiWordsUsage,
+    renderHiWordsSources,
+    renderHiWordsFrequency,
 } from './hiwords-card-sections';
 
 export type WordCardRenderMode = 'popover' | 'sidebar';
@@ -30,7 +32,7 @@ interface RenderOptions {
 
 export const DEFAULT_WORD_CARD_DETAIL_SECTIONS: CardDisplaySection[] = [
     'definitions', 'derivedWords', 'morphology', 'phrases', 'examples', 'memory',
-    'relations', 'usage', 'forms', 'images', 'custom', 'note',
+    'relations', 'usage', 'forms', 'frequency', 'sources', 'images', 'custom', 'note',
 ];
 
 export const DEFAULT_WORD_CARD_PREVIEW_SECTIONS: CardDisplaySection[] = ['definitions'];
@@ -77,12 +79,12 @@ function renderMeta(root: HTMLElement, wordDef: WordDefinition, options: RenderO
     if (!card || !wordDef.cardKind || !isWordCard(card, wordDef.cardKind)) return;
     const preferred = options.pronunciationVariant || 'us';
     const fallback = preferred === 'us' ? 'uk' : 'us';
-    const value = card.data.phonetics?.[preferred] || card.data.phonetics?.[fallback];
+    const value = card.data.phonetics?.[preferred] || card.data.phonetics?.[fallback] || card.data.phonetics?.unclassified;
     if (value) {
         const meta = options.pronunciationTarget || root.createDiv({ cls: 'hi-words-structured-meta' });
         const phonetic = meta.createSpan({ cls: 'hi-words-structured-phonetic' });
         const variant = card.data.phonetics?.[preferred] ? preferred : fallback;
-        phonetic.createSpan({ text: variant.toUpperCase(), cls: 'hi-words-structured-phonetic-label' });
+        if (card.data.phonetics?.[variant]) phonetic.createSpan({ text: variant.toUpperCase(), cls: 'hi-words-structured-phonetic-label' });
         phonetic.createSpan({ text: value });
         if (options.onPronunciationClick) {
             phonetic.addEventListener('click', event => {
@@ -123,6 +125,8 @@ function renderSection(
     }
     if (!isWordCard(card, wordDef.cardKind)) return;
     switch (section) {
+        case 'sources': renderHiWordsSources(root, card); break;
+        case 'frequency': renderHiWordsFrequency(root, card); break;
         case 'definitions': renderHiWordsMeanings(root, card); break;
         case 'examples': renderHiWordsSentences(root, card, density === 'rich' ? 2 : density ? 1 : undefined); break;
         case 'derivedWords': renderHiWordsDerivedWords(root, card); break;

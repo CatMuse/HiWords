@@ -1,21 +1,28 @@
 import { hidictSetting } from './hidict-settings';
-import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, SecretComponent, setIcon } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, Notice, FuzzySuggestModal, setIcon } from 'obsidian';
 import type { SettingDefinitionItem, SettingDefinition, SettingDefinitionControl } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { VocabularyBook, AIProvider } from '../utils';
 import { CanvasParser } from '../canvas';
 import { HiWordsParser } from '../card';
 import { t } from '../i18n';
-import { DictionaryService } from '../services/dictionary-service';
+import { aiSettingsGroups } from './ai-settings';
+import { AIConnectionControls } from './ai-connection-controls';
+import { switchAIProvider } from '../services/ai-profiles';
+import { resolveAIProtocol } from '../services/ai-client';
 import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT } from '../settings';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
-    private isTestingAIConnection = false;
+    private readonly aiControls: AIConnectionControls;
 
     constructor(app: App, plugin: HiWordsPlugin) {
         super(app, plugin);
         this.plugin = plugin;
+        this.aiControls = new AIConnectionControls({
+            app, config: () => plugin.settings.aiService, key: () => plugin.getAIAPIKey(),
+            selectModel: id => this.setControlValue('aiService.model', id), update: () => this.update(),
+        });
     }
 
     getSettingDefinitions(): SettingDefinitionItem[] {
@@ -29,12 +36,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const group = (heading: string, items: SettingDefinition[]): SettingDefinitionItem => ({
             type: 'group', heading: t(`settings.${heading}`), cls: 'hi-words-settings-group',
             items: items.map(item => this.withMultilineLayout(item)),
-        });
-        const prompt = (key: string, label: string, defaultPrompt: string, enabled: () => boolean): SettingDefinition => ({
-            ...field(key, label, 'textarea'),
-            desc: `${t(`settings.${label}_desc`)} ${t('settings.prompt_default_hint')}`,
-            control: { type: 'textarea', key, rows: 8, placeholder: defaultPrompt },
-            visible: enabled,
         });
         return [
             group('group_books', [
@@ -69,26 +70,11 @@ export class HiWordsSettingTab extends PluginSettingTab {
                 field('ttsTemplate', 'tts_template', 'text'),
                 select('pronunciationVariant', 'pronunciation_variant', options('pronunciation_', ['us', 'uk'])),
             ]),
-            group('group_ai', [
-                select('aiService.provider', 'ai_provider', { 'openai-compatible': t('settings.ai_provider_openai_compatible'), anthropic: t('settings.ai_provider_anthropic'), gemini: t('settings.ai_provider_gemini'), custom: t('settings.ai_provider_custom') }),
-                field('aiService.apiUrl', 'ai_api_url', 'text'),
-                { name: t('settings.ai_api_key'), desc: t('settings.ai_api_key_desc'), render: setting => {
-                    setting.addComponent(container => new SecretComponent(this.app, container)
-                        .setValue(this.plugin.settings.aiService.apiKeySecretId)
-                        .onChange(value => this.runAsync(() => this.setControlValue('aiService.apiKeySecretId', value), 'HiWords secret setting failed:')));
-                } },
-                field('aiService.model', 'ai_model', 'text'),
-                { name: t('settings.ai_test_connection'), render: setting => { setting.addButton(button => button.setButtonText(t('settings.ai_test_connection')).setDisabled(this.isTestingAIConnection).onClick(() => this.runAsync(() => this.testAIConnection(), 'HiWords connection test failed:'))); } },
-                { ...field('aiService.extraParams', 'ai_extra_params', 'textarea'), control: {
-                    type: 'textarea', key: 'aiService.extraParams', rows: 4,
-                    validate: value => { try { const parsed = JSON.parse(value || '{}'); if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return t('settings.json_object_required'); } catch { return t('settings.json_object_required'); } },
-                } },
-                field('aiDefinition.enabled', 'enable_ai_definition'),
-                prompt('aiDefinition.prompt', 'ai_prompt', DEFAULT_AI_DEFINITION_PROMPT, () => this.plugin.settings.aiDefinition.enabled),
-                field('selectionTranslate.enabled', 'enable_selection_translate'),
-                { ...field('selectionTranslate.targetLang', 'translate_target_lang', 'text'), visible: () => this.plugin.settings.selectionTranslate.enabled },
-                prompt('selectionTranslate.prompt', 'translate_prompt', DEFAULT_TRANSLATE_PROMPT, () => this.plugin.settings.selectionTranslate.enabled),
-            ]),
+            ...aiSettingsGroups({
+                plugin: this.plugin, controls: this.aiControls,
+                setValue: (key, value) => this.setControlValue(key, value),
+                multiline: item => this.withMultilineLayout(item),
+            }),
             group('group_canvas', [
                 field('autoLayoutEnabled', 'enable_auto_layout'),
                 ...['cardWidth', 'cardHeight'].map(key => ({
@@ -138,6 +124,7 @@ export class HiWordsSettingTab extends PluginSettingTab {
     }
 
     getControlValue(key: string): unknown {
+        if (key === 'aiService.apiProtocol') return resolveAIProtocol(this.plugin.settings.aiService);
         const [section, property] = key.split('.');
         const settings = this.plugin.settings as unknown as Record<string, unknown>;
         const value = property ? (settings[section] as Record<string, unknown>)?.[property] : settings[section];
@@ -150,14 +137,14 @@ export class HiWordsSettingTab extends PluginSettingTab {
     async setControlValue(key: string, value: unknown): Promise<void> {
         const [section, property] = key.split('.');
         const settings = this.plugin.settings as unknown as Record<string, unknown>;
-        if (key === 'aiService.provider') {
-            const previous = this.getProviderDefaults(this.plugin.settings.aiService.provider);
-            const next = this.getProviderDefaults(value as AIProvider);
-            if (next.apiUrl && (!this.plugin.settings.aiService.apiUrl || this.plugin.settings.aiService.apiUrl === previous.apiUrl)) this.plugin.settings.aiService.apiUrl = next.apiUrl;
-            if (next.model && (!this.plugin.settings.aiService.model || this.plugin.settings.aiService.model === previous.model)) this.plugin.settings.aiService.model = next.model;
-        }
-        if (property) (settings[section] as Record<string, unknown>)[property] = value;
+        if (key === 'aiService.provider') switchAIProvider(this.plugin.settings, value as AIProvider);
+        else if (property) (settings[section] as Record<string, unknown>)[property] = value;
         else settings[section] = value;
+        if (section === 'aiService') {
+            this.aiControls.invalidate();
+            const current = this.plugin.settings.aiService;
+            this.plugin.settings.aiProfiles = { ...this.plugin.settings.aiProfiles, [current.provider]: { ...current } };
+        }
         if (key === 'enableMasteredFeature') this.plugin.settings.showMasteredInSidebar = value === true;
         await this.plugin.saveSettings();
         if (key === 'fileNodeParseMode') await this.plugin.vocabularyManager.loadAllVocabularyBooks();
@@ -171,68 +158,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
         void action().catch(error => {
             console.error(context, error);
         });
-    }
-
-    /**
-     * 测试 AI 服务连接
-     */
-    private async testAIConnection() {
-        if (this.isTestingAIConnection) return;
-
-        this.isTestingAIConnection = true;
-        this.update();
-
-        const loadingNotice = new Notice(
-            t('notices.testing_ai_connection') || 'Testing AI connection...',
-            0
-        );
-
-        try {
-            const service = new DictionaryService({
-                service: this.plugin.settings.aiService,
-                apiKey: this.plugin.getAIAPIKey(),
-                prompt: 'Reply with "OK" for the word "{{word}}".'
-            });
-            const result = await service.fetchDefinition(
-                'test',
-                'This is a test sentence for checking the AI connection.'
-            );
-
-            loadingNotice.hide();
-
-            if (!result.trim()) {
-                throw new Error(t('ai_errors.invalid_response'));
-            }
-
-            new Notice(
-                t('notices.ai_connection_success') || 'AI connection successful',
-                5000
-            );
-        } catch (error) {
-            loadingNotice.hide();
-            console.error('AI connection test failed:', error);
-            const errorMessage = error instanceof Error
-                ? error.message
-                : (t('notices.ai_connection_failed') || 'AI connection test failed');
-            new Notice(errorMessage, 6000);
-        } finally {
-            this.isTestingAIConnection = false;
-            this.update();
-        }
-    }
-
-    private getProviderDefaults(provider: AIProvider): { apiUrl: string; model: string } {
-        switch (provider) {
-            case 'anthropic':
-                return { apiUrl: 'https://api.anthropic.com', model: 'claude-3-5-haiku-20241022' };
-            case 'gemini':
-                return { apiUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-2.5-flash' };
-            case 'openai-compatible':
-                return { apiUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' };
-            case 'custom':
-            default:
-                return { apiUrl: '', model: '' };
-        }
     }
 
     /**

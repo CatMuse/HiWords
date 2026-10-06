@@ -6,5 +6,5 @@ export function aiDetailPosition(host: Rect, viewport: { width: number; height: 
     const available = Math.max(1, right - left - 24);
     const width = Math.min(420, available, Math.max(320, (right - left) * .28));
     return { left: Math.max(8, right - width - 12), top: Math.min(top, Math.max(12, viewport.height - 100)),
-        width, height: Math.min(860, Math.max(80, bottom - top)) };
+        width, height: Math.max(80, bottom - top) };
 }

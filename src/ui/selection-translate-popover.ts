@@ -1,3 +1,4 @@
+import type { LexicalEntry } from '../lexical/types';
 import { createWordPopoverShell, positionWordPopover } from './word-popover-shell';
 import { playWordTTS } from '../utils/tts';
 import { selectedWord } from '../dictionary/hidict';
@@ -162,8 +163,10 @@ export class SelectionTranslatePopover extends Component {
         titleEl.classList.add('hi-words-translate-title');
 
         let resultWord = text;
+        let resultLexical: LexicalEntry | undefined;
         let resultDefinition = '';
-        const aiBtn = actionsEl.createEl('button', { cls: 'hi-words-card-action hi-words-ai-detail-button', text: 'AI', attr: { 'aria-label': dictText('aiDetailAction') } });
+        const aiBtn = actionsEl.createEl('button', { cls: 'hi-words-translate-btn hi-words-ai-detail-button', attr: { 'aria-label': dictText('aiDetailAction') } });
+        setIcon(aiBtn, 'sparkles');
         aiBtn.addEventListener('click', event => {
             event.stopPropagation();
             if (context && !context.isCurrent()) return;
@@ -174,7 +177,7 @@ export class SelectionTranslatePopover extends Component {
                 isCurrent: context?.isCurrent || (() => !view || this.plugin.app.workspace.getActiveViewOfType(View) === view), hostRect });
             this.removePopover();
         });
-        const addBtn = actionsEl.createEl('button', { cls: 'hi-words-card-action hi-words-translate-btn hi-words-translate-btn-add', attr: { 'aria-label': dictText('add') } });
+        const addBtn = actionsEl.createEl('button', { cls: 'hi-words-translate-btn hi-words-translate-btn-add', attr: { 'aria-label': dictText('add') } });
         addBtn.disabled = true;
         setIcon(addBtn, 'book-plus');
         addBtn.addEventListener('click', (e) => {
@@ -182,7 +185,7 @@ export class SelectionTranslatePopover extends Component {
             if (context && !context.isCurrent()) return;
             if (!resultDefinition) return;
             this.removePopover();
-            this.plugin.addOrEditWord(resultWord, sentence, resultDefinition);
+            this.plugin.addOrEditWord(resultWord, sentence, resultDefinition, resultLexical);
         });
         const contentEl = shell.content;
         contentEl.classList.add('hi-words-translate-content');
@@ -204,14 +207,15 @@ export class SelectionTranslatePopover extends Component {
 
         this.activePopover = popover;
         position();
-        void this.doTranslate(text, contentEl, (word, definition) => {
+        void this.doTranslate(text, contentEl, (word, definition, lexical) => {
+            resultLexical = lexical;
             resultWord = word; resultDefinition = definition; titleEl.textContent = word;
             addBtn.disabled = !definition;
             position();
         }, shell).then(position);
     }
 
-    private async doTranslate(text: string, contentEl: HTMLElement, ready: (word: string, definition: string) => void, shell: ReturnType<typeof createWordPopoverShell>) {
+    private async doTranslate(text: string, contentEl: HTMLElement, ready: (word: string, definition: string, lexical?: LexicalEntry) => void, shell: ReturnType<typeof createWordPopoverShell>) {
         if (this.isTranslating) {
             this.translationService.abort();
         }
@@ -234,16 +238,16 @@ export class SelectionTranslatePopover extends Component {
                     void playWordTTS(this.plugin, word, variant).catch(error => console.error('HiWords pronunciation failed:', error));
                 };
                 renderHidictResult(contentEl, result.entries, (entry, definition) => {
-                    ready(entry.word, definition);
-                    shell.setPronunciation(() => pronounce(entry.word), dictText('pronounce'));
+                    ready(entry.text, definition, entry);
+                    shell.setPronunciation(() => pronounce(entry.text), dictText('pronounce'));
                 }, { phoneticsContainer: shell.heading, onPhonetic: shell.bindPronunciation, pronunciationVariant: this.plugin.settings.pronunciationVariant });
             } else if (result.kind === 'translation') {
-                const translated = parseTranslationResult(result.text, text);
+                const translated = parseTranslationResult(result.text, text, { ...this.plugin.settings.aiService, translationLanguage: this.plugin.settings.selectionTranslate.targetLang });
                 shell.root.classList.remove('hi-words-hidict-popover');
                 shell.setMode('translation'); shell.setPronunciation();
                 const definition = translationDefinition(translated);
                 contentEl.createDiv({ cls: 'hi-words-translate-result', text: definition || translated.kind === 'text' && translated.translation || result.text });
-                ready(text, definition || '');
+                ready(text, definition || '', translated.kind === 'word' ? translated : undefined);
             } else if (result.kind === 'miss') contentEl.createDiv({ text: dictText('miss') });
         } catch (error) {
             if (!current()) return;

@@ -1,6 +1,35 @@
 // English language pack
 
 export default {
+    ai_connection: {
+        service_heading: "AI service",
+        features_heading: "AI features",
+        advanced: "Advanced options",
+        advanced_desc: "Custom API address and extra request parameters.",
+        advanced_custom_desc: "Extra request parameters for this service.",
+        prompt_page_desc: "Customize the prompt. Leave blank to use the default.",
+        prompt_heading: "Custom prompt",
+        test_model: "Test current model",
+        test_model_desc: "Sends a short test without note content. The provider may charge for this request.",
+
+        "protocol": "API protocol",
+        "protocol_desc": "Select the protocol supported by your custom endpoint.",
+        "connection": "Models and connection",
+        "test_desc": "Refresh models or test the current model. Testing sends a short prompt without note content and may incur a charge.",
+        "refresh_models": "Refresh models",
+        "choose_model": "Choose model",
+        "not_tested": "Not tested",
+        "loading": "Loading models…",
+        "models_found": "Models found",
+        "manual_hint": "You can still enter a model ID manually.",
+        "refresh_hint": "Refresh models first. You can always enter a model ID manually.",
+        "testing": "Testing…",
+        "connected": "Connected",
+        "invalid_url": "Use an HTTP(S) API base URL without credentials, query parameters or fragments.",
+        "timeout": "Connection timeout. The provider may still finish processing the request.",
+        "truncated": "AI response was truncated. Increase the output token limit.",
+        "pagination_error": "Could not load the complete model list. Enter a model ID manually."
+},
     // General
     plugin_name: "HiWords",
 
@@ -66,7 +95,7 @@ export default {
         ai_service: "AI service",
         ai_service_privacy_desc: "AI definition and selection translation share this service. Words, selected text, or context are sent to the provider you configure.",
         ai_provider: "Provider",
-        ai_provider_desc: "Choose a provider preset. Custom keeps URL-based auto detection.",
+        ai_provider_desc: 'Each provider keeps its own configuration. Choose an API protocol for custom services.',
         ai_provider_openai_compatible: "OpenAI compatible",
         ai_provider_anthropic: "Anthropic Claude",
         ai_provider_gemini: "Google Gemini",
@@ -76,7 +105,7 @@ export default {
         ai_api_key: "API Key",
         ai_api_key_desc: "Select an API key from Obsidian secret storage",
         ai_model: "Model ID",
-        ai_model_desc: "AI model identifier (e.g., gpt-4o-mini, deepseek-chat)",
+        ai_model_desc: 'Enter a model ID manually, or refresh and choose from available models.',
         ai_definition: "AI definition",
         enable_ai_definition: "Enable AI definition",
         enable_ai_definition_desc: "Show the AI auto-fill button when adding or editing words",

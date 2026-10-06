@@ -10,6 +10,8 @@ export interface HidictEntry {
 }
 export interface Hidict {
     schema: 'hidict'; schemaVersion: 1; name: string; entryCount: number;
+    language: string; definitionLanguage: string; version?: string;
+    sources?: { id: string; name?: string; url?: string; license?: string }[];
     entries: HidictEntry[];
 }
 const pos = new Set(['noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction', 'determiner', 'interjection', 'numeral', 'auxiliary', 'modal', 'phrase', 'unknown']);

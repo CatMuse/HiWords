@@ -1,9 +1,10 @@
-import { HidictEntry, selectedWord } from './hidict';
+import { selectedWord } from './hidict';
+import type { LexicalEntry } from '../lexical/types';
 import { prepareSelectionText } from '../utils/selection-text';
-export type SelectionResult = { kind: 'dictionary'; entries: HidictEntry[] } | { kind: 'translation'; text: string } | { kind: 'miss' } | { kind: 'stale' };
+export type SelectionResult = { kind: 'dictionary'; entries: LexicalEntry[] } | { kind: 'translation'; text: string } | { kind: 'miss' } | { kind: 'stale' };
 export async function resolveSelection(text: string, options: {
     dictionary: boolean; ai: boolean; current: () => boolean;
-    lookup: (word: string) => Promise<HidictEntry[]>;
+    lookup: (word: string) => Promise<LexicalEntry[]>;
     translate: (text: string) => Promise<string>;
 }): Promise<SelectionResult> {
     const cleanText = prepareSelectionText(text);

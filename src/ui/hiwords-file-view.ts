@@ -751,7 +751,9 @@ export class HiWordsFileView extends TextFileView {
         if (!isWordCard(card, kind)) return 0;
         switch (module) {
             case 'meanings': return card.data.meanings.length;
-            case 'sentences': return card.data.sentences?.length || 0;
+            case 'sources': return card.data.sources?.length || 0;
+            case 'frequency': return card.data.frequency ? 1 : 0;
+            case 'examples': return card.data.examples?.length || 0;
             case 'forms': return card.data.forms?.length || 0;
             case 'derivedWords': return card.data.derivedWords?.length || 0;
             case 'phrases': return card.data.phrases?.length || 0;
@@ -794,7 +796,7 @@ export class HiWordsFileView extends TextFileView {
         if (isConceptCard(card, kind) && module === 'definition') return !card.data.definition.trim();
         if (isWordCard(card, kind) && module === 'meanings') {
             return !card.data.meanings.some(meaning =>
-                !!meaning.partOfSpeech.trim() && !!meaning.translation.trim() && !!meaning.definition.trim()
+                !!meaning.partsOfSpeech.length && !!(meaning.translation?.trim() || meaning.definition?.trim())
             );
         }
         return false;

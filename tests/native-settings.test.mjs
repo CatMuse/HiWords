@@ -22,14 +22,15 @@ function fixture() {
     const events = [];
     const plugin = { settings: structuredClone(api.DEFAULT_SETTINGS), saveSettings: async () => {}, refreshHighlighter: () => {}, vocabularyManager: { loadAllVocabularyBooks: async () => {} } };
     const tab = new api.HiWordsSettingTab({ workspace: { trigger: name => events.push(name) } }, plugin);
-    return { tab, plugin, events, rows: tab.getSettingDefinitions().flatMap(group => group.items) };
+    const flatten = items => items.flatMap(item => item.items ? flatten(item.items) : [item]);
+    return { tab, plugin, events, rows: flatten(tab.getSettingDefinitions()) };
 }
-test('settings use five native groups with independently indexed controls', () => {
+test('settings use six native groups with independently indexed controls', () => {
     const { tab, rows } = fixture();
-    assert.equal(tab.getSettingDefinitions().length, 5);
+    assert.equal(tab.getSettingDefinitions().length, 6);
     assert.ok(tab.getSettingDefinitions().every(group => group.type === 'group' && group.heading));
     const keys = rows.filter(row => row.control).map(row => row.control.key);
-    assert.equal(keys.length, 21);
+    assert.equal(keys.length, 20);
     assert.equal(new Set(keys).size, keys.length);
     assert.equal(typeof tab.display, 'undefined');
 });
@@ -43,7 +44,7 @@ test('nested settings persist and control conditional prompt visibility', async 
     await tab.setControlValue('selectionTranslate.targetLang', 'ja');
     assert.equal(tab.getControlValue('selectionTranslate.targetLang'), 'ja');
 });
-test('mastery changes preserve sidebar linkage and provider changes preserve custom URLs', async () => {
+test('mastery changes preserve sidebar linkage and provider changes restore independent profiles', async () => {
     const { tab, plugin, events } = fixture();
     await tab.setControlValue('enableMasteredFeature', false);
     assert.equal(plugin.settings.showMasteredInSidebar, false);
@@ -52,6 +53,8 @@ test('mastery changes preserve sidebar linkage and provider changes preserve cus
     assert.equal(plugin.settings.aiService.apiUrl, 'https://generativelanguage.googleapis.com/v1beta');
     plugin.settings.aiService.apiUrl = 'https://custom.example';
     await tab.setControlValue('aiService.provider', 'anthropic');
+    assert.equal(plugin.settings.aiService.apiUrl, 'https://api.anthropic.com');
+    await tab.setControlValue('aiService.provider', 'gemini');
     assert.equal(plugin.settings.aiService.apiUrl, 'https://custom.example');
 });
 test('native validators reject invalid card sizes and non-object extra parameters', () => {

@@ -33,7 +33,7 @@ function getCardSearchValues(definition: WordDefinition): string[] {
     const card = definition.card;
     if (!card || !definition.cardKind) return [];
     const values: string[] = [];
-    if (isWordCard(card, definition.cardKind)) values.push(...card.data.meanings.flatMap(meaning => [meaning.partOfSpeech, meaning.definition, meaning.translation]));
+    if (isWordCard(card, definition.cardKind)) values.push(...card.data.meanings.flatMap(meaning => [...meaning.partsOfSpeech, meaning.definition || "", meaning.translation || ""]));
     if (isPersonCard(card, definition.cardKind)) values.push(
         card.data.summary,
         ...(card.data.nationalities || []),

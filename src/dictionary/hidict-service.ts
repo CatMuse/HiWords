@@ -1,3 +1,4 @@
+import { hidictToLexicalEntry } from './lexical-entry';
 import { App, Component, TFile } from 'obsidian';
 import { HidictIndex, parseHidict } from './hidict';
 import { dictText } from './text';
@@ -40,5 +41,5 @@ export class HidictService extends Component {
         try { return await promise; }
         finally { if (this.pending === pending) this.pending = undefined; }
     }
-    async lookup(word: string) { return (await this.loadIndex()).lookup(word); }
+    async lookup(word: string) { const index = await this.loadIndex(); return index.lookup(word).map(entry => hidictToLexicalEntry(entry, index.dictionary)); }
 }

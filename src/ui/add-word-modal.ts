@@ -1,3 +1,6 @@
+import { HiWordsGenerationService } from '../services/hiwords-generation-service';
+import { lexicalId } from '../lexical/ai-content';
+import { lexicalDefinition, LexicalEntry } from '../lexical/types';
 import { addVocabularyWord, getAddableVocabularyBooks } from '../services/add-vocabulary-word';
 import { DEFAULT_AI_DEFINITION_PROMPT, resolvePrompt } from '../settings';
 import { App, Modal, Notice, setIcon } from 'obsidian';
@@ -30,7 +33,7 @@ export class AddWordModal extends Modal {
      * @param sentence 单词所在的句子（可选）
      * @param isEditMode 是否为编辑模式
      */
-    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence = '', isEditMode = false, prefilledDefinition = '', definition?: WordDefinition) {
+    constructor(app: App, plugin: HiWordsPlugin, word: string, sentence = '', isEditMode = false, prefilledDefinition = '', definition?: WordDefinition, private lexical?: LexicalEntry) {
         super(app);
         this.plugin = plugin;
         this.word = word;
@@ -193,14 +196,20 @@ export class AddWordModal extends Modal {
                     setIcon(iconContainer, 'loader');
 
                     try {
-                        // 重新创建服务以确保使用最新配置
-                        const dictionaryService = new DictionaryService({
-                            service: this.plugin.settings.aiService,
-                            apiKey: this.plugin.getAIAPIKey(),
-                            prompt: resolvePrompt(this.plugin.settings.aiDefinition.prompt, DEFAULT_AI_DEFINITION_PROMPT)
-                        });
-                        const definition = await dictionaryService.fetchDefinition(queryWord, this.sentence);
-                        definitionInput.value = definition;
+                        if (bookSelect.value.endsWith('.hiwords') && !this.isEditMode) {
+                            const generated = await new HiWordsGenerationService(this.plugin).generate(queryWord);
+                            this.lexical = { ...generated, id: lexicalId('entry'), text: queryWord };
+                            this.prefilledDefinition = lexicalDefinition(this.lexical);
+                            definitionInput.value = this.prefilledDefinition;
+                        } else {
+                            const dictionaryService = new DictionaryService({
+                                service: this.plugin.settings.aiService,
+                                apiKey: this.plugin.getAIAPIKey(),
+                                prompt: resolvePrompt(this.plugin.settings.aiDefinition.prompt, DEFAULT_AI_DEFINITION_PROMPT)
+                            });
+                            definitionInput.value = await dictionaryService.fetchDefinition(queryWord, this.sentence);
+                            this.lexical = undefined;
+                        }
                         new Notice(t('notices.definition_fetched'));
                     } catch (error) {
                         console.error('Failed to fetch definition:', error);
@@ -374,6 +383,7 @@ export class AddWordModal extends Modal {
                         // 添加模式：调用添加词汇到 Canvas 的方法
                         success = await addVocabularyWord(this.plugin, selectedBook, {
                             word: finalWord, definition, aliases,
+                            lexical: definition === this.prefilledDefinition && finalWord === this.lexical?.text ? this.lexical : undefined,
                         }, colorValue);
 
                         // 关闭加载提示

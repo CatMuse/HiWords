@@ -1,0 +1,79 @@
+{
+  "schema": "hiwords",
+  "schemaVersion": 3,
+  "id": "lexical-example",
+  "title": "词条统一结构示例",
+  "cardKind": "language.word",
+  "cardKindVersion": 1,
+  "cards": [
+    {
+      "id": "lead-example",
+      "title": "lead",
+      "data": {
+        "language": "en",
+        "translationLanguage": "zh-CN",
+        "itemType": "word",
+        "meanings": [
+          {
+            "id": "lead-metal",
+            "partsOfSpeech": [
+              "noun"
+            ],
+            "translation": "铅",
+            "definition": "A heavy, soft metal."
+          },
+          {
+            "id": "lead-guide",
+            "partsOfSpeech": [
+              "verb"
+            ],
+            "sourceLabels": [
+              "vt"
+            ],
+            "translation": "引领；带领"
+          }
+        ],
+        "examples": [
+          {
+            "id": "lead-example-1",
+            "text": "She will lead the team.",
+            "translation": "她将带领这个团队。",
+            "meaningId": "lead-guide"
+          }
+        ],
+        "forms": [
+          {
+            "text": "led",
+            "types": [
+              "past",
+              "pastParticiple"
+            ]
+          }
+        ],
+        "phrases": [
+          {
+            "id": "lead-phrase",
+            "text": "take the lead",
+            "type": "collocation",
+            "translation": "带头；领先",
+            "examples": [
+              {
+                "id": "lead-phrase-example",
+                "text": "Our team took the lead.",
+                "translation": "我们队取得了领先。"
+              }
+            ]
+          }
+        ],
+        "usage": {
+          "notes": [
+            "lead 的读音会随释义变化。"
+          ],
+          "commonMistakes": [
+            "过去式和过去分词都是 led。"
+          ]
+        }
+      }
+    }
+  ]
+}

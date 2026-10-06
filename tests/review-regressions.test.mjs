@@ -88,19 +88,20 @@ test('typed custom fields accept false, zero, and absent values without coercion
 test('AI fills a new card with generated meanings instead of retaining the noun placeholder', () => {
     const card = api.createEmptyWordCard();
     card.title = 'quickly';
-    const meanings = [{ id: 'generated', partOfSpeech: 'adverb', translation: '迅速地', definition: 'At speed.' }];
+    const meanings = [{ id: 'generated', partsOfSpeech: ['adverb'], translation: '迅速地', definition: 'At speed.' }];
     assert.deepEqual(api.mergeGeneratedContent(card, { meanings }).data.meanings, meanings);
-    assert.equal(card.data.meanings[0].translation, '', 'draft generation must not mutate the saved card');
+    assert.equal(card.data.meanings[0].translation, undefined, 'draft generation must not mutate the saved card');
 });
 
-test('AI preserves existing meanings and fills only missing matching content', () => {
+test('AI keeps separate senses when a generated meaning shares an existing part of speech', () => {
     const card = api.createEmptyWordCard();
     card.data.meanings[0].translation = '我的释义';
     const result = api.mergeGeneratedContent(card, { meanings: [
-        { id: 'generated', partOfSpeech: 'noun', translation: 'AI 释义', definition: 'AI definition' },
+        { id: 'generated', partsOfSpeech: ['noun'], translation: 'AI 释义', definition: 'AI definition' },
     ] });
     assert.equal(result.data.meanings[0].translation, '我的释义');
-    assert.equal(result.data.meanings[0].definition, 'AI definition');
+    assert.equal(result.data.meanings[0].definition, undefined);
+    assert.equal(result.data.meanings[1].definition, 'AI definition');
     assert.equal(result.data.meanings[0].id, card.data.meanings[0].id);
 });
 

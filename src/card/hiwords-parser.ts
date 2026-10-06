@@ -1,3 +1,4 @@
+import { meaningLabel } from '../lexical/types';
 import { App, TFile } from 'obsidian';
 import {
     HiWordsCard,
@@ -8,7 +9,6 @@ import {
     isHiWordsPack,
     isPersonCard,
     isWordCard,
-    normalizeHiWordsPack,
 } from '../schema/hiwords';
 import type { WordDefinition, WordSection } from '../utils';
 import type { CardDisplaySection } from '../utils';
@@ -62,7 +62,7 @@ export class HiWordsParser {
     private async readPack(file: TFile): Promise<HiWordsPack | null> {
         const content = await this.app.vault.cachedRead(file);
         if (!content.trim()) return null;
-        const parsed = normalizeHiWordsPack(JSON.parse(content) as unknown);
+        const parsed = JSON.parse(content) as unknown;
         return isHiWordsPack(parsed) ? parsed : null;
     }
 
@@ -147,16 +147,18 @@ function buildSectionContent(
 function buildWordSectionContent(card: HiWordsWordCard, section: CardDisplaySection): string {
     const data = card.data;
     if (section === 'definitions') return data.meanings
-        .map(meaning => [[formatPartOfSpeech(meaning.partOfSpeech), meaning.translation].filter(Boolean).join(' '), meaning.definition].filter(Boolean).join('\n'))
+        .map(meaning => [[meaningLabel(meaning), meaning.translation].filter(Boolean).join(' '), meaning.definition].filter(Boolean).join('\n'))
         .filter(Boolean).join('\n\n');
-    if (section === 'examples') return (data.sentences || []).map(item => [item.text, item.translation].filter(Boolean).join('\n')).join('\n\n');
-    if (section === 'forms') return (data.forms || []).map(item => [item.form, item.type].filter(Boolean).join(' · ')).join('\n');
-    if (section === 'derivedWords') return (data.derivedWords || []).map(item => [[item.word, item.partOfSpeech].filter(Boolean).join(' · '), item.meaning].filter(Boolean).join('\n')).join('\n\n');
+    if (section === 'examples') return (data.examples || []).map(item => [item.text, item.translation].filter(Boolean).join('\n')).join('\n\n');
+    if (section === 'sources') return (data.sources || []).map(source => [source.type, source.name, source.version, source.license].filter(Boolean).join(' · ')).join('\n');
+    if (section === 'frequency') return data.frequency ? [data.frequency.source, data.frequency.rank, data.frequency.level].filter(item => item !== undefined).join(' · ') : '';
+    if (section === 'forms') return (data.forms || []).map(item => [item.text, item.types.join(", ")].filter(Boolean).join(' · ')).join('\n');
+    if (section === 'derivedWords') return (data.derivedWords || []).map(item => [[item.text, item.partsOfSpeech?.join("/")].filter(Boolean).join(' · '), item.translation].filter(Boolean).join('\n')).join('\n\n');
     if (section === 'morphology') return [
         (data.morphology?.components || []).map(item => [item.type, item.form, item.meaning].filter(Boolean).join(' · ')).join('\n'),
         data.morphology?.explanation,
     ].filter(Boolean).join('\n\n');
-    if (section === 'phrases') return (data.phrases || []).map(item => [[item.text, item.translation].filter(Boolean).join(' · '), item.sentence].filter(Boolean).join('\n')).join('\n\n');
+    if (section === 'phrases') return (data.phrases || []).map(item => [[item.text, item.translation].filter(Boolean).join(' · '), ...(item.examples || []).map(example => [example.text, example.translation].filter(Boolean).join("\n"))].filter(Boolean).join('\n')).join('\n\n');
     if (section === 'usage') return [
         nonEmptyLine('Register', data.usage?.register),
         nonEmptyLine('Patterns', data.usage?.patterns),
@@ -183,13 +185,8 @@ function nonEmptyLine(label: string, values?: string[]): string {
 
 function isCompleteCard(card: HiWordsCard, kind: HiWordsPack['cardKind']): boolean {
     if (!card.title.trim()) return false;
-    if (isWordCard(card, kind)) return card.data.meanings.some(item => item.translation.trim() || item.definition.trim());
+    if (isWordCard(card, kind)) return card.data.meanings.some(item => item.translation?.trim() || item.definition?.trim());
     if (isPersonCard(card, kind)) return Boolean(card.data.summary.trim());
     if (isConceptCard(card, kind)) return Boolean(card.data.definition.trim());
     return isCustomCard(card, kind);
-}
-
-function formatPartOfSpeech(value: string): string {
-    const map: Record<string, string> = { noun: 'n.', verb: 'v.', adjective: 'adj.', adverb: 'adv.', phrase: 'phr.' };
-    return map[value.trim().toLowerCase()] || value;
 }

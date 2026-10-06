@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 import { gzipSync } from 'node:zlib';
 const bundle = await build({
-    stdin: { contents: `export * from './src/dictionary/hidict'; export * from './src/dictionary/hidict-bytes'; export * from './src/dictionary/hidict-service'; export * from './src/dictionary/selection-lookup'; export * from './src/ui/hidict-result'; export { TFile } from 'obsidian';`, resolveDir: process.cwd() },
+    stdin: { contents: `export * from './src/dictionary/hidict'; export * from './src/dictionary/lexical-entry'; export * from './src/dictionary/hidict-bytes'; export * from './src/dictionary/hidict-service'; export * from './src/dictionary/selection-lookup'; export * from './src/ui/hidict-result'; export { TFile } from 'obsidian';`, resolveDir: process.cwd() },
     bundle: true, write: false, platform: 'node', format: 'esm',
     plugins: [{ name: 'obsidian', setup(b) {
         b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'mock' }));
@@ -89,12 +89,12 @@ test('a late read from the previous dictionary cannot poison the new cache', asy
     f.vault.readBinary = file => file.path === 'test.hidict' ? new Promise(resolve => release = resolve) : Promise.resolve(binary(JSON.stringify(dictionary([entry('new')]))));
     const old = f.service.lookup('do');
     f.file('new.hidict'); f.setPath('new.hidict'); f.service.invalidate();
-    assert.equal((await f.service.lookup('new'))[0].word, 'new');
+    assert.equal((await f.service.lookup('new'))[0].text, 'new');
     release(gzipped(JSON.stringify(dictionary()))); await assert.rejects(old, /changed/);
-    assert.equal((await f.service.lookup('new'))[0].word, 'new');
+    assert.equal((await f.service.lookup('new'))[0].text, 'new');
 });
 test('copied or saved definitions contain only grouped meanings', () => {
-    assert.equal(api.hidictDefinition(entry('do')), 'vt. 做；进行');
+    assert.equal(api.hidictDefinition(api.hidictToLexicalEntry(entry('do'))), 'vt. 做；进行');
 });
 
 test('plain and gzip dictionaries preserve Unicode, entries and form lookup', async () => {
@@ -104,11 +104,11 @@ test('plain and gzip dictionaries preserve Unicode, entries and form lookup', as
     const f = vaultFixture(); let reads = 0;
     f.vault.readBinary = async () => { reads++; return gzipped(text); };
     const [head, form] = await Promise.all([f.service.lookup('do'), f.service.lookup('did')]);
-    assert.deepEqual(head, form); assert.equal(head[0].meanings[0].definitions[0], '做；进行');
+    assert.deepEqual(head, form); assert.equal(head[0].meanings[0].translation, '做；进行');
     await f.service.lookup('do'); assert.equal(reads, 1);
     f.handlers.modify(f.files.get('test.hidict'));
     f.vault.readBinary = async () => binary(JSON.stringify(dictionary([entry('new')])));
-    assert.equal((await f.service.lookup('new'))[0].word, 'new');
+    assert.equal((await f.service.lookup('new'))[0].text, 'new');
 });
 test('truncated gzip, damaged checksum/length, invalid UTF-8 and invalid JSON fail without caching', async () => {
     const gzip = new Uint8Array(gzipped(JSON.stringify(dictionary())));
@@ -118,7 +118,7 @@ test('truncated gzip, damaged checksum/length, invalid UTF-8 and invalid JSON fa
         const f = vaultFixture(); f.vault.readBinary = async () => bytes.buffer;
         await assert.rejects(f.service.lookup('do'), /Invalid/);
         f.vault.readBinary = async () => gzipped(JSON.stringify(dictionary()));
-        assert.equal((await f.service.lookup('did'))[0].word, 'do');
+        assert.equal((await f.service.lookup('did'))[0].text, 'do');
     }
 });
 
