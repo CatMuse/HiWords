@@ -1,8 +1,9 @@
 import type { HiWordsSettings } from './utils';
+import { LEGACY_TRANSLATE_PROMPT } from './services/translation-prompt';
 
 export const DEFAULT_AI_DEFINITION_PROMPT = 'Please provide a concise definition for the word "{{word}}" based on this context:\n\nSentence: {{sentence}}\n\nFormat:\n1) Part of speech\n2) English definition\n3) Chinese translation\n4) Example sentence (use the original sentence if appropriate)';
 
-export const DEFAULT_TRANSLATE_PROMPT = 'Translate the following text to {{to}}. Only return the translation, no explanation.\n\nText: {{text}}';
+export const DEFAULT_TRANSLATE_PROMPT = LEGACY_TRANSLATE_PROMPT;
 
 export function resolvePrompt(value: string | undefined, defaultPrompt: string): string {
     return value?.trim() ? value : defaultPrompt;

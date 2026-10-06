@@ -5,6 +5,8 @@ import { prepareSelectionText } from '../utils/selection-text';
 import { resolveSelection } from '../dictionary/selection-lookup';
 import { dictText } from '../dictionary/text';
 import { renderHidictResult } from './hidict-result';
+import { AiDetailPanel } from './ai-detail-panel';
+import { parseTranslationResult, translationDefinition } from '../services/translation-result';
 import type { PopoverContext } from './popover-context';
 import { Component, MarkdownView, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
@@ -19,6 +21,7 @@ import { extractSentenceFromEditorMultiline, extractSentenceFromSelection } from
 export class SelectionTranslatePopover extends Component {
     private plugin: HiWordsPlugin;
     private translationService: TranslationService;
+    private detailPanel?: AiDetailPanel;
     private externalContext?: PopoverContext;
     private requestRevision = 0;
     private externalListeners?: Component;
@@ -54,6 +57,7 @@ export class SelectionTranslatePopover extends Component {
 
     updateSettings() {
         this.translationService.updateSettings(this.plugin.settings);
+        this.detailPanel?.close();
         this.removePopover();
     }
 
@@ -74,6 +78,7 @@ export class SelectionTranslatePopover extends Component {
     }
 
     closeForOwner(owner: object): void {
+        this.detailPanel?.closeForOwner(owner);
         if (this.externalContext?.owner === owner) this.removePopover();
     }
 
@@ -81,7 +86,7 @@ export class SelectionTranslatePopover extends Component {
         if (!this.plugin.settings.selectionTranslate.enabled && !this.plugin.settings.hidictPath) {
             return;
         }
-        if (this.activePopover && this.activePopover.contains(event.target as Node)) {
+        if (this.detailPanel?.contains(event.target as Node) || (this.activePopover && this.activePopover.contains(event.target as Node))) {
             return;
         }
         if (this.debounceTimer !== null) {
@@ -158,6 +163,17 @@ export class SelectionTranslatePopover extends Component {
 
         let resultWord = text;
         let resultDefinition = '';
+        const aiBtn = actionsEl.createEl('button', { cls: 'hi-words-card-action hi-words-ai-detail-button', text: 'AI', attr: { 'aria-label': dictText('aiDetailAction') } });
+        aiBtn.addEventListener('click', event => {
+            event.stopPropagation();
+            if (context && !context.isCurrent()) return;
+            if (!this.detailPanel) { this.detailPanel = new AiDetailPanel(this.plugin); this.addChild(this.detailPanel); }
+            const leaf = this.plugin.app?.workspace.activeLeaf;
+            const hostRect = context?.hostRect || (leaf?.view.containerEl ? () => leaf.view.containerEl.getBoundingClientRect() : undefined);
+            this.detailPanel.open(resultWord, { document: doc, owner: context?.owner, sentence, baseDefinition: resultDefinition,
+                isCurrent: context?.isCurrent || (() => !leaf || this.plugin.app.workspace.activeLeaf === leaf), hostRect });
+            this.removePopover();
+        });
         const addBtn = actionsEl.createEl('button', { cls: 'hi-words-card-action hi-words-translate-btn hi-words-translate-btn-add', attr: { 'aria-label': dictText('add') } });
         addBtn.disabled = true;
         setIcon(addBtn, 'book-plus');
@@ -222,11 +238,12 @@ export class SelectionTranslatePopover extends Component {
                     shell.setPronunciation(() => pronounce(entry.word), dictText('pronounce'));
                 }, { phoneticsContainer: shell.heading, onPhonetic: shell.bindPronunciation, pronunciationVariant: this.plugin.settings.pronunciationVariant });
             } else if (result.kind === 'translation') {
-                this.activePopover?.classList.remove('hi-words-hidict-popover');
-                shell.setMode('translation');
-                shell.setPronunciation();
-                contentEl.createDiv({ cls: 'hi-words-translate-result', text: result.text });
-                ready(text, result.text);
+                const translated = parseTranslationResult(result.text, text);
+                shell.root.classList.remove('hi-words-hidict-popover');
+                shell.setMode('translation'); shell.setPronunciation();
+                const definition = translationDefinition(translated);
+                contentEl.createDiv({ cls: 'hi-words-translate-result', text: definition || translated.kind === 'text' && translated.translation || result.text });
+                ready(text, definition || '');
             } else if (result.kind === 'miss') contentEl.createDiv({ text: dictText('miss') });
         } catch (error) {
             if (!current()) return;
@@ -255,6 +272,7 @@ export class SelectionTranslatePopover extends Component {
     }
 
     onunload() {
+        this.detailPanel?.close();
         this.removePopover();
         this.translationService.abort();
         if (this.debounceTimer !== null) {

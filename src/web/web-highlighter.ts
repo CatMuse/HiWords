@@ -217,7 +217,7 @@ export class WebHighlighter {
         const rect = { left: host.left + event.rect.left * zoom, right: host.left + event.rect.right * zoom,
             top: host.top + event.rect.top * zoom, bottom: host.top + event.rect.bottom * zoom };
         if (rect.bottom < host.top || rect.top > host.bottom || rect.right < host.left || rect.left > host.right) return;
-        const context = { owner: this, document: session.view.ownerDocument, rect, sentence: event.sentence || '', sourcePath: url, isCurrent: current };
+        const context = { owner: this, document: session.view.ownerDocument, rect, sentence: event.sentence || '', sourcePath: url, isCurrent: current, hostRect: () => session.view.getBoundingClientRect() };
         if (event.kind === 'hover') {
             if (!this.plugin.settings.showDefinitionOnHover) return;
             const definition = resolveWebClick(event, revision, this.vocabulary.tokens, session.issued);

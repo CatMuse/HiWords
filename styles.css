@@ -5000,3 +5000,107 @@ button.hi-words-translate-btn { padding: 0; border: 0; box-shadow: none; backgro
 .hi-words-word-popover-actions:empty { display: none; }
 .hi-words-hidict-setting .setting-item-info { min-width: 0; }
 .hi-words-hidict-setting select { max-width: min(320px, 40vw); }
+
+/* Structured AI selection cards. */
+.hi-words-ai-popover { width: min(440px, calc(100vw - 24px)); }
+.hi-words-ai-popover[data-mode="dictionary"] { width: max-content; }
+.hi-words-ai-badge {
+    align-self: center;
+    flex-shrink: 0;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--background-modifier-hover);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .04em;
+}
+.hi-words-ai-result { font-size: var(--font-ui-small); line-height: 1.65; white-space: normal; }
+.hi-words-ai-meaning { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 8px; }
+.hi-words-ai-meaning + .hi-words-ai-meaning { margin-top: 6px; }
+.hi-words-ai-pos { color: var(--text-accent); font-size: 12px; }
+.hi-words-ai-definition, .hi-words-ai-source, .hi-words-ai-translation, .hi-words-ai-section-text, .hi-words-ai-example-translation { white-space: pre-wrap; overflow-wrap: anywhere; }
+.hi-words-ai-source { color: var(--text-muted); padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--background-modifier-border); }
+.hi-words-ai-translation { color: var(--text-normal); }
+.hi-words-ai-section { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--background-modifier-border); }
+.hi-words-ai-section-label { color: var(--text-faint); font-size: 11px; margin-bottom: 4px; }
+.hi-words-ai-example-translation { color: var(--text-muted); margin-top: 4px; }
+
+/* On-demand AI details float over the right edge of the reading pane. */
+.hi-words-ai-detail-button { font-size: 11px; font-weight: 650; letter-spacing: .02em; }
+.hi-words-ai-detail-panel {
+    position: fixed;
+    z-index: var(--layer-popover, 30);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-l);
+    font-family: var(--font-interface);
+}
+.hi-words-ai-detail-panel, .hi-words-ai-detail-panel * { box-sizing: border-box; }
+.hi-words-ai-detail-header { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px 6px; cursor: grab; touch-action: none; }
+.hi-words-ai-detail-heading { flex: 1; min-width: 0; }
+.hi-words-ai-detail-kicker { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.hi-words-ai-detail-title { font-size: 13px; line-height: 1.5; font-weight: 450; color: var(--text-muted); overflow-wrap: anywhere; max-height: 78px; overflow: auto; }
+.hi-words-ai-detail-disclosure { flex: 0 0 auto; padding: 0 14px 9px; font-size: 10px; color: var(--text-faint); border-bottom: 1px solid var(--background-modifier-border); }
+.hi-words-ai-detail-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 16px; }
+.hi-words-ai-detail-body .hi-words-ai-result { font-size: 13px; line-height: 1.65; }
+.hi-words-ai-detail-panel.is-dragging, .hi-words-ai-detail-panel.is-dragging .hi-words-ai-detail-header { cursor: grabbing; user-select: none; }
+.hi-words-ai-detail-header button { cursor: pointer; touch-action: manipulation; }
+.hi-words-ai-detail-panel .hi-words-ai-detail-pin[aria-pressed="true"] { color: var(--text-accent); background: var(--background-modifier-hover); }
+.hi-words-ai-detail-loading { color: var(--text-muted); }
+.hi-words-ai-detail-error { color: var(--text-muted); margin-bottom: 14px; overflow-wrap: anywhere; }
+.hi-words-ai-pair + .hi-words-ai-pair { margin-top: 12px; }
+.hi-words-ai-detail-panel .hi-words-card-action { background: transparent; box-shadow: none; color: var(--text-muted); }
+.hi-words-ai-detail-panel .hi-words-card-action:not(:disabled):hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+.hi-words-ai-detail-summary { flex: 0 0 auto; margin: 10px 14px 0; padding-bottom: 10px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; border-bottom: 1px solid var(--background-modifier-border); font-size: 13px; }
+.hi-words-ai-detail-summary[hidden] { display: none; }
+.hi-words-ai-detail-body .hi-words-ai-result { font-weight: 400; }
+.hi-words-ai-detail-body .hi-words-ai-definition { font-weight: 550; }
+
+/* Field-based learning cards share theme colors and a compact reading rhythm. */
+.hi-words-ai-detail-body .hi-words-ai-type {
+    display: inline-flex; margin-bottom: 8px; padding: 1px 6px; border-radius: 5px;
+    background: var(--background-secondary); color: var(--text-muted); font-size: 11px; font-weight: 600;
+}
+.hi-words-ai-detail-body .hi-words-ai-section {
+    margin: 0 0 12px; padding: 0; border: 0;
+}
+.hi-words-ai-detail-body .hi-words-ai-section-label {
+    margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 600;
+}
+.hi-words-ai-detail-body .hi-words-ai-section[data-field="meanings"],
+.hi-words-ai-detail-body .hi-words-ai-section[data-field="translation"] {
+    padding-bottom: 10px; border-bottom: 1px solid var(--background-modifier-border);
+}
+.hi-words-ai-detail-body .hi-words-ai-definition,
+.hi-words-ai-detail-body .hi-words-ai-translation { font-size: 15px; line-height: 1.6; }
+.hi-words-ai-detail-body .hi-words-ai-pos {
+    padding: 1px 6px; border-radius: 4px; background: var(--background-secondary);
+    color: var(--text-accent); font-size: 11px;
+}
+.hi-words-ai-detail-body .hi-words-ai-meaning { gap: 10px; }
+.hi-words-ai-detail-body .hi-words-ai-meaning-unlabelled { grid-template-columns: minmax(0, 1fr); }
+.hi-words-ai-detail-body .hi-words-ai-meaning + .hi-words-ai-meaning { margin-top: 10px; }
+.hi-words-ai-detail-body .hi-words-ai-section[data-field="context"] {
+    padding: 8px 10px; border-radius: 8px; background: var(--background-secondary);
+    border-left: 3px solid var(--interactive-accent);
+}
+.hi-words-ai-detail-body .hi-words-ai-pair {
+    padding: 7px 10px; border-radius: 8px; background: var(--background-secondary);
+}
+.hi-words-ai-detail-body .hi-words-ai-pair + .hi-words-ai-pair { margin-top: 8px; }
+.hi-words-ai-detail-body .hi-words-ai-pair .hi-words-ai-section-text { font-weight: 500; }
+.hi-words-ai-detail-body .hi-words-ai-example-translation { font-size: 13px; line-height: 1.6; }
+.hi-words-ai-detail-body .hi-words-ai-list { margin: 0; padding-left: 19px; }
+.hi-words-ai-detail-body .hi-words-ai-list li { margin: 0 0 6px; padding-left: 2px; overflow-wrap: anywhere; }
+.hi-words-ai-detail-body .hi-words-ai-section[data-field="pitfalls"] {
+    padding: 8px 10px; border: 1px solid var(--background-modifier-border); border-radius: 8px;
+}
+/* The selected source already appears in the panel heading. */
+.hi-words-ai-detail-body .hi-words-ai-source { display: none; }
+.hi-words-ai-detail-body .hi-words-ai-section:last-child { margin-bottom: 0; }

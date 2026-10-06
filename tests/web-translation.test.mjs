@@ -28,11 +28,12 @@ test('translation sends the selected text, honors target/provider and invalidate
         const service = new TranslationService(config, () => 'test-only-key');
         assert.equal(await service.translate(' selected text '), 'translated');
         assert.equal(requests[0].url, 'https://translation.invalid/v1/chat/completions');
-        assert.equal(JSON.parse(requests[0].body).messages[0].content, `Translate selected text to ${config.selectionTranslate.targetLang}`);
+        assert.ok(JSON.parse(requests[0].body).messages[0].content.startsWith(`Translate selected text to ${config.selectionTranslate.targetLang}`));
+        assert.ok(!JSON.parse(requests[0].body).messages[0].content.includes('Return exactly one JSON object'));
         await service.translate('selected text'); assert.equal(requests.length, 1);
         config.selectionTranslate.targetLang = 'fr';
         await service.translate('selected text'); assert.equal(requests.length, 2);
-        assert.equal(JSON.parse(requests[1].body).messages[0].content, 'Translate selected text to fr');
+        assert.ok(JSON.parse(requests[1].body).messages[0].content.startsWith('Translate selected text to fr'));
         config.aiService.model = 'another-model';
         await service.translate('selected text'); assert.equal(requests.length, 3);
     } finally { delete globalThis.__webTranslationRequest; }
@@ -70,8 +71,56 @@ test('translation service blocks accidental selections before requesting AI and 
         }
         assert.equal(requests.length, 0);
         await service.translate('**hello**');
-        assert.equal(JSON.parse(requests[0].body).messages[0].content, 'Translate hello to zh-CN');
+        assert.ok(JSON.parse(requests[0].body).messages[0].content.startsWith('Translate hello to zh-CN'));
         for (const text of ['hello', '_hello', 'hello_', '#hello', '***hello__,']) await service.translate(text);
         assert.equal(requests.length, 1, 'cleaned selections share the cache');
+    } finally { delete globalThis.__webTranslationRequest; }
+});
+
+test('structured default supports existing OpenAI-compatible, Claude and Gemini response envelopes', async () => {
+    const json = JSON.stringify({ kind: 'word', text: 'future', meanings: [{ pos: 'noun', definition: '未来' }], usage: null, example: null });
+    try {
+        for (const provider of ['openai-compatible', 'anthropic', 'gemini']) {
+            const config = settings(); config.selectionTranslate.prompt = ''; config.aiService.provider = provider;
+            let request;
+            globalThis.__webTranslationRequest = async value => {
+                request = value;
+                return { status: 200, json: provider === 'anthropic' ? { content: [{ text: json }] }
+                    : provider === 'gemini' ? { candidates: [{ content: { parts: [{ text: json }] } }] }
+                    : { choices: [{ message: { content: json } }] } };
+            };
+            const service = new TranslationService(config, () => 'test-only-key');
+            assert.equal(await service.translateDetailed('future', 'Plan for the future.'), json);
+            const body = JSON.parse(request.body);
+            const prompt = provider === 'gemini' ? body.contents[0].parts[0].text : body.messages[0].content;
+            assert.ok(prompt.includes('Return exactly one JSON object'));
+            assert.ok(prompt.includes('Selection: "future"'));
+            assert.ok(prompt.includes('in zh-CN'));
+        }
+    } finally { delete globalThis.__webTranslationRequest; }
+});
+
+test('simple translation stays plain and detailed requests cache separately by bounded context', async () => {
+    const requests = [];
+    globalThis.__webTranslationRequest = async request => {
+        requests.push(request);
+        return { status: 200, json: { choices: [{ message: { content: 'result' } }] } };
+    };
+    try {
+        const config = settings(); config.selectionTranslate.prompt = '';
+        const service = new TranslationService(config, () => 'test-only-key');
+        await service.translate('future');
+        let prompt = JSON.parse(requests[0].body).messages[0].content;
+        assert.ok(prompt.includes('Only return the translation'));
+        assert.ok(!prompt.includes('Return exactly one JSON object'));
+        await service.translateDetailed('future', 'Context one');
+        await service.translateDetailed('future', 'Context one');
+        assert.equal(requests.length, 2);
+        prompt = JSON.parse(requests[1].body).messages[0].content;
+        assert.ok(prompt.includes('"collocations"')); assert.ok(prompt.includes('Context: "Context one"'));
+        await service.translateDetailed('future', 'Context two'); assert.equal(requests.length, 3);
+        await service.translateDetailed('future', 'x'.repeat(1000) + 'PRIVATE_TAIL');
+        assert.ok(!JSON.parse(requests[3].body).messages[0].content.includes('PRIVATE_TAIL'));
+        await service.translate('future'); assert.equal(requests.length, 4);
     } finally { delete globalThis.__webTranslationRequest; }
 });

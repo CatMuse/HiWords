@@ -1,4 +1,4 @@
-import { DEFAULT_TRANSLATE_PROMPT, resolvePrompt } from '../settings';
+import { buildTranslationPrompt, buildDetailedTranslationPrompt } from './translation-prompt';
 import { requestUrl } from 'obsidian';
 import { prepareSelectionText } from '../utils/selection-text';
 import { t } from '../i18n';
@@ -57,7 +57,13 @@ export class TranslationService {
      * @param text 要翻译的文本
      * @returns 翻译结果
      */
-    async translate(text: string): Promise<string> {
+    async translate(text: string): Promise<string> { return this.translateCached(text); }
+
+    async translateDetailed(text: string, context = ''): Promise<string> {
+        return this.translateCached(text, context.trim().slice(0, 1000));
+    }
+
+    private async translateCached(text: string, detailContext?: string): Promise<string> {
         const cleanText = prepareSelectionText(text);
         if (!cleanText) {
             throw new Error(t('translate.text_empty'));
@@ -67,7 +73,7 @@ export class TranslationService {
         const configKey = JSON.stringify([this.settings.aiService, this.settings.selectionTranslate, this.getAPIKey()]);
         if (configKey !== this.configKey) { this.cache.clear(); this.configKey = configKey; this.revision++; }
         const revision = this.revision;
-        const cacheKey = cleanText;
+        const cacheKey = JSON.stringify([detailContext === undefined ? 'simple' : 'detail', cleanText, detailContext]);
 
         // 检查缓存
         const cached = this.cache.get(cacheKey);
@@ -75,7 +81,7 @@ export class TranslationService {
             return cached.content;
         }
 
-        const result = await this.translateWithAI(cleanText);
+        const result = await this.translateWithAI(cleanText, detailContext);
 
         if (revision !== this.revision) throw new Error(t('translate.failed'));
         // 存入缓存
@@ -95,7 +101,7 @@ export class TranslationService {
     /**
      * 使用 AI 引擎翻译（复用现有的 AI 配置）
      */
-    private async translateWithAI(text: string): Promise<string> {
+    private async translateWithAI(text: string, detailContext?: string): Promise<string> {
         const aiConfig = this.settings.aiService;
         const apiKey = this.getAPIKey();
         if (!aiConfig?.apiUrl || !apiKey || !aiConfig?.model) {
@@ -103,11 +109,9 @@ export class TranslationService {
         }
 
         const targetLang = this.settings.selectionTranslate.targetLang || 'zh-CN';
-        const promptTemplate = resolvePrompt(this.settings.selectionTranslate.prompt, DEFAULT_TRANSLATE_PROMPT);
-        
-        const prompt = promptTemplate
-            .replace(/\{\{text\}\}/g, text)
-            .replace(/\{\{to\}\}/g, targetLang);
+        const detailed = detailContext !== undefined;
+        const prompt = detailed ? buildDetailedTranslationPrompt(text, targetLang, detailContext)
+            : buildTranslationPrompt(this.settings.selectionTranslate.prompt, text, targetLang);
 
         // 自动检测 API 类型并构建请求
         const url = aiConfig.apiUrl;
@@ -122,7 +126,7 @@ export class TranslationService {
                 requestBody = {
                     model: aiConfig.model,
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 1024
+                    max_tokens: detailed ? 2200 : 500
                 };
                 headers['x-api-key'] = apiKey;
                 headers['anthropic-version'] = '2023-06-01';
@@ -137,7 +141,7 @@ export class TranslationService {
                     model: aiConfig.model,
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.3,
-                    max_tokens: 500
+                    max_tokens: detailed ? 2200 : 500
                 };
                 headers['Authorization'] = `Bearer ${apiKey}`;
                 break;

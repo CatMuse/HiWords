@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS } from './settings';
+import { LEGACY_TRANSLATE_PROMPT, STRUCTURED_TRANSLATE_PROMPT } from './services/translation-prompt';
 import type { AIServiceSettings, HiWordsSettings } from './utils';
 
 interface NormalizedSettings {
@@ -47,7 +48,9 @@ export function normalizeStoredSettings(data: unknown): NormalizedSettings {
             },
             selectionTranslate: {
                 ...DEFAULT_SETTINGS.selectionTranslate,
-                ...stored.selectionTranslate
+                ...stored.selectionTranslate,
+                prompt: typeof stored.selectionTranslate?.prompt === 'string' && ![LEGACY_TRANSLATE_PROMPT, STRUCTURED_TRANSLATE_PROMPT].includes(stored.selectionTranslate.prompt.trim())
+                    ? stored.selectionTranslate.prompt : ''
             }
         },
         hadLegacyAPIKeyField,
