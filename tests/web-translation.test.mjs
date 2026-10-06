@@ -56,3 +56,22 @@ test('dismissed translation cannot resolve or poison the cache; missing configur
         assert.equal(calls, 2);
     } finally { delete globalThis.__webTranslationRequest; }
 });
+
+test('translation service blocks accidental selections before requesting AI and sends cleaned words', async () => {
+    const requests = [];
+    globalThis.__webTranslationRequest = async request => {
+        requests.push(request);
+        return { status: 200, json: { choices: [{ message: { content: 'translated' } }] } };
+    };
+    try {
+        const service = new TranslationService(settings(), () => 'test-only-key');
+        for (const text of ['。', '123', 'hello_world', 'word/word', 'word@word', 'a+b']) {
+            await assert.rejects(service.translate(text));
+        }
+        assert.equal(requests.length, 0);
+        await service.translate('**hello**');
+        assert.equal(JSON.parse(requests[0].body).messages[0].content, 'Translate hello to zh-CN');
+        for (const text of ['hello', '_hello', 'hello_', '#hello', '***hello__,']) await service.translate(text);
+        assert.equal(requests.length, 1, 'cleaned selections share the cache');
+    } finally { delete globalThis.__webTranslationRequest; }
+});

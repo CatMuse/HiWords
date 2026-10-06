@@ -109,3 +109,44 @@ test('truncated gzip, damaged checksum/length, invalid UTF-8 and invalid JSON fa
         assert.equal((await f.service.lookup('did'))[0].word, 'do');
     }
 });
+
+test('accidental selections never call lookup or AI; wrapped words are cleaned before routing', async () => {
+    const lookups = [], translations = [];
+    const options = { dictionary: true, ai: true, current: () => true,
+        lookup: async word => { lookups.push(word); return word === 'hello' ? [entry('hello')] : []; },
+        translate: async text => { translations.push(text); return 'translated'; } };
+    for (const text of ['.', '。', '_', '***', '123', '3.14', 'hello_world', 'word/word', 'word@word', 'a+b', 'hello_world is code']) {
+        assert.equal((await api.resolveSelection(text, options)).kind, 'miss', text);
+    }
+    assert.deepEqual(lookups, []); assert.deepEqual(translations, []);
+    for (const text of ['(hello)', '**hello**', '__hello__', '“hello,”', '`hello`', '**hello**,', '(**hello**)']) {
+        assert.equal((await api.resolveSelection(text, options)).kind, 'dictionary', text);
+    }
+    assert.deepEqual(lookups, Array(7).fill('hello')); assert.deepEqual(translations, []);
+    await api.resolveSelection('**unknown**', options);
+    await api.resolveSelection('The price is $10.50, right?', options);
+    await api.resolveSelection('你好，世界！', options);
+    await api.resolveSelection('café', options);
+    await api.resolveSelection('今日は晴れです。', options);
+    await api.resolveSelection('don’t', options);
+    assert.deepEqual(translations, ['unknown', 'The price is $10.50, right?', '你好，世界！', 'café', '今日は晴れです。', 'don’t']);
+});
+
+test('extra boundary symbols are removed without merging interior symbols into a word', async () => {
+    const lookups = [], translations = [];
+    const options = { dictionary: true, ai: true, current: () => true,
+        lookup: async word => { lookups.push(word); return word === 'future' ? [entry('future')] : []; },
+        translate: async text => { translations.push(text); return 'translated'; } };
+    const decorated = ['_future', 'future_', '#future', '@future!', '***future__', '/future/', '\\future\\', '~~future', '★future★', '(_future_,)'];
+    for (const text of decorated) assert.equal((await api.resolveSelection(text, options)).kind, 'dictionary', text);
+    assert.deepEqual(lookups, decorated.map(() => 'future'));
+    assert.deepEqual(translations, []);
+    for (const text of ['hello_world', '_hello_world_', 'hello/world', '#hello@world#']) {
+        assert.equal((await api.resolveSelection(text, options)).kind, 'miss', text);
+    }
+    assert.equal(lookups.length, decorated.length);
+    await api.resolveSelection('_unknown', options);
+    await api.resolveSelection('#don’t!', options);
+    await api.resolveSelection('~well-known_', options);
+    assert.deepEqual(translations, ['unknown', 'don’t', 'well-known']);
+});

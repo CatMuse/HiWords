@@ -158,3 +158,22 @@ test('clicking or pressing Enter on dictionary phonetics pronounces the current 
         assert.equal(played.length, 2);
     } finally { globalThis.Audio = previous; }
 });
+
+test('native and external selection entries ignore symbols and identifiers even with AI enabled', async () => {
+    let lookups = 0;
+    const f = fixture(async word => { assert.equal(word, 'hello'); lookups++; return [entry('hello', '你好')]; });
+    f.plugin.settings.selectionTranslate.enabled = true;
+    for (const text of ['。', '_', '123', 'hello_world', 'hello/there', 'a+b']) {
+        f.popover.showSelection(text, f.context);
+        f.popover.getSelectedText = () => text;
+        f.popover.tryShowPopover({ target: { closest: () => null } });
+        assert.equal(f.body.children.length, 0, text);
+    }
+    await flush(); assert.equal(lookups, 0);
+    for (const text of ['**hello**', '_hello', 'hello_', '#hello', '***hello__,']) {
+        f.popover.closeForOwner(f.owner);
+        f.popover.showSelection(text, f.context); await flush();
+        assert.equal(f.body.find('hi-words-translate-title').textContent, 'hello');
+    }
+    assert.equal(lookups, 5);
+});

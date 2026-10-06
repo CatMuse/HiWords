@@ -1,5 +1,6 @@
 import { DEFAULT_TRANSLATE_PROMPT, resolvePrompt } from '../settings';
 import { requestUrl } from 'obsidian';
+import { prepareSelectionText } from '../utils/selection-text';
 import { t } from '../i18n';
 import type { AIProvider, HiWordsSettings } from '../utils';
 
@@ -57,11 +58,11 @@ export class TranslationService {
      * @returns 翻译结果
      */
     async translate(text: string): Promise<string> {
-        if (!text?.trim()) {
+        const cleanText = prepareSelectionText(text);
+        if (!cleanText) {
             throw new Error(t('translate.text_empty'));
         }
 
-        const cleanText = text.trim();
         // Settings are mutated in place; snapshot the effective configuration, including the selected secret value.
         const configKey = JSON.stringify([this.settings.aiService, this.settings.selectionTranslate, this.getAPIKey()]);
         if (configKey !== this.configKey) { this.cache.clear(); this.configKey = configKey; this.revision++; }

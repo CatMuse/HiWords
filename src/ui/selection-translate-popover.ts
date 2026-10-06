@@ -1,6 +1,7 @@
 import { createWordPopoverShell, positionWordPopover } from './word-popover-shell';
 import { playWordTTS } from '../utils/tts';
 import { selectedWord } from '../dictionary/hidict';
+import { prepareSelectionText } from '../utils/selection-text';
 import { resolveSelection } from '../dictionary/selection-lookup';
 import { dictText } from '../dictionary/text';
 import { renderHidictResult } from './hidict-result';
@@ -57,6 +58,9 @@ export class SelectionTranslatePopover extends Component {
     }
 
     showSelection(text: string, context: PopoverContext): void {
+        const cleanText = prepareSelectionText(text);
+        if (!cleanText) return;
+        text = cleanText;
         if (!this.canLookup(text) || !context.isCurrent()) return;
         if (!text.trim() || text.length > 500) return;
         if (this.externalContext?.owner === context.owner && this.externalContext.sourcePath === context.sourcePath
@@ -65,7 +69,8 @@ export class SelectionTranslatePopover extends Component {
     }
 
     private canLookup(text: string): boolean {
-        return this.plugin.settings.selectionTranslate.enabled || !!(this.plugin.settings.hidictPath && selectedWord(text));
+        const cleanText = prepareSelectionText(text);
+        return !!cleanText && (this.plugin.settings.selectionTranslate.enabled || !!(this.plugin.settings.hidictPath && selectedWord(cleanText)));
     }
 
     closeForOwner(owner: object): void {
@@ -90,7 +95,7 @@ export class SelectionTranslatePopover extends Component {
     }
 
     private tryShowPopover(event: MouseEvent) {
-        const selectedText = this.getSelectedText();
+        const selectedText = prepareSelectionText(this.getSelectedText());
         if (!selectedText || !this.canLookup(selectedText) || selectedText.length > 500) {
             return;
         }
