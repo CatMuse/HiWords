@@ -7,7 +7,7 @@ const bundle = await build({
     bundle: true, write: false, platform: 'node', format: 'esm',
     plugins: [{ name: 'obsidian', setup(b) {
         b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'mock' }));
-        b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: `export class Component { registerEvent() {} } export class TFile {} export const getLanguage = () => 'en'; export const setIcon = () => {};` }));
+        b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: `export class Component { load() { this.onload?.(); } registerEvent() {} } export class TFile {} export const getLanguage = () => 'en'; export const setIcon = () => {};` }));
     } }],
 });
 const api = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
@@ -62,7 +62,7 @@ function vaultFixture() {
     const file = name => { const f = Object.assign(new api.TFile(), { path: name, extension: 'hidict', stat: { mtime: 1, size: 1 } }); files.set(name, f); return f; };
     file(path);
     const vault = { getAbstractFileByPath: p => files.get(p), readBinary: async () => { reads++; return binary(JSON.stringify(dictionary())); }, on: (name, callback) => { handlers[name] = callback; } };
-    const service = new api.HidictService({ vault }, () => path); service.onload();
+    const service = new api.HidictService({ vault }, () => path); service.load();
     return { service, vault, files, handlers, setPath: p => path = p, file, reads: () => reads };
 }
 test('dictionary loads lazily, shares concurrent reads, invalidates modifications, and reports deleted files', async () => {
@@ -71,6 +71,18 @@ test('dictionary loads lazily, shares concurrent reads, invalidates modification
     await f.service.lookup('do'); assert.equal(f.reads(), 1);
     f.handlers.modify(f.files.get('test.hidict')); await f.service.lookup('do'); assert.equal(f.reads(), 2);
     f.files.clear(); await assert.rejects(f.service.lookup('do'), /missing/);
+});
+
+test('component lifecycle load registers invalidation without reading a missing or unconfigured dictionary', () => {
+    let reads = 0;
+    const events = [];
+    const vault = { getAbstractFileByPath: () => undefined, readBinary: () => { reads++; throw Error('unexpected read'); }, on: name => events.push(name) };
+    for (const path of ['', 'missing.hidict']) {
+        const service = new api.HidictService({ vault }, () => path);
+        assert.equal(service.load(), undefined);
+    }
+    assert.equal(reads, 0);
+    assert.deepEqual(events, ['modify', 'delete', 'rename', 'modify', 'delete', 'rename']);
 });
 test('a late read from the previous dictionary cannot poison the new cache', async () => {
     const f = vaultFixture(); let release;

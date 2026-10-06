@@ -20,7 +20,7 @@ export class HidictService extends Component {
     }
     invalidate(): void { this.revision++; this.cached = undefined; this.pending = undefined; }
     onunload(): void { this.invalidate(); }
-    async load(path = this.getPath()): Promise<HidictIndex> {
+    async loadIndex(path = this.getPath()): Promise<HidictIndex> {
         const file = this.app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile) || file.extension.toLowerCase() !== 'hidict') throw new Error(dictText('missing'));
         const stamp = `${file.stat.mtime}:${file.stat.size}`;
@@ -40,5 +40,5 @@ export class HidictService extends Component {
         try { return await promise; }
         finally { if (this.pending === pending) this.pending = undefined; }
     }
-    async lookup(word: string) { return (await this.load()).lookup(word); }
+    async lookup(word: string) { return (await this.loadIndex()).lookup(word); }
 }

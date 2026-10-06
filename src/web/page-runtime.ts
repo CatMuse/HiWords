@@ -124,7 +124,7 @@ export function webHighlightRuntime(command: PageCommand, namespace = 'hiwords-w
     while (visited < 256 && characters < 64000) {
         let node: Node | null = null;
         if (!state.walker) {
-            const root = state.roots.values().next().value as Node | undefined;
+            const root = state.roots.values().next().value;
             if (!root) break;
             state.roots.delete(root);
             if (!root.isConnected) continue;
@@ -160,7 +160,7 @@ export function webHighlightRuntime(command: PageCommand, namespace = 'hiwords-w
         characters += textNode.data.length;
     }
     const removed = Array.from(state.removed).slice(0, 256);
-    removed.forEach(id => state!.removed.delete(id));
+    for (const id of removed) state.removed.delete(id);
     const click = state.click;
     const surfaceEvent = state.surface;
     state.surface = undefined;

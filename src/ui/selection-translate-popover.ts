@@ -8,7 +8,7 @@ import { renderHidictResult } from './hidict-result';
 import { AiDetailPanel } from './ai-detail-panel';
 import { parseTranslationResult, translationDefinition } from '../services/translation-result';
 import type { PopoverContext } from './popover-context';
-import { Component, MarkdownView, setIcon } from 'obsidian';
+import { Component, MarkdownView, View, setIcon } from 'obsidian';
 import HiWordsPlugin from '../../main';
 import { TranslationService } from '../services/translation-service';
 import { t } from '../i18n';
@@ -168,10 +168,10 @@ export class SelectionTranslatePopover extends Component {
             event.stopPropagation();
             if (context && !context.isCurrent()) return;
             if (!this.detailPanel) { this.detailPanel = new AiDetailPanel(this.plugin); this.addChild(this.detailPanel); }
-            const leaf = this.plugin.app?.workspace.activeLeaf;
-            const hostRect = context?.hostRect || (leaf?.view.containerEl ? () => leaf.view.containerEl.getBoundingClientRect() : undefined);
+            const view = this.plugin.app?.workspace.getActiveViewOfType(View);
+            const hostRect = context?.hostRect || (view?.containerEl ? () => view.containerEl.getBoundingClientRect() : undefined);
             this.detailPanel.open(resultWord, { document: doc, owner: context?.owner, sentence, baseDefinition: resultDefinition,
-                isCurrent: context?.isCurrent || (() => !leaf || this.plugin.app.workspace.activeLeaf === leaf), hostRect });
+                isCurrent: context?.isCurrent || (() => !view || this.plugin.app.workspace.getActiveViewOfType(View) === view), hostRect });
             this.removePopover();
         });
         const addBtn = actionsEl.createEl('button', { cls: 'hi-words-card-action hi-words-translate-btn hi-words-translate-btn-add', attr: { 'aria-label': dictText('add') } });

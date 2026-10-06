@@ -21,10 +21,14 @@ export function installWebSurface(
     const move = (event: MouseEvent) => {
         if (!event.isTrusted || event.buttons || !document.getSelection()?.isCollapsed) return;
         const target = event.target instanceof Element ? event.target : null;
-        const doc = document as Document & { caretRangeFromPoint?: (x: number, y: number) => Range | null };
-        const node = target && !target.closest(excluded) ? doc.caretRangeFromPoint?.(event.clientX, event.clientY)?.startContainer : null;
-        const id = node ? ids.get(node as Text) : undefined;
-        const entry = id ? entries.get(id) : undefined;
+        if (!target || target.closest(excluded)) { if (lastToken !== undefined) hide(); return; }
+        const doc = document as Document & { caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node } | null };
+        const node = doc.caretPositionFromPoint?.(event.clientX, event.clientY)?.offsetNode;
+        const id = node?.nodeType === Node.TEXT_NODE ? ids.get(node as Text) : undefined;
+        const entry = doc.caretPositionFromPoint ? (id ? entries.get(id) : undefined)
+            : Array.from(entries.values()).find(item => target.contains(item.node) && item.ranges.some(match =>
+                Array.from(match.range.getClientRects()).some(rect => rect.width > 0
+                    && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom)));
         const hit = entry?.node.isConnected && entry.node.data === entry.text ? entry.ranges.find(item =>
             Array.from(item.range.getClientRects()).some(r => event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom)) : undefined;
         if (!hit) { if (lastToken !== undefined) hide(); return; }

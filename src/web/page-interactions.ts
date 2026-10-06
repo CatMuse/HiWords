@@ -23,13 +23,14 @@ export function installWebInteractions(
         if (!link && event.altKey) return;
         const pointDocument = document as Document & {
             caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node } | null;
-            caretRangeFromPoint?: (x: number, y: number) => Range | null;
         };
-        const node = pointDocument.caretPositionFromPoint?.(event.clientX, event.clientY)?.offsetNode
-            || pointDocument.caretRangeFromPoint?.(event.clientX, event.clientY)?.startContainer;
-        if (!node || node.nodeType !== Node.TEXT_NODE) return;
-        const id = ids.get(node as Text);
-        const entry = id ? entries.get(id) : undefined;
+        const node = pointDocument.caretPositionFromPoint?.(event.clientX, event.clientY)?.offsetNode;
+        const id = node?.nodeType === Node.TEXT_NODE ? ids.get(node as Text) : undefined;
+        // Older guest browsers can still hit-test our existing highlights without a legacy caret API.
+        const entry = pointDocument.caretPositionFromPoint ? (id ? entries.get(id) : undefined)
+            : Array.from(entries.values()).find(item => target.contains(item.node) && item.ranges.some(match =>
+                Array.from(match.range.getClientRects()).some(rect => rect.width > 0
+                    && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom)));
         if (!entry || !entry.node.isConnected || entry.node.data !== entry.text) return;
         const hit = entry.ranges.find(item => Array.from(item.range.getClientRects()).some(rect =>
             rect.width > 0 && event.clientX >= rect.left && event.clientX <= rect.right

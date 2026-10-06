@@ -32,7 +32,7 @@ export function hidictSetting(plugin: HiWordsPlugin, refresh: () => void): Setti
                     if (path === previous) return;
                     busy = true; dropdown.setDisabled(true);
                     try {
-                        if (path) await plugin.hidictService.load(path);
+                        if (path) await plugin.hidictService.loadIndex(path);
                         plugin.settings.hidictPath = path;
                         plugin.hidictService.invalidate();
                         await plugin.saveSettings();

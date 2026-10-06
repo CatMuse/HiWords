@@ -22,8 +22,7 @@ function findCanvasNode(canvas: CanvasRuntime, nodeId: string): unknown {
     if (nodes instanceof Map) return nodes.get(nodeId);
     if (Array.isArray(nodes)) return nodes.find(node => isNodeWithId(node, nodeId));
     if (nodes && typeof nodes === 'object') {
-        const record = nodes as Record<string, unknown>;
-        return record[nodeId] || Object.values(record).find(node => isNodeWithId(node, nodeId));
+        return nodes[nodeId] || Object.values(nodes).find(node => isNodeWithId(node, nodeId));
     }
     return undefined;
 }

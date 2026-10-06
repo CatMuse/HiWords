@@ -10,7 +10,7 @@ function fixture(files, selected = '') {
     globalThis.hidictNotices = [];
     const calls = [];
     const dropdown = { options: {}, selectEl: { setAttribute() {} }, addOption(key, label) { this.options[key] = label; return this; }, setValue(value) { this.value = value; return this; }, setDisabled(value) { this.disabled = value; return this; }, onChange(cb) { this.change = cb; return this; } };
-    const plugin = { app: { vault: { getFiles: () => files } }, settings: { hidictPath: selected }, hidictService: { async load(path) { calls.push(['load', path]); }, invalidate() { calls.push(['invalidate']); } }, async saveSettings() { calls.push(['save', this.settings.hidictPath]); } };
+    const plugin = { app: { vault: { getFiles: () => files } }, settings: { hidictPath: selected }, hidictService: { async loadIndex(path) { calls.push(['load', path]); }, invalidate() { calls.push(['invalidate']); } }, async saveSettings() { calls.push(['save', this.settings.hidictPath]); } };
     const setting = { settingEl: { addClass() {} }, descEl: { createDiv() { return { setAttribute() {} }; } }, addDropdown(cb) { cb(dropdown); } };
     hidictSetting(plugin, () => calls.push(['refresh'])).render(setting);
     return { plugin, dropdown, calls };
@@ -30,12 +30,12 @@ test('dictionary dropdown validates before saving, shows filenames only and supp
 });
 test('invalid dictionary or failed persistence restores the previous selection', async () => {
     const f = fixture([file('a.hidict'), file('b.hidict')], 'a.hidict');
-    f.plugin.hidictService.load = async () => { throw Error('Invalid dictionary'); };
+    f.plugin.hidictService.loadIndex = async () => { throw Error('Invalid dictionary'); };
     await f.dropdown.change('b.hidict');
     assert.equal(f.plugin.settings.hidictPath, 'a.hidict');
     assert.equal(f.dropdown.value, 'a.hidict');
     assert.ok(!f.calls.some(call => call[0] === 'save'));
-    f.plugin.hidictService.load = async () => {};
+    f.plugin.hidictService.loadIndex = async () => {};
     f.plugin.saveSettings = async () => { throw Error('Save failed'); };
     await f.dropdown.change('b.hidict');
     assert.equal(f.plugin.settings.hidictPath, 'a.hidict');

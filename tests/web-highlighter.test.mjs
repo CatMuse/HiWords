@@ -8,7 +8,7 @@ const bundle = await build({
     bundle: true, write: false, platform: 'browser', format: 'esm', minify: true, target: 'es2018',
     plugins: [{ name: 'desktop-boundary', setup(b) {
         b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'mock' }));
-        b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: 'export const Platform = { isDesktopApp: true };' }));
+        b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: 'export class View {} export const Platform = { isDesktopApp: true };' }));
     } }],
 });
 const api = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
@@ -69,7 +69,7 @@ test('rapid off/on reconnects immediately after cleanup without waiting for back
         clearWebWordInSidebar() {}, refreshWebSidebar() {}, addChild() {},
         definitionPopover: { closeForOwner() {} }, selectionTranslatePopover: { closeForOwner() {} },
         register: callback => callbacks.push(callback), registerEvent() {}, registerInterval() {},
-        app: { workspace: { on() {}, onLayoutReady: callback => callback(),
+        app: { workspace: { on() {}, onLayoutReady: callback => callback(), getActiveViewOfType: () => null,
             getLeavesOfType: () => [{ view: { containerEl: { querySelectorAll: () => [view] } } }],
         } },
     };
@@ -123,7 +123,7 @@ test('page interactions require a real single click inside a range, preserve lin
     const listeners = new Map();
     const clicks = [];
     let link = false, collapsed = true;
-    class Element { closest(selector) { return selector === 'a[href]' && link ? this : null; } }
+    class Element { closest(selector) { return selector === 'a[href]' && link ? this : null; } contains(value) { return value === node; } }
     const target = new Element();
     const node = { nodeType: 3, data: 'hello', isConnected: true };
     const range = { getClientRects: () => [{ left: 10, right: 50, top: 10, bottom: 30, width: 40 }] };
@@ -154,6 +154,13 @@ test('page interactions require a real single click inside a range, preserve lin
         assert.equal(clicks.length, 1);
         assert.equal(fire({ altKey: true }).prevented, true);
         assert.equal(clicks.length, 2);
+        link = false;
+        globalThis.document.caretPositionFromPoint = () => null;
+        fire(); assert.equal(clicks.length, 2, 'a standard API miss must not hit unrelated highlights');
+        delete globalThis.document.caretPositionFromPoint;
+        Object.defineProperty(globalThis.document, 'caretRangeFromPoint', { get() { throw Error('Legacy caret API must not be accessed'); } });
+        fire(); assert.equal(clicks.length, 3, 'range geometry supports older guest browsers');
+        fire({ clientX: 90 }); assert.equal(clicks.length, 3);
         cleanup(); assert.equal(listeners.size, 0);
     } finally {
         for (const [key, value] of Object.entries(originals)) {
@@ -169,6 +176,52 @@ test('web surface rejects malformed geometry, excessive selections and obsolete 
     for (const value of [null, { ...valid, generation: 2 }, { ...valid, text: 'x'.repeat(501) }, { ...valid, sentence: 'x'.repeat(1201) }, { ...valid, rect: { ...rect, left: NaN } }, { ...valid, rect: { ...rect, bottom: 0 } }, { ...valid, kind: 'execute' }, { ...valid, kind: 'hover', token: '1' }]) {
         assert.equal(api.validateSurfaceEvent(value, 3), undefined);
     }
+});
+
+test('serialized hover surface uses standard caret positions and geometry when unavailable, with cleanup', () => {
+    for (const standard of [true, false]) {
+        const listeners = new Map(), timers = new Map(), notifications = [];
+        const node = { nodeType: 3, data: 'hello', isConnected: true };
+        class Element { closest() { return null; } contains(value) { return value === node; } }
+        const target = new Element();
+        node.parentElement = target;
+        const rect = { left: 10, right: 50, top: 10, bottom: 30, width: 40 };
+        const range = { getClientRects: () => [rect], getBoundingClientRect: () => rect };
+        const entry = { node, text: 'hello', ranges: [{ range, token: 4 }] };
+        const document = { getSelection: () => ({ isCollapsed: true }),
+            addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name),
+            ...(standard ? { caretPositionFromPoint: () => ({ offsetNode: node }) } : {}) };
+        Object.defineProperty(document, 'caretRangeFromPoint', { get() { throw Error('Legacy caret API accessed'); } });
+        const scope = { document, Element, Node: { TEXT_NODE: 3 }, entries: new Map([[1, entry]]), ids: new WeakMap([[node, 1]]),
+            notify: value => notifications.push(value), window: {
+                setTimeout: fn => { timers.set(1, fn); return 1; }, clearTimeout: id => timers.delete(id),
+                addEventListener: (name, fn) => listeners.set('window:' + name, fn), removeEventListener: name => listeners.delete('window:' + name) } };
+        const cleanup = vm.runInNewContext(`(${api.installWebSurface.toString()})(entries,ids,9,notify)`, scope);
+        const move = overrides => listeners.get('mousemove')({ isTrusted: true, buttons: 0, clientX: 20, clientY: 20, target, ...overrides });
+        move(); timers.get(1)();
+        assert.equal(notifications[0].kind, 'hover'); assert.equal(notifications[0].token, 4);
+        move({ clientX: 100 }); assert.equal(notifications[1].kind, 'hide');
+        node.data = 'changed'; move(); assert.equal(timers.size, 0);
+        cleanup(); assert.equal(listeners.size, 0); assert.equal(timers.size, 0);
+    }
+});
+
+test('web detail ownership uses the active view and accepts the sidebar while rejecting switched readers', async () => {
+    const leaf = {}, otherLeaf = {};
+    let active = { leaf, getViewType: () => 'webviewer' }, current;
+    const workspace = { getActiveViewOfType: () => active };
+    Object.defineProperty(workspace, 'activeLeaf', { get() { throw Error('Deprecated activeLeaf accessed'); } });
+    const manager = Object.create(api.WebHighlighter.prototype);
+    Object.assign(manager, { stopped: false, readingLeaf: leaf, clickSequence: 0, plugin: {
+        settings: { enableWebHighlight: true, enableAutoHighlight: true }, app: { workspace },
+        showWordInSidebar: async (_definition, _context, guard) => { current = guard; },
+    } });
+    const session = { leaf, clickTicket: 0, navigation: 1, disposed: false, view: { getURL: () => 'https://example.test/' } };
+    manager.openDetails(session, { word: 'hello' });
+    assert.equal(current(), true);
+    active = { leaf: otherLeaf, getViewType: () => 'hi-words-sidebar' }; assert.equal(current(), true);
+    active = { leaf: otherLeaf, getViewType: () => 'webviewer' }; assert.equal(current(), false);
+    active = { leaf, getViewType: () => 'webviewer' }; session.navigation++; assert.equal(current(), false);
 });
 
 

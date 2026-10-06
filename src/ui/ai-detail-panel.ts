@@ -38,8 +38,7 @@ export class AiDetailPanel extends Component {
         this.close(); this.service.updateSettings(this.plugin.settings); this.key = key; this.context = context;
         const doc = context.document, win = doc.defaultView;
         if (!win || !context.isCurrent()) return;
-        const root = doc.createElement('div'); this.root = root;
-        root.className = 'hi-words-ai-detail-panel';
+        const root = doc.createDocumentFragment().createDiv({ cls: 'hi-words-ai-detail-panel' }); this.root = root;
         root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'false'); root.setAttribute('aria-label', dictText('aiDetail'));
         const header = root.createDiv({ cls: 'hi-words-ai-detail-header' });
         const heading = header.createDiv({ cls: 'hi-words-ai-detail-heading' });

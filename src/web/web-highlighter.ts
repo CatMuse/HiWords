@@ -1,7 +1,7 @@
 import type { WordDefinition } from '../utils/types';
 import { WebWordIndex } from './web-word-index';
 import { validateSurfaceEvent } from './page-surface';
-import { Platform, WorkspaceLeaf } from 'obsidian';
+import { Platform, View, WorkspaceLeaf } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import { pageScript } from './page-runtime';
 import { buildWebVocabulary, matchWebTexts, webHighlightCSS, resolveWebClick } from './web-vocabulary';
@@ -32,7 +32,7 @@ export class WebHighlighter {
     constructor(private plugin: HiWordsPlugin) {
         if (!Platform.isDesktopApp) return;
         plugin.register(() => this.destroy());
-        this.readingLeaf = plugin.app.workspace.activeLeaf;
+        this.readingLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf || null;
         plugin.registerEvent(plugin.app.workspace.on('active-leaf-change', leaf => {
             this.closePopovers();
             if (leaf?.view.getViewType() === 'hi-words-sidebar') return;
@@ -244,10 +244,10 @@ export class WebHighlighter {
         const navigation = session.navigation;
         const url = session.view.getURL();
         const current = () => {
-            const active = this.plugin.app.workspace.activeLeaf;
+            const active = this.plugin.app.workspace.getActiveViewOfType(View);
             return this.enabled() && !session.disposed && sequence === this.clickSequence
                 && navigation === session.navigation && session.view.getURL() === url
-                && (!active || active === session.leaf || active.view.getViewType() === 'hi-words-sidebar');
+                && (!active || active.leaf === session.leaf || active.getViewType() === 'hi-words-sidebar');
         };
         void this.plugin.showWordInSidebar(definition, { type: 'web', leaf: session.leaf, url }, current).catch(error => {
             console.error('HiWords failed to open web word details:', error);

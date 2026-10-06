@@ -142,8 +142,7 @@ export class DefinitionPopover extends Component {
     showDefinition(wordDef: WordDefinition, context: PopoverContext): void {
         if (!this.plugin.settings.showDefinitionOnHover || !context.isCurrent()) return;
         if (this.activeTooltip?.hasClass('is-subview')) return;
-        const target = context.document.createElement('span');
-        target.textContent = wordDef.word;
+        const target = context.document.createDocumentFragment().createSpan({ text: wordDef.word });
         void this.createTooltip(target, wordDef.word, wordDef.definition, wordDef, context);
     }
 

@@ -6,7 +6,7 @@ const bundle = await build({
     bundle: true, write: false, platform: 'node', format: 'esm',
     plugins: [{ name: 'obsidian', setup(b) {
         b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'mock' }));
-        b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: `export class Component { cleanups=[]; addChild() {} removeChild(child) {child.cleanups.splice(0).forEach(fn=>fn())} register(fn){this.cleanups.push(fn)} registerDomEvent(target,name,fn,options) {target.addEventListener(name,fn,options);this.register(()=>target.removeEventListener(name,fn,options))} } export class MarkdownView {} export class App {} export const getLanguage = () => 'en'; export const setIcon = () => {}; export const requestUrl = () => { throw Error('Unexpected AI request'); };` }));
+        b.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: `export class Component { cleanups=[]; addChild() {} removeChild(child) {child.cleanups.splice(0).forEach(fn=>fn())} register(fn){this.cleanups.push(fn)} registerDomEvent(target,name,fn,options) {target.addEventListener(name,fn,options);this.register(()=>target.removeEventListener(name,fn,options))} } export class View {} export class MarkdownView extends View {} export class App {} export const getLanguage = () => 'en'; export const setIcon = () => {}; export const requestUrl = () => { throw Error('Unexpected AI request'); };` }));
     } }],
 });
 const api = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
@@ -47,7 +47,7 @@ function fixture(lookup, controllerApi = api) {
     const body = new Element(); body.root = true;
     const win = events({ scrollX: 0, scrollY: 0, innerWidth: 900, innerHeight: 600, requestAnimationFrame: cb => cb() });
     globalThis.window = win;
-    const doc = events({ body, defaultView: win, documentElement: { scrollTop: 0, scrollLeft: 0 }, createElement: tag => new Element(tag) });
+    const doc = events({ body, defaultView: win, documentElement: { scrollTop: 0, scrollLeft: 0 }, createDocumentFragment: () => new Element('fragment') });
     const added = [];
     const plugin = { settings: { ...structuredClone(api.DEFAULT_SETTINGS), hidictPath: 'test.hidict' }, getAIAPIKey: () => '', hidictService: { lookup }, addOrEditWord: (...args) => added.push(args) };
     const popover = new controllerApi.SelectionTranslatePopover(plugin);

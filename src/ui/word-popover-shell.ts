@@ -15,16 +15,14 @@ export function positionWordPopover(root: HTMLElement, rect: { left: number; top
     });
 }
 export function createWordPopoverShell(doc: Document, word: string, mode: WordPopoverMode) {
-    const root = doc.createElement('div');
-    root.className = 'hi-words-tooltip hi-words-word-popover';
+    const root = doc.createDocumentFragment().createDiv({ cls: 'hi-words-tooltip hi-words-word-popover' });
     const header = root.createDiv({ cls: 'hi-words-tooltip-title-container' });
     const heading = header.createDiv({ cls: 'hi-words-tooltip-heading' });
     const title = heading.createDiv({ cls: 'hi-words-tooltip-title' });
     title.textContent = word;
     const actions = header.createDiv({ cls: 'hi-words-word-popover-actions' });
     // Kept detached so learning section tabs can precede the content.
-    const content = doc.createElement('div');
-    content.className = 'hi-words-tooltip-content';
+    const content = doc.createDocumentFragment().createDiv({ cls: 'hi-words-tooltip-content' });
     let pronounce: (() => void) | undefined;
     let pronunciationLabel = word;
     const pronunciationTargets = new Set<HTMLElement>();
