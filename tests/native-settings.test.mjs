@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { build } from 'esbuild';
 const result = await build({
-    stdin: { contents: "export { HiWordsSettingTab } from './src/ui/settings-tab'; export { DEFAULT_SETTINGS, DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT, resolvePrompt } from './src/settings';", resolveDir: process.cwd() },
+    stdin: { contents: "export { HiWordsSettingTab } from './src/ui/settings-tab'; export { DEFAULT_SETTINGS, DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT, DEFAULT_AI_EXPLANATION_PROMPT, resolvePrompt } from './src/settings';", resolveDir: process.cwd() },
     bundle: true, write: false, platform: 'node', format: 'esm',
     plugins: [{ name: 'settings-boundary', setup(b) {
         b.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'mock' }));
@@ -39,10 +39,23 @@ test('nested settings persist and control conditional prompt visibility', async 
     await tab.setControlValue('aiDefinition.enabled', false);
     assert.equal(plugin.settings.aiDefinition.enabled, false);
     assert.equal(rows.find(row => row.name === 'Definition prompt').visible(), false);
+    assert.equal(rows.find(row => row.name === 'AI explanation prompt').visible(), true);
     await tab.setControlValue('selectionTranslate.enabled', true);
     assert.equal(rows.find(row => row.name === 'Translation prompt').visible(), true);
     await tab.setControlValue('selectionTranslate.targetLang', 'ja');
     assert.equal(tab.getControlValue('selectionTranslate.targetLang'), 'ja');
+});
+test('target language is a dropdown available for AI explanations and retains saved uncommon languages', async () => {
+    const { tab, plugin, rows } = fixture();
+    const target = rows.find(row => row.control?.key === 'selectionTranslate.targetLang');
+    assert.equal(target.control.type, 'dropdown');
+    assert.equal(target.visible, undefined, 'AI explanations also use this setting when selection translation is disabled');
+    for (const language of ['zh-CN', 'zh-TW', 'en', 'ja', 'fr']) assert.ok(target.control.options[language]);
+    await tab.setControlValue('selectionTranslate.targetLang', 'pt-BR');
+    const flatten = items => items.flatMap(item => item.items ? flatten(item.items) : [item]);
+    const updated = flatten(tab.getSettingDefinitions()).find(row => row.control?.key === 'selectionTranslate.targetLang');
+    assert.equal(updated.control.options['pt-BR'], 'pt-BR');
+    assert.equal(plugin.settings.selectionTranslate.targetLang, 'pt-BR');
 });
 test('mastery changes preserve sidebar linkage and provider changes restore independent profiles', async () => {
     const { tab, plugin, events } = fixture();
@@ -69,8 +82,9 @@ test('blank prompts use defaults and custom prompts remain unchanged', async () 
     for (const [key, fallback] of [
         ['aiDefinition.prompt', api.DEFAULT_AI_DEFINITION_PROMPT],
         ['selectionTranslate.prompt', api.DEFAULT_TRANSLATE_PROMPT],
+        ['selectionTranslate.explanationPrompt', api.DEFAULT_AI_EXPLANATION_PROMPT],
     ]) {
-        const row = rows.find(row => row.name === (key.startsWith('aiDefinition') ? 'Definition prompt' : 'Translation prompt'));
+        const row = rows.find(row => row.name === (key.startsWith('aiDefinition') ? 'Definition prompt' : key.endsWith('explanationPrompt') ? 'AI explanation prompt' : 'Translation prompt'));
         const rendered = renderMultiline(row);
         assert.equal(rendered.input.placeholder, fallback);
         rendered.cleanup();

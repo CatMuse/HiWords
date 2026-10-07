@@ -150,9 +150,11 @@ export default {
         enable_selection_translate: "Enable selection translate",
         enable_selection_translate_desc: "Show translation popup when text is selected",
         translate_target_lang: "Target language",
-        translate_target_lang_desc: "Target language code (e.g. zh-CN, en, ja)",
+        translate_target_lang_desc: "Language for selection translations and AI explanations.",
         translate_prompt: "Translation prompt",
         translate_prompt_desc: "AI translation prompt template. Use {{text}} and {{to}} as placeholders",
+        ai_explanation_prompt: "AI explanation prompt",
+        ai_explanation_prompt_desc: "Customize word and sentence explanations. Use {{text}}, {{context}} and {{to}} as placeholders.",
     },
 
     // Sidebar

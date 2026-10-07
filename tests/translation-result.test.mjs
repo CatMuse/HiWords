@@ -34,6 +34,10 @@ test('custom guidance and dollar signs remain literal while every request uses t
     assert.ok(!prompt.includes('"pos"')); assert.ok(!prompt.includes('"collocations"'));
     assert.ok(api.buildDetailedTranslationPrompt('future', 'zh-CN', 'Plan for the future.').includes('reading.contextMeaning'));
     assert.equal(api.normalizeStoredSettings({ selectionTranslate: { prompt: 'Custom' } }).settings.selectionTranslate.prompt, 'Custom');
+    assert.equal(api.normalizeStoredSettings({ selectionTranslate: { prompt: 'Custom' } }).settings.selectionTranslate.explanationPrompt, '');
+    const stored = api.normalizeStoredSettings({ selectionTranslate: { explanationPrompt: 'Focus on grammar.' } }).settings;
+    assert.equal(api.normalizeStoredSettings(stored).settings.selectionTranslate.explanationPrompt, 'Focus on grammar.');
+    assert.equal(api.normalizeStoredSettings({ selectionTranslate: { explanationPrompt: null } }).settings.selectionTranslate.explanationPrompt, '');
 });
 
 test('malformed optional sections do not hide valid meanings; repeated examples are deduplicated', () => {

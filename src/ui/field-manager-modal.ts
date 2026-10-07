@@ -240,7 +240,7 @@ function checkbox(container: HTMLElement, label: string, checked: boolean, onCha
 }
 
 function iconButton(container: HTMLElement, icon: string, label: string): HTMLButtonElement {
-    const button = container.createEl('button', { cls: 'clickable-icon', attr: { type: 'button', 'aria-label': label, title: label } });
+    const button = container.createEl('button', { cls: 'clickable-icon', attr: { type: 'button', 'aria-label': label } });
     setIcon(button, icon);
     return button;
 }

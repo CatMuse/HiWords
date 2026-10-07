@@ -175,7 +175,7 @@ class BookDisplaySettingsModal extends Modal {
 
                 const actions = row.createDiv({ cls: 'hi-words-library-display-row-actions' });
                 const moveLabel = previewZone ? 'Move to details' : 'Move to preview';
-                const move = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': moveLabel, title: moveLabel } });
+                const move = actions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': moveLabel } });
                 setIcon(move, previewZone ? 'arrow-down' : 'arrow-up');
                 move.onclick = () => {
                     if (previewZone) {
@@ -952,7 +952,7 @@ export class HiWordsLibraryView extends ItemView {
     }
 
     private addIconButton(container: HTMLElement, icon: string, label: string, onClick: () => Promise<void> | void) {
-        const button = container.createEl('button', { cls: 'clickable-icon hi-words-library-icon-button', attr: { 'aria-label': label, title: label } });
+        const button = container.createEl('button', { cls: 'clickable-icon hi-words-library-icon-button', attr: { 'aria-label': label } });
         setIcon(button, icon);
         button.onclick = (event) => {
             event.stopPropagation();

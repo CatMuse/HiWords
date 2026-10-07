@@ -93,7 +93,7 @@ export class TranslationService {
 
         const targetLang = this.settings.selectionTranslate.targetLang || 'zh-CN';
         const detailed = detailContext !== undefined;
-        const prompt = detailed ? buildDetailedTranslationPrompt(text, targetLang, detailContext)
+        const prompt = detailed ? buildDetailedTranslationPrompt(text, targetLang, detailContext, this.settings.selectionTranslate.explanationPrompt)
             : buildTranslationPrompt(this.settings.selectionTranslate.prompt, text, targetLang);
 
         const content = await new AIClient(aiConfig, apiKey).generate(prompt, detailed ? 2200 : 500);

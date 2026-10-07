@@ -121,9 +121,11 @@ export default {
         enable_selection_translate: "Activar traducción por selección",
         enable_selection_translate_desc: "Mostrar ventana emergente de traducción al seleccionar texto",
         translate_target_lang: "Idioma de destino",
-        translate_target_lang_desc: "Código del idioma de destino (ej. zh-CN, en, ja)",
+        translate_target_lang_desc: "Selecciona el idioma de las traducciones del texto seleccionado y las explicaciones de IA. El vocabulario existente y los diccionarios conservan su idioma.",
         translate_prompt: "Prompt de traducción",
         translate_prompt_desc: "Plantilla de prompt para traducción IA. Use {{text}} y {{to}} como marcadores",
+        ai_explanation_prompt: "Prompt de explicación de IA",
+        ai_explanation_prompt_desc: "Personaliza las explicaciones de palabras y oraciones. Variables: {{text}}, {{context}} y {{to}}.",
     },
 
     // Sidebar

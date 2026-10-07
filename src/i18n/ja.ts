@@ -119,9 +119,11 @@ export default {
         enable_selection_translate: "選択翻訳を有効にする",
         enable_selection_translate_desc: "テキストを選択すると翻訳ポップアップを表示",
         translate_target_lang: "ターゲット言語",
-        translate_target_lang_desc: "ターゲット言語コード（例：zh-CN、en、ja）",
+        translate_target_lang_desc: "選択テキストの翻訳と AI 解説の言語を選択します。既存の単語帳と辞書の内容は元の言語のままです。",
         translate_prompt: "翻訳プロンプト",
         translate_prompt_desc: "AI翻訳のプロンプトテンプレート。{{text}}と{{to}}をプレースホルダーとして使用",
+        ai_explanation_prompt: "AI 解説プロンプト",
+        ai_explanation_prompt_desc: "単語と文の解説をカスタマイズします。{{text}}、{{context}}、{{to}} を使用できます。",
     },
 
     // Sidebar

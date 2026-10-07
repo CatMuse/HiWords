@@ -13,6 +13,8 @@ export type SupportedLocale = 'en' | 'zh' | 'es' | 'fr' | 'de' | 'ja';
 export interface LanguagePack {
     plugin_name: string;
     settings: {
+        ai_explanation_prompt?: string;
+        ai_explanation_prompt_desc?: string;
         vocabulary_books: string;
         add_vocabulary_book: string;
         remove_vocabulary_book: string;

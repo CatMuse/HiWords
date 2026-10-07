@@ -125,6 +125,7 @@ export interface SelectionTranslateSettings {
     enabled: boolean;
     targetLang: string;
     prompt: string;
+    explanationPrompt: string;
 }
 
 export type LearningItemType = 'word' | 'phrase' | 'concept' | 'term';

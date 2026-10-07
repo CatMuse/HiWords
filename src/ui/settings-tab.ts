@@ -10,7 +10,7 @@ import { aiSettingsGroups } from './ai-settings';
 import { AIConnectionControls } from './ai-connection-controls';
 import { switchAIProvider } from '../services/ai-profiles';
 import { resolveAIProtocol } from '../services/ai-client';
-import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT } from '../settings';
+import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT, DEFAULT_AI_EXPLANATION_PROMPT } from '../settings';
 
 export class HiWordsSettingTab extends PluginSettingTab {
     plugin: HiWordsPlugin;
@@ -129,7 +129,8 @@ export class HiWordsSettingTab extends PluginSettingTab {
         const settings = this.plugin.settings as unknown as Record<string, unknown>;
         const value = property ? (settings[section] as Record<string, unknown>)?.[property] : settings[section];
         const defaultPrompt = key === 'aiDefinition.prompt' ? DEFAULT_AI_DEFINITION_PROMPT
-            : key === 'selectionTranslate.prompt' ? DEFAULT_TRANSLATE_PROMPT : undefined;
+            : key === 'selectionTranslate.prompt' ? DEFAULT_TRANSLATE_PROMPT
+            : key === 'selectionTranslate.explanationPrompt' ? DEFAULT_AI_EXPLANATION_PROMPT : undefined;
         if (defaultPrompt && (typeof value !== 'string' || !value.trim() || value === defaultPrompt)) return '';
         return value;
     }
@@ -342,7 +343,6 @@ export class HiWordsSettingTab extends PluginSettingTab {
                     attr: {
                         type: 'button',
                         'aria-label': option.label,
-                        title: option.label,
                     },
                 });
                 item.style.setProperty('--hi-words-book-color', option.css);

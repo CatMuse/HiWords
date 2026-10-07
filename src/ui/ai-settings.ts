@@ -2,7 +2,7 @@ import { SecretComponent } from 'obsidian';
 import type { SettingDefinition, SettingDefinitionControl, SettingDefinitionGroup, SettingDefinitionItem, SettingDefinitionPage } from 'obsidian';
 import type HiWordsPlugin from '../../main';
 import type { AIConnectionControls } from './ai-connection-controls';
-import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT } from '../settings';
+import { DEFAULT_AI_DEFINITION_PROMPT, DEFAULT_TRANSLATE_PROMPT, DEFAULT_AI_EXPLANATION_PROMPT } from '../settings';
 import { t } from '../i18n';
 
 interface Options {
@@ -10,6 +10,22 @@ interface Options {
     controls: AIConnectionControls;
     setValue: (key: string, value: unknown) => Promise<void>;
     multiline: (item: SettingDefinition) => SettingDefinition;
+}
+
+function targetLanguageOptions(current: string): Record<string, string> {
+    // Native language names remain recognizable regardless of the app locale.
+    const languages: Record<string, string> = {
+        'zh-CN': '简体中文 (zh-CN)', 'zh-TW': '繁體中文 (zh-TW)',
+        en: 'English (en)', ja: '日本語 (ja)', ko: '한국어 (ko)',
+        fr: 'Français (fr)', de: 'Deutsch (de)', es: 'Español (es)',
+        it: 'Italiano (it)', pt: 'Português (pt)', ru: 'Русский (ru)',
+        ar: 'العربية (ar)', hi: 'हिन्दी (hi)', th: 'ไทย (th)',
+        vi: 'Tiếng Việt (vi)', id: 'Bahasa Indonesia (id)',
+        tr: 'Türkçe (tr)', nl: 'Nederlands (nl)', pl: 'Polski (pl)',
+        uk: 'Українська (uk)',
+    };
+    if (current && !Object.prototype.hasOwnProperty.call(languages, current)) languages[current] = current;
+    return languages;
 }
 
 /** Native groups and sub-pages retain settings search and keyboard navigation. */
@@ -79,8 +95,12 @@ export function aiSettingsGroups(options: Options): SettingDefinitionItem[] {
             promptPage('aiDefinition.prompt', 'ai_prompt', DEFAULT_AI_DEFINITION_PROMPT, () => plugin.settings.aiDefinition.enabled),
             { name: t('settings.enable_selection_translate'), desc: t('settings.enable_selection_translate_desc'),
                 control: { type: 'toggle', key: 'selectionTranslate.enabled' } },
-            { ...field('selectionTranslate.targetLang', 'translate_target_lang'), visible: () => plugin.settings.selectionTranslate.enabled },
+            { name: t('settings.translate_target_lang'), desc: t('settings.translate_target_lang_desc'),
+                control: { type: 'dropdown', key: 'selectionTranslate.targetLang',
+                    options: targetLanguageOptions(plugin.settings.selectionTranslate.targetLang) },
+            },
             promptPage('selectionTranslate.prompt', 'translate_prompt', DEFAULT_TRANSLATE_PROMPT, () => plugin.settings.selectionTranslate.enabled),
+            promptPage('selectionTranslate.explanationPrompt', 'ai_explanation_prompt', DEFAULT_AI_EXPLANATION_PROMPT, () => true),
         ], 'hi-words-ai-features'),
     ];
 }

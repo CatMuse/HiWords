@@ -100,6 +100,37 @@ test('structured default supports existing OpenAI-compatible, Claude and Gemini 
     } finally { delete globalThis.__webTranslationRequest; }
 });
 
+test('custom explanation prompt applies to words and sentences, preserves the output contract and invalidates cached details', async () => {
+    const prompts = [];
+    globalThis.__webTranslationRequest = async request => {
+        prompts.push(JSON.parse(request.body).messages[0].content);
+        return { status: 200, json: { choices: [{ message: { content: 'result' } }] } };
+    };
+    try {
+        const config = settings();
+        config.selectionTranslate.explanationPrompt = 'Explain {{text}} using {{context}} in {{to}}. Focus on grammar.';
+        config.selectionTranslate.targetLang = 'ja';
+        const service = new TranslationService(config, () => 'test-only-key');
+        await service.translateDetailed('future', 'Plan for the future.');
+        assert.ok(prompts[0].startsWith('Explain future using Plan for the future. in ja. Focus on grammar.'));
+        assert.ok(prompts[0].includes('Return exactly one JSON object'));
+        assert.ok(prompts[0].includes('Target language: ja'));
+        await service.translateDetailed('The future is bright.', 'Context');
+        assert.ok(prompts[1].startsWith('Explain The future is bright. using Context in ja.'));
+        assert.ok(prompts[1].includes('"kind":"sentence"'));
+        await service.translateDetailed('future', 'Plan for the future.');
+        assert.equal(prompts.length, 2);
+        config.selectionTranslate.explanationPrompt = 'Use beginner-friendly explanations.';
+        await service.translateDetailed('future', 'Plan for the future.');
+        assert.ok(prompts[2].startsWith('Use beginner-friendly explanations.'));
+        config.selectionTranslate.explanationPrompt = '  ';
+        await service.translateDetailed('future', 'Plan for the future.');
+        assert.ok(prompts[3].startsWith('Explain the selection for a language learner.'));
+        await service.translate('future');
+        assert.ok(prompts[4].startsWith('Translate future to ja'));
+    } finally { delete globalThis.__webTranslationRequest; }
+});
+
 test('simple translation uses shared fields and detailed requests cache separately by bounded context', async () => {
     const requests = [];
     globalThis.__webTranslationRequest = async request => {

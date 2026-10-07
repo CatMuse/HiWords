@@ -64,7 +64,9 @@ export function normalizeStoredSettings(data: unknown): NormalizedSettings {
                 ...DEFAULT_SETTINGS.selectionTranslate,
                 ...stored.selectionTranslate,
                 prompt: typeof stored.selectionTranslate?.prompt === 'string' && ![LEGACY_TRANSLATE_PROMPT, STRUCTURED_TRANSLATE_PROMPT].includes(stored.selectionTranslate.prompt.trim())
-                    ? stored.selectionTranslate.prompt : ''
+                    ? stored.selectionTranslate.prompt : '',
+                explanationPrompt: typeof stored.selectionTranslate?.explanationPrompt === 'string'
+                    ? stored.selectionTranslate.explanationPrompt : ''
             }
         },
         hadLegacyAPIKeyField,

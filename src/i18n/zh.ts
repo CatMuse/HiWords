@@ -150,9 +150,11 @@ export default {
         enable_selection_translate: "启用划词翻译",
         enable_selection_translate_desc: "选中文本后自动弹出翻译浮窗",
         translate_target_lang: "目标语言",
-        translate_target_lang_desc: "翻译的目标语言代码（如 zh-CN、en、ja）",
+        translate_target_lang_desc: "选择划词翻译和 AI 解释使用的语言。已有词库和本地词典内容保留原语言。",
         translate_prompt: "翻译提示词",
         translate_prompt_desc: "AI 翻译的提示词模板，使用 {{text}} 和 {{to}} 作为占位符",
+        ai_explanation_prompt: "AI 解释提示词",
+        ai_explanation_prompt_desc: "自定义单词和句子的解释。支持 {{text}}、{{context}} 和 {{to}} 占位符。",
     },
 
     // 侧边栏
